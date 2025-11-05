@@ -1,5 +1,8 @@
 {
     "conventionalCommits.scopes": [
-        "abstraction"
+        "abstraction",
+        "cache",
+        "memory",
+        "knowledge"
     ]
 }
