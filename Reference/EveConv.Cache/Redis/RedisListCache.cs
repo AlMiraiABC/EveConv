@@ -11,7 +11,7 @@ namespace EveConv.Cache.Redis
 {
     public partial class RedisCache : IListCache<object>
     {
-        public async Task<object?> GetByIndexAsync(string key, int index)
+        public async Task<object?> ListGetByIndexAsync(string key, int index)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -38,7 +38,7 @@ namespace EveConv.Cache.Redis
             }
         }
 
-        public async Task<int> GetLengthAsync(string key)
+        public async Task<int> ListLengthAsync(string key)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -56,7 +56,7 @@ namespace EveConv.Cache.Redis
             }
         }
 
-        public async Task<IList<object>> GetRangeAsync(string key, int start = 0, int stop = -1)
+        public async Task<IList<object>> ListRangeAsync(string key, int start = 0, int stop = -1)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -93,7 +93,7 @@ namespace EveConv.Cache.Redis
             }
         }
 
-        public async Task<IList<object>> LeftPopAsync(string key, int count)
+        public async Task<IList<object>> ListLeftPopAsync(string key, int count)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -134,7 +134,7 @@ namespace EveConv.Cache.Redis
             }
         }
 
-        public async Task<int> LeftPushAsync(string key, IEnumerable<object> values, TimeSpan? ttl = null)
+        public async Task<int> ListLeftPushAsync(string key, IEnumerable<object> values, TimeSpan? ttl = null)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -144,7 +144,7 @@ namespace EveConv.Cache.Redis
             if (valueList.Count == 0)
             {
                 _logger.LogDebug("LeftPushAsync called with empty values for key: {Key}", key);
-                return await GetLengthAsync(key);
+                return await ListLengthAsync(key);
             }
 
             try
@@ -173,7 +173,7 @@ namespace EveConv.Cache.Redis
             }
         }
 
-        public async Task<int> RemoveAsync(string key, object value, int count = 0)
+        public async Task<int> ListRemoveAsync(string key, object value, int count = 0)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -193,7 +193,7 @@ namespace EveConv.Cache.Redis
             }
         }
 
-        public async Task<IList<object>> RightPopAsync(string key, int count)
+        public async Task<IList<object>> ListRightPopAsync(string key, int count)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -234,7 +234,7 @@ namespace EveConv.Cache.Redis
             }
         }
 
-        public async Task<int> RightPushAsync(string key, IEnumerable<object> values, TimeSpan? ttl = null)
+        public async Task<int> ListRightPushAsync(string key, IEnumerable<object> values, TimeSpan? ttl = null)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -244,7 +244,7 @@ namespace EveConv.Cache.Redis
             if (valueList.Count == 0)
             {
                 _logger.LogDebug("RightPushAsync called with empty values for key: {Key}", key);
-                return await GetLengthAsync(key);
+                return await ListLengthAsync(key);
             }
 
             try
@@ -273,7 +273,7 @@ namespace EveConv.Cache.Redis
             }
         }
 
-        public async Task<bool> SetByIndexAsync(string key, int index, object value)
+        public async Task<bool> ListSetByIndexAsync(string key, int index, object value)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -300,7 +300,7 @@ namespace EveConv.Cache.Redis
             }
         }
 
-        public async Task TrimAsync(string key, int start, int stop)
+        public async Task ListTrimAsync(string key, int start, int stop)
         {
             ThrowIfDisposed();
             ValidateKey(key);

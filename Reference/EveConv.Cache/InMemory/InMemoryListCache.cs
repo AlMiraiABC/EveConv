@@ -58,7 +58,7 @@ namespace EveConv.Cache.InMemory
             return index < 0 ? length + index : index;
         }
 
-        public Task<object?> GetByIndexAsync(string key, int index)
+        public Task<object?> ListGetByIndexAsync(string key, int index)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -79,7 +79,7 @@ namespace EveConv.Cache.InMemory
             return Task.FromResult<object?>(value);
         }
 
-        public Task<int> GetLengthAsync(string key)
+        public Task<int> ListLengthAsync(string key)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -88,7 +88,7 @@ namespace EveConv.Cache.InMemory
             return Task.FromResult(list.Count);
         }
 
-        public Task<IList<object>> GetRangeAsync(string key, int start = 0, int stop = -1)
+        public Task<IList<object>> ListRangeAsync(string key, int start = 0, int stop = -1)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -120,7 +120,7 @@ namespace EveConv.Cache.InMemory
             return Task.FromResult<IList<object>>(result);
         }
 
-        public Task<IList<object>> LeftPopAsync(string key, int count)
+        public Task<IList<object>> ListLeftPopAsync(string key, int count)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -145,7 +145,7 @@ namespace EveConv.Cache.InMemory
             return Task.FromResult<IList<object>>(result);
         }
 
-        public Task<int> LeftPushAsync(string key, IEnumerable<object> values, TimeSpan? ttl = null)
+        public Task<int> ListLeftPushAsync(string key, IEnumerable<object> values, TimeSpan? ttl = null)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -163,7 +163,7 @@ namespace EveConv.Cache.InMemory
             return Task.FromResult(list.Count);
         }
 
-        public Task<int> RemoveAsync(string key, object value, int count = 0)
+        public Task<int> ListRemoveAsync(string key, object value, int count = 0)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -228,7 +228,7 @@ namespace EveConv.Cache.InMemory
             return Task.FromResult(removed);
         }
 
-        public Task<IList<object>> RightPopAsync(string key, int count)
+        public Task<IList<object>> ListRightPopAsync(string key, int count)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -253,7 +253,7 @@ namespace EveConv.Cache.InMemory
             return Task.FromResult<IList<object>>(result);
         }
 
-        public Task<int> RightPushAsync(string key, IEnumerable<object> values, TimeSpan? ttl = null)
+        public Task<int> ListRightPushAsync(string key, IEnumerable<object> values, TimeSpan? ttl = null)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -271,7 +271,7 @@ namespace EveConv.Cache.InMemory
             return Task.FromResult(list.Count);
         }
 
-        public Task<bool> SetByIndexAsync(string key, int index, object value)
+        public Task<bool> ListSetByIndexAsync(string key, int index, object value)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -304,7 +304,7 @@ namespace EveConv.Cache.InMemory
             return Task.FromResult(false);
         }
 
-        public Task TrimAsync(string key, int start, int stop)
+        public Task ListTrimAsync(string key, int start, int stop)
         {
             ThrowIfDisposed();
             ValidateKey(key);
