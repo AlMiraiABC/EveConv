@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 namespace EveConv.Abstraction.Cache
 {
     /// <summary>
-    /// Provides fundamental cache operations for single-item management with optional expiration support.
+    /// Provides basic cache operations for single-item management with optional expiration support.
     /// </summary>
     /// <typeparam name="TValue">The type of values stored in the cache.</typeparam>
-    public interface ICache<TValue>
+    public interface IBasicCache<TValue>
     {
         /// <summary>
         /// Stores a value in the cache with the specified key and optional time-to-live.

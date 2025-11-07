@@ -6,7 +6,7 @@ namespace EveConv.Cache.Redis;
 /// <summary>
 /// Basic cache operations implementation for RedisCache.
 /// </summary>
-public partial class RedisCache : ICache<object>
+public partial class RedisCache : IBasicCache<object>
 {
     /// <inheritdoc />
     public async Task SetAsync(string key, object value, TimeSpan? ttl = null)
