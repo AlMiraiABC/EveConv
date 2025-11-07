@@ -145,9 +145,9 @@ namespace EveConv.Abstraction.Cache
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
         /// <remarks>
         /// Both start and stop are inclusive indices. Use 0 for the first element and -1 for the last element.
-        /// GetRangeAsync("mylist", 0, -1) returns all elements in the list.
+        /// ListRangeAsync("mylist", 0, -1) returns all elements in the list.
         /// </remarks>
-        Task<IList<TValue>> ListGetRangeAsync(string key, int start = 0, int stop = -1);
+        Task<IList<TValue>> ListRangeAsync(string key, int start = 0, int stop = -1);
 
         /// <summary>
         /// Gets the length of the list stored at the specified key.
