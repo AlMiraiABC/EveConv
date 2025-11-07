@@ -107,7 +107,7 @@ public partial class RedisCache
         {
             if (string.IsNullOrEmpty(serializedValue) || serializedValue == NullMarker)
             {
-                return default(T);
+                return default;
             }
 
             var targetType = typeof(T);
@@ -156,6 +156,7 @@ public partial class RedisCache
     /// <returns>True if the type is primitive; otherwise, false.</returns>
     private static bool IsPrimitiveType(Type type)
     {
+        // Boolean, Byte, SByte, Int16, Int32, UInt16, UInt32, Int64, UInt64, IntPtr, UIntPtr, Char, Double, Single
         return type.IsPrimitive ||
                type == typeof(string) ||
                type == typeof(decimal) ||
