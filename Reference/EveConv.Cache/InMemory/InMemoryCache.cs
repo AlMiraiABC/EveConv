@@ -28,7 +28,7 @@ public partial class InMemoryCache : IDisposable
     /// <param name="configuration">The cache configuration options.</param>
     /// <param name="logger">Optional logger for diagnostic logging.</param>
     /// <exception cref="ArgumentNullException">Thrown when memoryCache or configuration is null.</exception>
-    public InMemoryCache(IOptions<InMemoryConfiguration> configuration, ILogger? logger = null)
+    public InMemoryCache(IOptions<InMemoryConfiguration> configuration, ILogger<InMemoryCache>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(configuration);
 
