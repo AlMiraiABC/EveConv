@@ -20,7 +20,7 @@ public partial class RedisCache : IDisposable
     /// Initializes a new instance of the <see cref="RedisCache"/> class.
     /// </summary>
     /// <param name="configuration">The Redis configuration options.</param>
-    /// <param name="logger">The logger instance.</param>
+    /// <param name="logger">Optional logger for diagnostic logging.</param>
     /// <exception cref="ArgumentNullException">Thrown when configuration or logger is null.</exception>
     /// <exception cref="ArgumentException">Thrown when configuration is invalid.</exception>
     public RedisCache(IOptions<RedisConfiguration> configuration, Logger<RedisCache>? logger)
