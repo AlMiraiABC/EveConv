@@ -26,15 +26,15 @@ public partial class InMemoryCache : IDisposable
     /// </summary>
     /// <param name="memoryCache">The underlying memory cache instance.</param>
     /// <param name="configuration">The cache configuration options.</param>
-    /// <param name="loggerFactory">Optional logger factory for diagnostic logging.</param>
+    /// <param name="logger">Optional logger for diagnostic logging.</param>
     /// <exception cref="ArgumentNullException">Thrown when memoryCache or configuration is null.</exception>
-    public InMemoryCache(IOptions<InMemoryConfiguration> configuration, ILoggerFactory? loggerFactory = null)
+    public InMemoryCache(IOptions<InMemoryConfiguration> configuration, ILogger? logger = null)
     {
         ArgumentNullException.ThrowIfNull(configuration);
 
         _memoryCache = new MemoryCache(configuration);
         _configuration = configuration.Value;
-        _logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<InMemoryCache>();
+        _logger = logger ?? DefaultLogger<InMemoryCache>.Instance;
 
         _logger.LogInformation("InMemoryCache initialized with SizeLimit: {SizeLimit}, CompactionPercentage: {CompactionPercentage}",
             _configuration.SizeLimit, _configuration.CompactionPercentage);
