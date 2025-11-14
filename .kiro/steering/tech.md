@@ -1,7 +1,7 @@
 # Technology Stack
 
 ## Framework & Runtime
-- **.NET 8.0**: Target framework for all projects
+- **.NET 10.0**: Target framework for all projects
 - **ASP.NET Core**: Web API framework with Swagger/OpenAPI support
 - **C#**: Primary programming language with nullable reference types enabled
 
@@ -54,9 +54,9 @@ dotnet clean
   ```cs
   using EveConv.Abstraction.Diagnostic;
   private readonly ILogger _logger;
-  public SomeClass(ILoggerFactory? loggerFactory)
+  public SomeClass(ILogger? logger)
   {
-    _logger = (loggerFactory?? DefaultLogger.Factory).CreateLogger<SomeClass>();
+    _logger = logger ?? DefaultLogger<SomeClass>.Instance;
   }
  
   ```
