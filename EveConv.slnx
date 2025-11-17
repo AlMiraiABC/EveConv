@@ -1,0 +1,27 @@
+<Solution>
+  <Folder Name="/Knowledge/">
+    <Project Path="Knowledge/EveConv.FileExtractor/EveConv.FileExtractor.csproj" />
+    <Project Path="Knowledge/EveConv.Knowledge/EveConv.Knowledge.csproj" />
+  </Folder>
+  <Folder Name="/LLM/">
+    <Project Path="LLM/EveConv.Embedding/EveConv.Embedding.csproj" />
+    <Project Path="LLM/EveConv.TextGeneration/EveConv.TextGeneration.csproj" />
+  </Folder>
+  <Folder Name="/Memory/">
+    <Project Path="Memory/EveConv.Memory/EveConv.Memory.csproj" />
+  </Folder>
+  <Folder Name="/Reference/">
+    <Project Path="Reference/EveConv.GraphStorage/EveConv.GraphStorage.csproj" />
+    <Project Path="Reference/EveConv.RdbStorage/EveConv.RdbStorage.csproj" />
+    <Project Path="Reference/EveConv.VectorStorage/EveConv.VectorStorage.csproj" />
+  </Folder>
+  <Folder Name="/Reference/Cache/">
+    <Project Path="Reference/Cache/EveConv.Cache.InMemory/EveConv.Cache.InMemory.csproj" />
+    <Project Path="Reference/Cache/EveConv.Cache.Redis/EveConv.Cache.Redis.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Project Path="EveConv.Abstraction/EveConv.Abstraction.csproj" />
+  <Project Path="EveConv.Api/EveConv.Api.csproj" />
+</Solution>
