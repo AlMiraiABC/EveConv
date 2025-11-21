@@ -13,11 +13,13 @@
   <Folder Name="/Reference/">
     <Project Path="Reference/EveConv.GraphStorage/EveConv.GraphStorage.csproj" />
     <Project Path="Reference/EveConv.RdbStorage/EveConv.RdbStorage.csproj" />
-    <Project Path="Reference/EveConv.VectorStorage/EveConv.VectorStorage.csproj" />
   </Folder>
   <Folder Name="/Reference/Cache/">
     <Project Path="Reference/Cache/EveConv.Cache.InMemory/EveConv.Cache.InMemory.csproj" />
     <Project Path="Reference/Cache/EveConv.Cache.Redis/EveConv.Cache.Redis.csproj" />
+  </Folder>
+  <Folder Name="/Reference/VectorStorage/">
+    <Project Path="Reference/VectorStorage/EveConv.VectorStorage.Qdrant/EveConv.VectorStorage.Qdrant.csproj" Id="9d0c4525-2924-40c2-b97d-48c0517749a6" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
