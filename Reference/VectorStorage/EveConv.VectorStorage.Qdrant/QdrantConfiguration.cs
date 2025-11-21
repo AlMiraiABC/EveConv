@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Microsoft.Extensions.Options;
 
-namespace EveConv.Storage.Qdrant
+namespace EveConv.VectorStorage.Qdrant
 {
     public class QdrantConfiguration : IOptions<QdrantConfiguration>
     {

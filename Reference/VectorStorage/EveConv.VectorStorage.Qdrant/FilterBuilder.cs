@@ -9,7 +9,7 @@ using Qdrant.Client.Grpc;
 using QMatch = Qdrant.Client.Grpc.Match;
 using QRange = Qdrant.Client.Grpc.Range;
 
-namespace EveConv.Storage.Qdrant
+namespace EveConv.VectorStorage.Qdrant
 {
     /// <summary>
     /// Helper class to build Qdrant <see cref="Filter"/> from <see cref="Searchable"/>

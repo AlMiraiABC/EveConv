@@ -46,7 +46,7 @@ namespace EveConv.Abstraction.VectorStorage
         /// Asynchronously inserts a new vector or updates an existing vector in the specified collection.
         /// </summary>
         /// <param name="collectionName">The name of the collection in which to upsert the vector. Cannot be null or empty.</param>
-        /// <param name="vector">The vector data to upsert. Cannot be null.</param>
+        /// <param name="record">The vector data to upsert. Cannot be null.</param>
         /// <param name="cancellationToken">Task cancellation token</param>
         /// <returns>
         ///     A task that represents the asynchronous upsert operation.
@@ -56,7 +56,7 @@ namespace EveConv.Abstraction.VectorStorage
         ///     Insert if the vector with <paramref name="vectorId"/> is empty or does not exist;
         ///     otherwise, update the existing vector with the new data and metadata.
         /// </remarks>
-        Task<string> UpsertVectorAsync(string collectionName, VectorRecord vector, CancellationToken cancellationToken = default);
+        Task<string> UpsertVectorAsync(string collectionName, VectorRecord record, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Asynchronously deletes a vector with the specified identifier from the given collection.

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -15,9 +16,9 @@ using Microsoft.Extensions.Options;
 using Qdrant.Client;
 using Qdrant.Client.Grpc;
 
-namespace EveConv.Storage.Qdrant
+namespace EveConv.VectorStorage.Qdrant
 {
-    public class QdrantVectorStorage : IVectorStorage, IDisposable
+    public partial class QdrantVectorStorage : IVectorStorage, IDisposable
     {
         private bool _disposed;
 
@@ -36,12 +37,14 @@ namespace EveConv.Storage.Qdrant
 
         public async Task<bool> CheckCollectionExistsAsync(string collectionName, CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
             CheckCollectionName(collectionName);
             return await this._client.CollectionExistsAsync(collectionName, cancellationToken);
         }
 
         public async Task CreateCollectionAsync(string collectionName, int vectorDimension, CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
             CheckCollectionName(collectionName);
             if (vectorDimension <= 0)
             {
@@ -60,6 +63,7 @@ namespace EveConv.Storage.Qdrant
 
         public async Task DeleteVectorAsync(string collectionName, string vectorId, CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
             CheckCollectionName(collectionName);
             await this._client.DeleteAsync(collectionName, ParseVectorId(vectorId), cancellationToken: cancellationToken);
             if (_logger.IsEnabled(LogLevel.Debug))
@@ -71,6 +75,7 @@ namespace EveConv.Storage.Qdrant
         private readonly SemaphoreSlim _ensureCollectionExistsLock = new(1, 1);
         public async Task EnsureCollectionExistsAsync(string collectionName, int vectorDimension, CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
             CheckCollectionName(collectionName);
             if (vectorDimension <= 0)
             {
@@ -114,6 +119,7 @@ namespace EveConv.Storage.Qdrant
             int offset = 0,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
             CheckCollectionName(collectionName);
             if (limit <= 0)
             {
@@ -133,8 +139,14 @@ namespace EveConv.Storage.Qdrant
                 limit: (ulong)limit,
                 offset: (ulong)offset,
                 cancellationToken: cancellationToken);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Searched {count} vectors from collection {cname} with limit {limit} and offset {offset}",
+                    points.Count, collectionName, limit, offset);
+            }
             foreach (var point in points)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var id = point.Id.Uuid;
                 var metadata = ParsePointPayload(point.Payload);
                 var vector = point.Vectors?.Vector?.Data?.ToArray() ?? [];
@@ -148,28 +160,50 @@ namespace EveConv.Storage.Qdrant
             }
         }
 
-        public async Task<string> UpsertVectorAsync(string collectionName, VectorRecord vector, CancellationToken cancellationToken = default)
+        public async Task<string> UpsertVectorAsync(string collectionName, VectorRecord record, CancellationToken cancellationToken = default)
         {
+            ThrowIfDisposed();
             CheckCollectionName(collectionName);
-            CheckVectorData(vector.Data);
-            var id = !string.IsNullOrWhiteSpace(vector.Id)
-                ? ParseVectorId(vector.Id)
-                : Guid.NewGuid();
+            CheckInsertVectorRecord(record);
             var point = new PointStruct()
             {
-                Id = id,
-                Vectors = vector.Data,
+                Id = !string.IsNullOrWhiteSpace(record.Id)
+                    ? ParseVectorId(record.Id)
+                    : Guid.NewGuid(),
+                Vectors = record.Data,
                 Payload = { }
             };
-            FillPointPayload(point.Payload, vector.Metadata);
+            FillPointPayload(point.Payload, record.Metadata);
             await this._client.UpsertAsync(collectionName, [point], cancellationToken: cancellationToken);
-            return id.ToString();
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                if (string.IsNullOrWhiteSpace(record.Id))
+                {
+                    _logger.LogDebug("Vector {vid} inserted to collection {cname}", point.Id.Uuid, collectionName);
+                }
+                else
+                {
+                    _logger.LogDebug("Vector {vid} updated to collection {cname}", point.Id.Uuid, collectionName);
+                }
+            }
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("Vector {vid} upserted to collection {cname} with vector {vector} and payload {payload}",
+                    point.Id.Uuid, collectionName, JsonSerializer.Serialize(record.Data), JsonSerializer.Serialize(record.Metadata));
+            }
+            return point.Id.Uuid.ToString();
         }
 
         #region private
 
-        [return: NotNull]
-        private static void CheckCollectionName(string? collectionName)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ThrowIfDisposed()
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CheckCollectionName([NotNull] string? collectionName)
         {
             if (string.IsNullOrWhiteSpace(collectionName))
             {
@@ -177,8 +211,18 @@ namespace EveConv.Storage.Qdrant
             }
         }
 
-        [return: NotNull]
-        private static void CheckVectorData(float[]? data)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CheckInsertVectorRecord([NotNull] VectorRecord? record)
+        {
+            ArgumentNullException.ThrowIfNull(record);
+            if (!string.IsNullOrWhiteSpace(record.Id))
+            {
+                CheckVectorData(record.Data);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void CheckVectorData([NotNull] float[]? data)
         {
             if (data is null or [])
             {
@@ -192,6 +236,7 @@ namespace EveConv.Storage.Qdrant
         /// <param name="vectorId">Vector id.</param>
         /// <returns>Parsed guid.</returns>
         /// <exception cref="ArgumentException">This vector id is malformed.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static Guid ParseVectorId(string vectorId)
         {
             if (Guid.TryParse(vectorId, out var vid))
@@ -234,10 +279,6 @@ namespace EveConv.Storage.Qdrant
             }
         }
 
-        private static readonly JsonSerializerOptions PAYLOAD_SERIALIZER_OPTIONS = new JsonSerializerOptions()
-        {
-            ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve,
-        };
         /// <summary>
         /// Populates the specified payload with key-value pairs from the provided metadata dictionary, converting each
         /// value to a protocol buffer Value representation.
@@ -255,59 +296,65 @@ namespace EveConv.Storage.Qdrant
             {
                 return;
             }
-            var ele = JsonSerializer.SerializeToElement(metadata, PAYLOAD_SERIALIZER_OPTIONS);
-            foreach (var prop in ele.EnumerateObject())
+            foreach (var kv in metadata)
             {
-                payload[prop.Name] = ToValue(prop.Value);
+                payload[kv.Key] = ToValue(kv.Value);
             }
-            static Value ToValue(JsonElement element)
+            static Value ToValue(object? obj)
             {
-                var value = new Value();
-                switch (element.ValueKind)
+                var v = new Value();
+                if (obj is null)
                 {
-                    case JsonValueKind.Object:
-                        var structValue = new Struct();
-                        foreach (var p in element.EnumerateObject())
-                        {
-                            structValue.Fields[p.Name] = ToValue(p.Value);
-                        }
-                        value.StructValue = structValue;
-                        break;
-                    case JsonValueKind.Array:
-                        var list = new ListValue();
-                        foreach (var item in element.EnumerateArray())
-                        {
-                            list.Values.Add(ToValue(item));
-                        }
-                        value.ListValue = list;
-                        break;
-                    case JsonValueKind.String:
-                        value.StringValue = element.GetString();
-                        break;
-                    case JsonValueKind.Number:
-                        var raw = element.GetRawText();
-                        if (!raw.ContainsAny(['.', 'e', 'E']) && element.TryGetInt64(out var v))
-                        {
-                            value.IntegerValue = v;
-                        }
-                        else
-                        {
-                            value.DoubleValue = element.GetDouble();
-                        }
-                        break;
-                    case JsonValueKind.True:
-                        value.BoolValue = true;
-                        break;
-                    case JsonValueKind.False:
-                        value.BoolValue = false;
-                        break;
-                    case JsonValueKind.Undefined:
-                    case JsonValueKind.Null:
-                    default:
-                        value.NullValue = NullValue.NullValue;
-                        break;
+                    v.NullValue = NullValue.NullValue;
+                    return v;
                 }
-                return value;
+                switch (obj)
+                {
+                    case string s:
+                        v.StringValue = s;
+                        return v;
+                    case bool b:
+                        v.BoolValue = b;
+                        return v;
+                    case byte or sbyte or short or ushort or int or uint or long:
+                        v.IntegerValue = Convert.ToInt64(obj);
+                        return v;
+                    case float or double or decimal:
+                        v.DoubleValue = Convert.ToDouble(obj);
+                        return v;
+                    case IEnumerable enumerable when obj is not string:
+                        {
+                            var listValue = new ListValue();
+                            foreach (var item in enumerable)
+                            {
+                                listValue.Values.Add(ToValue(item));
+                            }
+                            v.ListValue = listValue;
+                            return v;
+                        }
+                    case IDictionary<string, object?> dict:
+                        {
+                            var structValue = new Struct();
+                            foreach (var entry in dict)
+                            {
+                                structValue.Fields[entry.Key] = ToValue(entry.Value);
+                            }
+                            v.StructValue = structValue;
+                            return v;
+                        }
+                    default:
+                        // fallback to json serialization
+                        try
+                        {
+                            var json = JsonSerializer.Serialize(obj);
+                            v.StringValue = json;
+                        }
+                        catch
+                        {
+                            v.NullValue = NullValue.NullValue;
+                        }
+                        return v;
+                }
             }
         }
 
