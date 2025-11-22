@@ -11,7 +11,7 @@ namespace EveConv.Cache.Redis;
 public static class DependencyInjectExtensions
 {
     /// <summary>
-    /// Adds Redis cache services to the specified service collection with configuration options.
+    /// Adds <see cref="RedisCache"/> services to the specified service collection with configuration options.
     /// </summary>
     /// <param name="services">The service collection to add services to.</param>
     /// <returns>The service collection for method chaining.</returns>
@@ -32,7 +32,7 @@ public static class DependencyInjectExtensions
     }
 
     /// <summary>
-    /// Adds Redis cache services to the specified service collection with a configuration section.
+    /// Adds <see cref="RedisCache"/> services to the specified service collection with a configuration section.
     /// </summary>
     /// <param name="services">The service collection to add services to.</param>
     /// <param name="configurationSection">The configuration section containing Redis settings.</param>
@@ -51,10 +51,10 @@ public static class DependencyInjectExtensions
     }
 
     /// <summary>
-    /// Adds Redis cache services to the specified service collection with a configuration action.
+    /// Adds <see cref="RedisCache"/> services to the specified service collection with a configuration action.
     /// </summary>
     /// <param name="services">The service collection to add services to.</param>
-    /// <param name="configureOptions">An action to configure Redis options.</param>
+    /// <param name="configureOptions">An action to configure <see cref="RedisConfiguration"/> options.</param>
     /// <returns>The service collection for method chaining.</returns>
     /// <exception cref="ArgumentNullException">Thrown when services or configureOptions is null.</exception>
     public static IServiceCollection AddRedisCache(this IServiceCollection services, Action<RedisConfiguration> configureOptions)

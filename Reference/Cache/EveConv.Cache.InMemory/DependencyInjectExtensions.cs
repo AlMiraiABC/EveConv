@@ -6,12 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 namespace EveConv.Cache.InMemory;
 
 /// <summary>
-/// Extension methods for registering InMemoryCache services with dependency injection.
+/// Extension methods for registering <see cref="InMemoryCache"/> services with dependency injection.
 /// </summary>
 public static class DependencyInjectExtensions
 {
     /// <summary>
-    /// Adds InMemoryCache services to the service collection with default configuration.
+    /// Adds <see cref="InMemoryCache"/> services to the service collection with default configuration.
     /// </summary>
     /// <param name="services">The service collection to add services to.</param>
     /// <returns>The service collection for chaining.</returns>
@@ -30,10 +30,10 @@ public static class DependencyInjectExtensions
     }
 
     /// <summary>
-    /// Adds InMemoryCache services to the service collection with configuration action.
+    /// Adds <see cref="InMemoryCache"/> services to the service collection with configuration action.
     /// </summary>
     /// <param name="services">The service collection to add services to.</param>
-    /// <param name="configureOptions">Action to configure InMemoryConfiguration options.</param>
+    /// <param name="configureOptions">Action to configure <see cref="InMemoryConfiguration"/> options.</param>
     /// <returns>The service collection for chaining.</returns>
     public static IServiceCollection AddInMemoryCache(this IServiceCollection services, Action<InMemoryConfiguration> configureOptions)
     {
@@ -49,7 +49,7 @@ public static class DependencyInjectExtensions
     }
 
     /// <summary>
-    /// Adds InMemoryCache services to the service collection with configuration section.
+    /// Adds <see cref="InMemoryCache"/> services to the service collection with configuration section.
     /// </summary>
     /// <param name="services">The service collection to add services to.</param>
     /// <param name="configurationSection">The configuration section instance to bind from.</param>
