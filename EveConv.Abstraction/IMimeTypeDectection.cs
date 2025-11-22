@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace EveConv.Abstraction.DocParser
+namespace EveConv.Abstraction
 {
     public interface IMimeTypeDetection
     {
