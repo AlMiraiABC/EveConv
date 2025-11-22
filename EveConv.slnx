@@ -1,6 +1,6 @@
 <Solution>
   <Folder Name="/Knowledge/">
-    <Project Path="Knowledge/EveConv.FileExtractor/EveConv.FileExtractor.csproj" />
+    <Project Path="Knowledge/EveConv.DocDecoder/EveConv.DocDecoder.csproj" Id="483ae9aa-c906-4a94-a276-ece6351029d8" />
     <Project Path="Knowledge/EveConv.Knowledge/EveConv.Knowledge.csproj" />
   </Folder>
   <Folder Name="/LLM/">
