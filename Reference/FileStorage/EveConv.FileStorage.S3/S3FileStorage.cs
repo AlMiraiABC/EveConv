@@ -20,6 +20,7 @@ namespace EveConv.FileStorage.S3
         public S3FileStorage(IOptions<S3Configuration> options, ILoggerFactory? loggerFactory = null)
         {
             ArgumentNullException.ThrowIfNull(options);
+            options.Value.Valid();
             this._config = options.Value;
             this._logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<S3FileStorage>();
             this._client = new(this._config, loggerFactory);
