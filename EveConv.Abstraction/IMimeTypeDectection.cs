@@ -10,6 +10,18 @@ namespace EveConv.Abstraction
     public interface IMimeTypeDetection
     {
         public string GetFileType(string filename);
-        public bool TryGetFileType(string filename, out string? mimeType);
+        public bool TryGetFileType(string filename, out string? mimeType)
+        {
+            try
+            {
+                mimeType = GetFileType(filename);
+                return true;
+            }
+            catch
+            {
+            }
+            mimeType = null;
+            return false;
+        }
     }
 }
