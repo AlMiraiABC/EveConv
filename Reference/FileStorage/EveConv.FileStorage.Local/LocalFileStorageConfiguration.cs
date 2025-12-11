@@ -13,5 +13,10 @@ namespace EveConv.FileStorage.Local
         public string RootPath { get; init; } = "./files";
 
         public LocalFileStorageConfiguration Value => this;
+
+        public void Valid()
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(RootPath);
+        }
     }
 }

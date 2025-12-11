@@ -11,18 +11,18 @@
     <Project Path="Memory/EveConv.Memory/EveConv.Memory.csproj" />
   </Folder>
   <Folder Name="/Reference/">
-    <Project Path="E:/projects/eve/EveConv/Reference/EveConv.Downloader/EveConv.Downloader.csproj" Id="36ab8f2a-b7a5-46fd-a42f-a26609d04f10" />
-    <Project Path="E:/projects/eve/EveConv/Reference/EveConv.GraphStorage/EveConv.GraphStorage.csproj" />
-    <Project Path="E:/projects/eve/EveConv/Reference/EveConv.MimeType/EveConv.MimeType.csproj" Id="d78cd075-ad41-4e31-857a-e44ca81c97b0" />
-    <Project Path="E:/projects/eve/EveConv/Reference/EveConv.RdbStorage/EveConv.RdbStorage.csproj" />
+    <Project Path="Reference/EveConv.Downloader/EveConv.Downloader.csproj" Id="36ab8f2a-b7a5-46fd-a42f-a26609d04f10" />
+    <Project Path="Reference/EveConv.GraphStorage/EveConv.GraphStorage.csproj" />
+    <Project Path="Reference/EveConv.MimeType/EveConv.MimeType.csproj" Id="d78cd075-ad41-4e31-857a-e44ca81c97b0" />
+    <Project Path="Reference/EveConv.RdbStorage/EveConv.RdbStorage.csproj" />
   </Folder>
   <Folder Name="/Reference/Cache/">
     <Project Path="Reference/Cache/EveConv.Cache.InMemory/EveConv.Cache.InMemory.csproj" />
     <Project Path="Reference/Cache/EveConv.Cache.Redis/EveConv.Cache.Redis.csproj" />
   </Folder>
   <Folder Name="/Reference/FileStorage/">
-    <Project Path="E:/projects/eve/EveConv/Reference/FileStorage/EveConv.FileStorage.Local/EveConv.FileStorage.Local.csproj" Id="a9d47fb7-fcde-4e7e-8a38-099042f8e490" />
-    <Project Path="E:/projects/eve/EveConv/Reference/FileStorage/EveConv.FileStorage.S3/EveConv.FileStorage.S3.csproj" Id="050ff246-b66e-4a0d-9ec8-a7bb94dd4f58" />
+    <Project Path="Reference/FileStorage/EveConv.FileStorage.Local/EveConv.FileStorage.Local.csproj" Id="a9d47fb7-fcde-4e7e-8a38-099042f8e490" />
+    <Project Path="Reference/FileStorage/EveConv.FileStorage.S3/EveConv.FileStorage.S3.csproj" Id="050ff246-b66e-4a0d-9ec8-a7bb94dd4f58" />
   </Folder>
   <Folder Name="/Reference/Helper/">
     <Project Path="Reference/Helper/EveConv.S3Helper/EveConv.S3Helper.csproj" Id="3b473ce7-027a-4615-a033-11583bcc0faa" />
@@ -32,6 +32,10 @@
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/EveConv.FileStorage.Local.Tests/EveConv.FileStorage.Local.Tests.csproj" Id="3f8e86d1-4c64-4320-b152-60ba0aa26503" />
+    <Project Path="Tests/EveConv.FileStorage.S3.Tests/EveConv.FileStorage.S3.Tests.csproj" Id="8f599cd8-1ca1-40c5-b573-e6316adfb27d" />
   </Folder>
   <Project Path="EveConv.Abstraction/EveConv.Abstraction.csproj" />
   <Project Path="EveConv.Api/EveConv.Api.csproj" />

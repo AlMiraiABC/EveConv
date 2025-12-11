@@ -19,7 +19,7 @@ namespace EveConv.FileStorage.Local
         public LocalFileStorage(IOptions<LocalFileStorageConfiguration> config, IMimeTypeDetection mimeTypeDetection, ILogger<LocalFileStorage>? logger)
         {
             ArgumentNullException.ThrowIfNull(config);
-            ArgumentException.ThrowIfNullOrWhiteSpace(config.Value.RootPath);
+            config.Value.Valid();
             this._rootPath = config.Value.RootPath;
             this._mimeTypeDetection = mimeTypeDetection;
             this._logger = logger ?? DefaultLogger<LocalFileStorage>.Instance;
@@ -71,7 +71,7 @@ namespace EveConv.FileStorage.Local
             ArgumentException.ThrowIfNullOrWhiteSpace(fileId);
             ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
             var f = Path.Combine(GetIndexPath(indexName), fileId, fileName);
-            if (!Directory.Exists(f))
+            if (!File.Exists(f))
             {
                 throw new FileNotFoundException("File not found.", f);
             }
@@ -96,7 +96,7 @@ namespace EveConv.FileStorage.Local
             // File name may contains invalid characters or too long. Throw exception directly.
             // It should be validated by caller.
             // Do not modify file name, cannot return modified name to caller.
-            var fp = await EnsureFileFolderAsync(fileId);
+            var fp = await EnsureFileFolderAsync(indexName, fileId, cancellationToken);
             var f = Path.Combine(fp, fileName);
             using var fs = new FileStream(f, FileMode.Create, FileAccess.Write, FileShare.None);
             await fileContent.CopyToAsync(fs, cancellationToken);
@@ -111,10 +111,10 @@ namespace EveConv.FileStorage.Local
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private async Task<string> EnsureFileFolderAsync(string fileId)
+        private async Task<string> EnsureFileFolderAsync(string indexName, string fileId, CancellationToken cancellationToken = default)
         {
-            await EnsureIndexExistsAsync(fileId);
-            var fp = Path.Combine(GetIndexPath(fileId), fileId);
+            await EnsureIndexExistsAsync(indexName, cancellationToken);
+            var fp = Path.Combine(GetIndexPath(indexName), fileId);
             if (Directory.Exists(fp))
             {
                 return fp;
