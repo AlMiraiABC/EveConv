@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -21,23 +21,16 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
-	<ItemGroup>
-		<Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
-	</ItemGroup>
-
-	<ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.4" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
-    <PackageReference Include="xunit.v3" Version="3.2.1" />
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+		<PackageReference Include="Testcontainers.Minio" Version="4.9.0" />
+		<PackageReference Include="Testcontainers.XunitV3" Version="4.9.0" />
+		<PackageReference Include="xunit.v3" Version="3.2.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Reference\FileStorage\EveConv.FileStorage.Local\EveConv.FileStorage.Local.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Using Include="Xunit" />
+    <ProjectReference Include="..\..\Reference\Helper\EveConv.S3Helper\EveConv.S3Helper.csproj" />
   </ItemGroup>
 
 </Project>

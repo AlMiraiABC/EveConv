@@ -155,7 +155,7 @@ namespace EveConv.S3Helper
                 {
                     _logger.LogTrace("Got {count} objects for deletion in bucket '{bucket}' with prefix '{prefix}'", objects.S3Objects.Count, bucketName, prefix);
                 }
-                if (objects.S3Objects.Count == 0)
+                if (objects.S3Objects is null || objects.S3Objects.Count == 0)
                 {
                     break;
                 }
@@ -165,9 +165,9 @@ namespace EveConv.S3Helper
                     Quiet = false,
                     Objects = objects.S3Objects.ConvertAll(o => new KeyVersion { Key = o.Key }),
                 }, cancellationToken);
-                successed.AddRange(deletes.DeletedObjects.ConvertAll(o => o.Key));
-                failed.AddRange(deletes.DeleteErrors.ConvertAll(e => e.Key));
-                if (deletes.DeletedObjects.Count > 0)
+                successed.AddRange((deletes.DeletedObjects ?? []).ConvertAll(o => o.Key));
+                failed.AddRange((deletes.DeleteErrors ?? []).ConvertAll(e => e.Key));
+                if (deletes.DeleteErrors?.Count > 0)
                 {
                     if (_logger.IsEnabled(LogLevel.Warning))
                     {
@@ -215,7 +215,6 @@ namespace EveConv.S3Helper
                 Key = key,
                 InputStream = fileContent,
                 PartSize = _config.UploadPartSize,
-
             }, cancellationToken);
         }
 
