@@ -37,8 +37,11 @@ namespace EveConv.S3Helper
         private AmazonS3Client CreateClient()
         {
             var credentials = CreateCredentials();
-            var region = _config.RegionName is null ? null : RegionEndpoint.GetBySystemName(_config.RegionName);
-            return new AmazonS3Client(credentials, region);
+            var config = new AmazonS3Config()
+            {
+                ServiceURL = _config.Endpoint,
+            };
+            return new AmazonS3Client(credentials, config);
         }
 
         private AWSCredentials CreateCredentials()

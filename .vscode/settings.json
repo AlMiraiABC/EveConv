@@ -4,6 +4,8 @@
         "cache",
         "memory",
         "knowledge",
-        "vector"
+        "vector",
+        "file",
+        "heper"
     ]
 }

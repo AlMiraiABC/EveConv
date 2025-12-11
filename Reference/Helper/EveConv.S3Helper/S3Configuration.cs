@@ -6,35 +6,43 @@ namespace EveConv.S3Helper
 {
     public class S3Configuration
     {
-        #region aws credential
+        #region credential
         /// <summary>
-        /// Used to create a basic AWS credential using Access Key and Secret Key.
+        /// Used to create a basic credential using Access Key and Secret Key.
         /// </summary>
         public string? AccessKey { get => string.IsNullOrWhiteSpace(field) ? null : field; init; }
         /// <summary>
-        /// Used to create a basic AWS credential using Access Key and Secret Key.
+        /// Used to create a basic credential using Access Key and Secret Key.
         /// </summary>
         public string? SecretKey { get => string.IsNullOrWhiteSpace(field) ? null : field; init; }
         /// <summary>
-        /// Used to create a basic AWS credential using Access Key and Secret Key with additional Account ID.
+        /// Used to create a basic credential using Access Key and Secret Key with additional Account ID.
         /// </summary>
         public string? AccountId { get => string.IsNullOrWhiteSpace(field) ? null : field; init; }
         /// <summary>
-        /// File path to AWS credentials profile location.
-        /// <para/>
-        /// Used to create a profile based AWS credential.
+        /// File path to credentials profile location.
         /// </summary>
+        /// <remarks>
+        /// Used to create a profile based credential.
+        /// </remarks>
         public string? ProfileLocation { get => string.IsNullOrWhiteSpace(field) ? null : field; init; }
         /// <summary>
         /// Profile name in <see cref="ProfileLocation"/>.
-        /// <para/>
-        /// Used to create a profile based AWS credential.
+        /// <remarks>
+        /// Used to create a profile based credential.
+        /// </remarks>
         /// </summary>
         public string? ProfileName { get => string.IsNullOrWhiteSpace(field) ? null : field; init; }
         #endregion
 
-        #region aws config
-        public string? RegionName { get => string.IsNullOrWhiteSpace(field) ? null : field; init; }
+        #region config
+        /// <summary>
+        /// Custom endpoint URL.
+        /// </summary>
+        /// <remarks>
+        /// Got from environment or profile is not set.
+        /// </remarks>
+        public string? Endpoint { get => string.IsNullOrWhiteSpace(field) ? null : field; init; }
         #endregion
 
         #region operation
