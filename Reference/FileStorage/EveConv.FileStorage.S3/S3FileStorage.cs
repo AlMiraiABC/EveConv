@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Amazon.S3.Model;
+using EveConv.Abstraction;
 using EveConv.Abstraction.Diagnostic;
 using EveConv.Abstraction.FileStorage;
 using EveConv.S3Helper;
@@ -12,17 +13,18 @@ namespace EveConv.FileStorage.S3
 {
     public class S3FileStorage : IFileStorage
     {
-        private readonly S3Configuration _config;
         private readonly ILogger<S3FileStorage> _logger;
-
+        private readonly IMimeTypeDetection _mimeTypeDetection;
+        private readonly S3Configuration _config;
         private readonly S3ObjectHelper _client;
 
-        public S3FileStorage(IOptions<S3Configuration> options, ILoggerFactory? loggerFactory = null)
+        public S3FileStorage(IOptions<S3Configuration> options, IMimeTypeDetection mimeTypeDetection, ILoggerFactory? loggerFactory = null)
         {
             ArgumentNullException.ThrowIfNull(options);
             options.Value.Valid();
             this._config = options.Value;
             this._logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<S3FileStorage>();
+            this._mimeTypeDetection = mimeTypeDetection;
             this._client = new(this._config, loggerFactory);
         }
 
@@ -51,15 +53,20 @@ namespace EveConv.FileStorage.S3
             // HACK: How about return a temporary read-only file URL, that download by caller or user.
             try
             {
-                var file = await _client.GetObjectAsync(indexName, key, cancellationToken);
+                var file = await _client.GetObjectMetadataAsync(indexName, key, cancellationToken);
                 return new StreamableFileContent(
                     fileName: fileName,
                     fileSize: file.ContentLength,
-                    fileType: file.Headers.ContentType,
+                    fileType: _mimeTypeDetection.GetFileType(fileName),
                     lastWriteTimeUtc: file.LastModified ?? default,
-                    asyncStreamDelegate: async () => file.ResponseStream);
+                    asyncStreamDelegate: async () =>
+                    {
+                        return await _client.GetObjectAsync(indexName, key, cancellationToken)
+                            .ContinueWith(i => i.Result.ResponseStream);
+                    });
             }
-            catch (NoSuchKeyException)
+            catch (Exception ex) when (ex is NoSuchBucketException or NoSuchKeyException
+                || ex is Amazon.S3.AmazonS3Exception s3ex && (s3ex.StatusCode == System.Net.HttpStatusCode.NotFound))
             {
                 throw new FileNotFoundException($"File not found in bucket {indexName}", key);
             }
@@ -89,7 +96,8 @@ namespace EveConv.FileStorage.S3
             ArgumentException.ThrowIfNullOrWhiteSpace(fileId);
             ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
             ArgumentNullException.ThrowIfNull(fileContent);
-            await this._client.UploadObjectAsync(indexName, GetObjectKey(fileId, fileName), fileContent, cancellationToken);
+            this._mimeTypeDetection.TryGetFileType(fileName, out var fileType);
+            await this._client.UploadObjectAsync(indexName, GetObjectKey(fileId, fileName), fileContent, fileType, cancellationToken);
         }
 
         #region private helper

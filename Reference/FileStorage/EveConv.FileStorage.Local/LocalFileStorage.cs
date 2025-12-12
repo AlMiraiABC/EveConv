@@ -28,7 +28,7 @@ namespace EveConv.FileStorage.Local
         public async Task CreateIndexAsync(string indexName, CancellationToken cancellationToken = default)
         {
             Directory.CreateDirectory(GetIndexPath(indexName));
-            if(_logger.IsEnabled(LogLevel.Information))
+            if (_logger.IsEnabled(LogLevel.Information))
             {
                 _logger.LogInformation("Created index '{idx}' at path '{path}'.", indexName, GetIndexPath(indexName));
             }
@@ -52,14 +52,14 @@ namespace EveConv.FileStorage.Local
             var fp = Path.Combine(GetIndexPath(indexName), fileId);
             if (!Directory.Exists(fp))
             {
-                if(_logger.IsEnabled(LogLevel.Information))
+                if (_logger.IsEnabled(LogLevel.Information))
                 {
                     _logger.LogInformation("File folder '{fid}' in index '{idx}' does not exist, no need to delete.", fileId, indexName);
                 }
                 return;
             }
             Directory.Delete(fp, true);
-            if(_logger.IsEnabled(LogLevel.Information))
+            if (_logger.IsEnabled(LogLevel.Information))
             {
                 _logger.LogInformation("Deleted file folder '{fid}' in index '{idx}'.", fileId, indexName);
             }
@@ -76,10 +76,11 @@ namespace EveConv.FileStorage.Local
                 throw new FileNotFoundException("File not found.", f);
             }
             var fi = new FileInfo(f);
+            this._mimeTypeDetection.TryGetFileType(fileName, out var ft);
             return new StreamableFileContent(
                 fileName: fi.Name,
                 fileSize: fi.Length,
-                fileType: this._mimeTypeDetection.GetFileType(fileName),
+                fileType: ft,
                 lastWriteTimeUtc: fi.LastWriteTimeUtc,
                 asyncStreamDelegate: async () =>
                 {
