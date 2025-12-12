@@ -94,6 +94,13 @@ namespace EveConv.S3Helper
         #endregion
 
         #region bucket
+
+        /// <summary>
+        /// Asynchronously create a new S3 bucket.
+        /// </summary>
+        /// <param name="bucketName">Name of bucket.</param>
+        /// <param name="cancellationToken">Task cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task CreateBucketAsync(string bucketName, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(bucketName);
@@ -108,6 +115,12 @@ namespace EveConv.S3Helper
             }
         }
 
+        /// <summary>
+        /// Asynchronously ensure a S3 bucket exists, create it if not exists.
+        /// </summary>
+        /// <param name="bucketName">Name of bucket.</param>
+        /// <param name="cancellationToken">Task cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task EnsureBucketExistsAsync(string bucketName, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(bucketName);
@@ -136,7 +149,18 @@ namespace EveConv.S3Helper
 
         #region object
 
-        public async Task<(List<string>, List<string>)> DeleteObjectsAsync(string bucketName, string prefix, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Asynchronously delete objects in specified bucket which match <paramref name="prefix"/>.
+        /// </summary>
+        /// <param name="bucketName">Name of bucket.</param>
+        /// <param name="prefix">Prefix which need to delete. Doesn't support wild chars.</param>
+        /// <param name="cancellationToken">Task cancellation token.</param>
+        /// <returns>
+        ///     A task contains delete infos.
+        ///     The first item is successed keys, and the second item is failed keys.
+        ///     Delete may failed if access denied, object locked, etc.
+        /// </returns>
+        public async Task<(List<string> Successed, List<string> Failed)> DeleteObjectsAsync(string bucketName, string prefix, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(bucketName);
             ArgumentException.ThrowIfNullOrWhiteSpace(prefix);
@@ -191,6 +215,34 @@ namespace EveConv.S3Helper
             return (successed, failed);
         }
 
+        /// <summary>
+        /// Asynchronously retrieves metadata of object.
+        /// </summary>
+        /// <param name="bucketName">Name of bucket.</param>
+        /// <param name="key">Key of object need to retrieve.</param>
+        /// <param name="cancellationToken">Task cancellation token.</param>
+        /// <returns>A task contains metadata.</returns>
+        /// <remarks>Sames as <see cref="GetObjectAsync(string, string, CancellationToken)"/> but not contains content.</remarks>
+        /// <seealso cref="GetObjectAsync(string, string, CancellationToken)"/>
+        public async Task<GetObjectMetadataResponse> GetObjectMetadataAsync(string bucketName, string key, CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(bucketName);
+            ArgumentException.ThrowIfNullOrWhiteSpace(key);
+            return await _client.GetObjectMetadataAsync(new()
+            {
+                BucketName = bucketName,
+                Key = key,
+            }, cancellationToken);
+        }
+
+        /// <summary>
+        /// Asynchronously retrieves object from S3.
+        /// </summary>
+        /// <param name="bucketName">Name of bucket.</param>
+        /// <param name="key">Key of object need to retrieve.</param>
+        /// <param name="cancellationToken">Task cancellation token.</param>
+        /// <returns>A task contains metadata and content.</returns>
+        /// <see cref="GetObjectMetadataAsync(string, string, CancellationToken)"/>
         public async Task<GetObjectResponse> GetObjectAsync(string bucketName, string key, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(bucketName);
@@ -203,7 +255,16 @@ namespace EveConv.S3Helper
             }, cancellationToken);
         }
 
-        public async Task UploadObjectAsync(string bucketName, string key, Stream fileContent, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Asynchronously uploads content stream to S3 as an object.
+        /// </summary>
+        /// <param name="bucketName">Name of bucket.</param>
+        /// <param name="key">Key of object that upload to.</param>
+        /// <param name="fileContent">A content stream.</param>
+        /// <param name="contentType">Content-Type, known as Mime-Type</param>
+        /// <param name="cancellationToken">Task cancellation token.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public async Task UploadObjectAsync(string bucketName, string key, Stream fileContent, string? contentType = null, CancellationToken cancellationToken = default)
         {
             // multi part upload need split stream to chunk, that read all content from stream.
             ArgumentException.ThrowIfNullOrWhiteSpace(bucketName);
@@ -215,6 +276,7 @@ namespace EveConv.S3Helper
                 Key = key,
                 InputStream = fileContent,
                 PartSize = _config.UploadPartSize,
+                ContentType = contentType,
             }, cancellationToken);
         }
 
