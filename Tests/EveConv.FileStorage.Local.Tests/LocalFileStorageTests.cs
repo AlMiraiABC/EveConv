@@ -10,6 +10,7 @@ namespace EveConv.FileStorage.Local.Tests
         private readonly string _tempRootPath;
         private readonly LocalFileStorage _storage;
         private readonly MockMimeTypeDetection _mimeTypeDetection;
+        private static CancellationToken CurrentCT => TestContext.Current.CancellationToken;
 
         public LocalFileStorageTests()
         {
@@ -18,7 +19,7 @@ namespace EveConv.FileStorage.Local.Tests
 
             _mimeTypeDetection = new MockMimeTypeDetection();
             var config = Options.Create(new LocalFileStorageConfiguration { RootPath = _tempRootPath });
-            _storage = new LocalFileStorage(config, _mimeTypeDetection, null);
+            _storage = new(config, _mimeTypeDetection, null);
         }
 
         public void Dispose()
@@ -37,7 +38,7 @@ namespace EveConv.FileStorage.Local.Tests
             var indexName = "test-index";
 
             // Act
-            await _storage.CreateIndexAsync(indexName, TestContext.Current.CancellationToken);
+            await _storage.CreateIndexAsync(indexName, CurrentCT);
 
             // Assert
             var indexPath = Path.Combine(_tempRootPath, indexName);
@@ -53,7 +54,7 @@ namespace EveConv.FileStorage.Local.Tests
             Directory.CreateDirectory(indexPath);
 
             // Act & Assert
-            await _storage.EnsureIndexExistsAsync(indexName, TestContext.Current.CancellationToken);
+            await _storage.EnsureIndexExistsAsync(indexName, CurrentCT);
             Assert.True(Directory.Exists(indexPath));
         }
 
@@ -64,7 +65,7 @@ namespace EveConv.FileStorage.Local.Tests
             var indexName = "new-index";
 
             // Act
-            await _storage.EnsureIndexExistsAsync(indexName, TestContext.Current.CancellationToken);
+            await _storage.EnsureIndexExistsAsync(indexName, CurrentCT);
 
             // Assert
             Assert.True(Directory.Exists(Path.Combine(_tempRootPath, indexName)));
@@ -76,7 +77,7 @@ namespace EveConv.FileStorage.Local.Tests
         [InlineData(typeof(ArgumentException), "   ")]
         public async Task EnsureIndexExistsAsync_WithNullOrWhiteSpace_ThrowsArgumentException(Type ex, string? name)
         {
-            await Assert.ThrowsAsync(ex, () => _storage.EnsureIndexExistsAsync(name!, TestContext.Current.CancellationToken));
+            await Assert.ThrowsAsync(ex, () => _storage.EnsureIndexExistsAsync(name!, CurrentCT));
         }
 
         [Fact]
@@ -90,12 +91,12 @@ namespace EveConv.FileStorage.Local.Tests
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
 
             // Act
-            await _storage.WriteFileAsync(indexName, fileId, fileName, stream, TestContext.Current.CancellationToken);
+            await _storage.WriteFileAsync(indexName, fileId, fileName, stream, CurrentCT);
 
             // Assert
             var filePath = Path.Combine(_tempRootPath, indexName, fileId, fileName);
             Assert.True(File.Exists(filePath));
-            var savedContent = await File.ReadAllTextAsync(filePath, TestContext.Current.CancellationToken);
+            var savedContent = await File.ReadAllTextAsync(filePath, CurrentCT);
             Assert.Equal(content, savedContent);
         }
 
@@ -110,7 +111,7 @@ namespace EveConv.FileStorage.Local.Tests
 
             // Act & Assert
             await Assert.ThrowsAsync<ArgumentNullException>(() =>
-                _storage.WriteFileAsync(indexName!, fileId!, fileName!, stream, TestContext.Current.CancellationToken));
+                _storage.WriteFileAsync(indexName!, fileId!, fileName!, stream, CurrentCT));
         }
 
         [Fact]
@@ -126,10 +127,10 @@ namespace EveConv.FileStorage.Local.Tests
             var fileFolderPath = Path.Combine(indexPath, fileId);
             var filePath = Path.Combine(fileFolderPath, fileName);
             Directory.CreateDirectory(fileFolderPath);
-            await File.WriteAllTextAsync(filePath, content, TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(filePath, content, CurrentCT);
 
             // Act
-            var result = await _storage.ReadFileAsync(indexName, fileId, fileName, TestContext.Current.CancellationToken);
+            var result = await _storage.ReadFileAsync(indexName, fileId, fileName, CurrentCT);
 
             // Assert
             Assert.Equal(fileName, result.FileName);
@@ -138,7 +139,7 @@ namespace EveConv.FileStorage.Local.Tests
 
             using var readStream = await result.GetStreamAsync();
             using var reader = new StreamReader(readStream);
-            var readContent = await reader.ReadToEndAsync(TestContext.Current.CancellationToken);
+            var readContent = await reader.ReadToEndAsync(CurrentCT);
             Assert.Equal(content, readContent);
         }
 
@@ -152,7 +153,7 @@ namespace EveConv.FileStorage.Local.Tests
 
             // Act & Assert
             await Assert.ThrowsAsync<FileNotFoundException>(() =>
-                _storage.ReadFileAsync(indexName, fileId, fileName, TestContext.Current.CancellationToken));
+                _storage.ReadFileAsync(indexName, fileId, fileName, CurrentCT));
         }
 
         [Theory]
@@ -163,7 +164,7 @@ namespace EveConv.FileStorage.Local.Tests
         {
             // Act & Assert
             await Assert.ThrowsAsync<ArgumentNullException>(() =>
-                _storage.ReadFileAsync(indexName!, fileId!, fileName!, TestContext.Current.CancellationToken));
+                _storage.ReadFileAsync(indexName!, fileId!, fileName!, CurrentCT));
         }
 
         [Fact]
@@ -178,12 +179,12 @@ namespace EveConv.FileStorage.Local.Tests
             var fileFolderPath = Path.Combine(indexPath, fileId);
             var filePath = Path.Combine(fileFolderPath, fileName);
             Directory.CreateDirectory(fileFolderPath);
-            await File.WriteAllTextAsync(filePath, "Delete me", TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(filePath, "Delete me", CurrentCT);
 
             Assert.True(Directory.Exists(fileFolderPath));
 
             // Act
-            await _storage.DeleteFileAsync(indexName, fileId, TestContext.Current.CancellationToken);
+            await _storage.DeleteFileAsync(indexName, fileId, CurrentCT);
 
             // Assert
             Assert.False(Directory.Exists(fileFolderPath));
@@ -197,7 +198,7 @@ namespace EveConv.FileStorage.Local.Tests
             var fileId = "non-existent-file";
 
             // Act & Assert (should not throw)
-            await _storage.DeleteFileAsync(indexName, fileId, TestContext.Current.CancellationToken);
+            await _storage.DeleteFileAsync(indexName, fileId, CurrentCT);
         }
 
         [Theory]
@@ -207,7 +208,7 @@ namespace EveConv.FileStorage.Local.Tests
         {
             // Act & Assert
             await Assert.ThrowsAsync<ArgumentNullException>(() =>
-                _storage.DeleteFileAsync(indexName!, fileId!, TestContext.Current.CancellationToken));
+                _storage.DeleteFileAsync(indexName!, fileId!, CurrentCT));
         }
 
         [Fact]
@@ -222,15 +223,15 @@ namespace EveConv.FileStorage.Local.Tests
             var fileFolderPath = Path.Combine(indexPath, fileId);
             var filePath = Path.Combine(fileFolderPath, fileName);
             Directory.CreateDirectory(fileFolderPath);
-            await File.WriteAllTextAsync(filePath, "Original content", TestContext.Current.CancellationToken);
+            await File.WriteAllTextAsync(filePath, "Original content", CurrentCT);
 
             using var stream2 = new MemoryStream(Encoding.UTF8.GetBytes("New content"));
 
             // Act
-            await _storage.WriteFileAsync(indexName, fileId, fileName, stream2, TestContext.Current.CancellationToken);
+            await _storage.WriteFileAsync(indexName, fileId, fileName, stream2, CurrentCT);
 
             // Assert
-            var content = await File.ReadAllTextAsync(filePath, TestContext.Current.CancellationToken);
+            var content = await File.ReadAllTextAsync(filePath, CurrentCT);
             Assert.Equal("New content", content);
         }
 
