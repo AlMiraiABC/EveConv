@@ -219,9 +219,4 @@ public class MimeTypesDetection : IMimeTypeDetection
 
         throw new NotSupportedException($"File type not supported: {filename}");
     }
-
-    public bool TryGetFileType(string filename, out string? mimeType)
-    {
-        return s_extensionTypes.TryGetValue(Path.GetExtension(filename), out mimeType);
-    }
 }

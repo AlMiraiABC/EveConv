@@ -3,14 +3,33 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace EveConv.Abstraction
 {
     public interface IMimeTypeDetection
     {
+        /// <summary>
+        /// The default mime type.
+        /// </summary>
+        public const string OCTET_STREAM_MIME_TYPE = "application/octet-stream";
+
+        /// <summary>
+        /// Determines the file mime type based on file name or extension.
+        /// </summary>
+        /// <param name="filename">File name contains extension.</param>
+        /// <returns>Mime type if determined.</returns>
+        /// <remarks>DO NOT Mime-Sniffing(reading file content), may cause XSS or other security issues.</remarks>
         public string GetFileType(string filename);
-        public bool TryGetFileType(string filename, out string? mimeType)
+
+        /// <summary>
+        /// Try to determine the file mime type based on file name or extension.
+        /// </summary>
+        /// <param name="filename">File name contains extension.</param>
+        /// <param name="mimeType">Mime type if determined, otherwise <see cref="OCTET_STREAM_MIME_TYPE"/>.</param>
+        /// <returns><see langword="true"/> if determined successfully, otherwise <see langword="false"/>.</returns>
+        public bool TryGetFileType(string filename, [NotNull] out string? mimeType)
         {
             try
             {
@@ -20,7 +39,7 @@ namespace EveConv.Abstraction
             catch
             {
             }
-            mimeType = null;
+            mimeType = OCTET_STREAM_MIME_TYPE;
             return false;
         }
     }
