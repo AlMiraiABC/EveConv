@@ -12,6 +12,8 @@ namespace EveConv.S3Helper.Tests
 
         private AmazonS3Client _client = null!;
 
+        private static CancellationToken CurrentCT => TestContext.Current.CancellationToken;
+
         public S3ObjectHelperTests(MinioContainerFixture fixture)
         {
             this.container = fixture.Container;
@@ -34,7 +36,7 @@ namespace EveConv.S3Helper.Tests
                {
                    ServiceURL = container.GetConnectionString(),
                });
-            var response = await _client.ListBucketsAsync(TestContext.Current.CancellationToken);
+            var response = await _client.ListBucketsAsync(CurrentCT);
             Console.WriteLine("Got {0} buckets", response.Buckets?.Count ?? 0);
         }
 
@@ -47,88 +49,102 @@ namespace EveConv.S3Helper.Tests
         [Fact]
         public async Task CreateBucketAsync_NotExist_Success()
         {
-            await client.CreateBucketAsync(Guid.NewGuid().ToString(), TestContext.Current.CancellationToken);
+            await client.CreateBucketAsync(Guid.NewGuid().ToString(), CurrentCT);
         }
 
         [Fact]
         public async Task CreateBucketAsync_Exist_BucketAlreadyOwnedByYouException()
         {
-            var bucketName = await CreateBucketAsync(TestContext.Current.CancellationToken);
-            await Assert.ThrowsAsync<BucketAlreadyOwnedByYouException>(async () => await client.CreateBucketAsync(bucketName, TestContext.Current.CancellationToken));
+            var bucketName = await CreateBucketAsync(CurrentCT);
+            await Assert.ThrowsAsync<BucketAlreadyOwnedByYouException>(async () => await client.CreateBucketAsync(bucketName, CurrentCT));
         }
 
         [Fact]
         public async Task EnsureBucketExistsAsync_NotExist_Success()
         {
-            await client.EnsureBucketExistsAsync(Guid.NewGuid().ToString(), TestContext.Current.CancellationToken);
+            await client.EnsureBucketExistsAsync(Guid.NewGuid().ToString(), CurrentCT);
         }
 
         [Fact]
         public async Task EnsureBucketExistsAsync_Exist_Success()
         {
-            var bucketName = await CreateBucketAsync(TestContext.Current.CancellationToken);
-            await client.EnsureBucketExistsAsync(bucketName, TestContext.Current.CancellationToken);
+            var bucketName = await CreateBucketAsync(CurrentCT);
+            await client.EnsureBucketExistsAsync(bucketName, CurrentCT);
         }
 
         [Fact]
         public async Task DeleteObjectsAsync_Exist_Success()
         {
-            var bucketName = await CreateBucketAsync(TestContext.Current.CancellationToken);
+            var bucketName = await CreateBucketAsync(CurrentCT);
             var prefix = Guid.NewGuid().ToString();
-            await PutObjectsAsync(bucketName, prefix, Enumerable.Range(0, 10).Select(i => Guid.NewGuid().ToString()), TestContext.Current.CancellationToken);
-            await this.client.DeleteObjectsAsync(bucketName, prefix, TestContext.Current.CancellationToken);
+            await PutObjectsAsync(bucketName, prefix, Enumerable.Range(0, 10).Select(i => Guid.NewGuid().ToString()), CurrentCT);
+            await this.client.DeleteObjectsAsync(bucketName, prefix, CurrentCT);
             var response = await this._client.ListObjectsV2Async(new()
             {
                 BucketName = bucketName,
                 Prefix = prefix,
-            }, TestContext.Current.CancellationToken);
+            }, CurrentCT);
             Assert.Equal(0, response.KeyCount ?? 0);
         }
 
         [Fact]
         public async Task DeleteObjectsAsync_NotExist_Success()
         {
-            var bucketName = await CreateBucketAsync(TestContext.Current.CancellationToken);
+            var bucketName = await CreateBucketAsync(CurrentCT);
             var prefix = Guid.NewGuid().ToString();
-            await this.client.DeleteObjectsAsync(bucketName, prefix, TestContext.Current.CancellationToken);
+            await this.client.DeleteObjectsAsync(bucketName, prefix, CurrentCT);
             var response = await this._client.ListObjectsV2Async(new()
             {
                 BucketName = bucketName,
                 Prefix = prefix,
-            }, TestContext.Current.CancellationToken);
+            }, CurrentCT);
             Assert.Equal(0, response.KeyCount ?? 0);
         }
 
         [Fact]
         public async Task UploadObjectAsync_NotExist_Success()
         {
-            var bucketName = await CreateBucketAsync(TestContext.Current.CancellationToken);
+            var bucketName = await CreateBucketAsync(CurrentCT);
             var key = $"{Guid.NewGuid()}/{Guid.NewGuid()}.txt";
             var writeContent = Guid.NewGuid().ToString();
             using var fileContent = new MemoryStream(Encoding.UTF8.GetBytes(writeContent));
-            await this.client.UploadObjectAsync(bucketName, key, fileContent, TestContext.Current.CancellationToken);
-            var response = await this._client.GetObjectAsync(bucketName, key, TestContext.Current.CancellationToken);
+            await this.client.UploadObjectAsync(bucketName, key, fileContent, null, CurrentCT);
+            var response = await this._client.GetObjectAsync(bucketName, key, CurrentCT);
             Assert.NotNull(response);
             using var reader = new StreamReader(response.ResponseStream);
-            var readContent = await reader.ReadToEndAsync(TestContext.Current.CancellationToken);
+            var readContent = await reader.ReadToEndAsync(CurrentCT);
             Assert.Equal(readContent, writeContent);
         }
 
         [Fact]
         public async Task UploadObjectAsync_Exist_Success()
         {
-            var bucketName = await CreateBucketAsync(TestContext.Current.CancellationToken);
+            var bucketName = await CreateBucketAsync(CurrentCT);
             var prefix = Guid.NewGuid().ToString();
             var writeContent = Guid.NewGuid().ToString();
-            var fkey = (await PutObjectsAsync(bucketName, prefix, [writeContent], TestContext.Current.CancellationToken))[0];
+            var fkey = (await PutObjectsAsync(bucketName, prefix, [writeContent], CurrentCT))[0];
             var key = $"{prefix}/{fkey}";
             using var fileContent = new MemoryStream(Encoding.UTF8.GetBytes(writeContent));
-            await this.client.UploadObjectAsync(bucketName, key, fileContent, TestContext.Current.CancellationToken);
-            var response = await this._client.GetObjectAsync(bucketName, key, TestContext.Current.CancellationToken);
+            await this.client.UploadObjectAsync(bucketName, key, fileContent, null, CurrentCT);
+            var response = await this._client.GetObjectAsync(bucketName, key, CurrentCT);
             Assert.NotNull(response);
             using var reader = new StreamReader(response.ResponseStream);
-            var readContent = await reader.ReadToEndAsync(TestContext.Current.CancellationToken);
+            var readContent = await reader.ReadToEndAsync(CurrentCT);
             Assert.Equal(readContent, writeContent);
+        }
+
+        [Fact]
+        public async Task UploadObjectAsync_ContentTypeSpec_Success()
+        {
+            var bucketName = await CreateBucketAsync(CurrentCT);
+            var contentType = "text/plain";
+            var key = $"{Guid.NewGuid()}/{Guid.NewGuid()}.txt";
+            var writeContent = Guid.NewGuid().ToString();
+            using var fileContent = new MemoryStream(Encoding.UTF8.GetBytes(writeContent));
+            await this.client.UploadObjectAsync(bucketName, key, fileContent, contentType, CurrentCT);
+            var response = await this._client.GetObjectAsync(bucketName, key, CurrentCT);
+            Assert.NotNull(response);
+            Assert.Equal(contentType, response.Headers.ContentType);
         }
 
         /// <summary>
@@ -165,7 +181,7 @@ namespace EveConv.S3Helper.Tests
                     BucketName = bucketName,
                     Key = $"{prefix}/{key}",
                     ContentBody = obj,
-                }, TestContext.Current.CancellationToken);
+                }, CurrentCT);
             });
             await Task.WhenAll(tasks);
             return [.. keys];
