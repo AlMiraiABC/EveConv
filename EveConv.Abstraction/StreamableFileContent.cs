@@ -5,7 +5,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace EveConv.Abstraction.FileStorage;
+namespace EveConv.Abstraction;
 
 public record StreamableFileContent : IDisposable
 {
@@ -18,6 +18,7 @@ public record StreamableFileContent : IDisposable
     /// <summary>
     /// Size of file in bytes, known as Content-Length.
     /// </summary>
+    /// <remarks>Set to <c>-1</c> for unknown length.</remarks>
     public long FileSize { get; } = 0;
     /// <summary>
     /// File type, known as Content-Type or Mime-Type.
@@ -52,16 +53,16 @@ public record StreamableFileContent : IDisposable
         string fileName,
         long fileSize,
         Func<Task<Stream>> asyncStreamDelegate,
-        string fileType = "application/octet-stream",
-        DateTimeOffset lastWriteTimeUtc = default)
+        string? fileType = "application/octet-stream",
+        DateTimeOffset? lastWriteTimeUtc = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
         ArgumentNullException.ThrowIfNull(asyncStreamDelegate);
 
         this.FileName = fileName;
         this.FileSize = fileSize;
-        this.FileType = fileType;
-        this.LastWrite = lastWriteTimeUtc == default ? DateTimeOffset.UtcNow : lastWriteTimeUtc;
+        this.FileType = fileType ?? "application/octet-stream";
+        this.LastWrite = lastWriteTimeUtc.HasValue ? lastWriteTimeUtc.Value : DateTimeOffset.UtcNow;
         this.GetStreamAsync = async () =>
         {
             this._stream = await asyncStreamDelegate().ConfigureAwait(false);

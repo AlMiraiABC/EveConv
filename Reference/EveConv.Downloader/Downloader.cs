@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using EveConv.Abstraction;
 using EveConv.Abstraction.Diagnostic;
+using EveConv.Abstraction.Downloader;
 using Microsoft.Extensions.Logging;
 
 namespace EveConv.Downloader
@@ -19,7 +20,7 @@ namespace EveConv.Downloader
             this._downloaders = downloaders.ToDictionary(i => i.GetType(), i => i);
         }
 
-        public Task<Stream> DownloadAsync(string filePath, CancellationToken token = default)
+        public Task<StreamableFileContent> DownloadAsync(string filePath, CancellationToken token = default)
         {
             ArgumentException.ThrowIfNullOrEmpty(filePath);
             if (filePath.StartsWith("s3:"))
@@ -28,7 +29,7 @@ namespace EveConv.Downloader
                 {
                     throw new InvalidOperationException("S3 downloader is not configured.");
                 }
-                var s3Path = filePath.Substring(3);
+                var s3Path = filePath[3..];
                 if (_logger.IsEnabled(LogLevel.Debug))
                 {
                     _logger.LogDebug("Downloading file from S3 path '{s3Path}'", s3Path);

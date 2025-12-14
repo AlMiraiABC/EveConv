@@ -4,6 +4,7 @@ using System.Text;
 using Amazon.S3.Model;
 using EveConv.Abstraction;
 using EveConv.Abstraction.Diagnostic;
+using EveConv.Abstraction.Downloader;
 using EveConv.S3Helper;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -22,7 +23,7 @@ namespace EveConv.Downloader
             this._client = new(options.Value, loggerFactory);
         }
 
-        public async Task<Stream> DownloadAsync(string filePath, CancellationToken token = default)
+        public async Task<StreamableFileContent> DownloadAsync(string filePath, CancellationToken token = default)
         {
             ArgumentException.ThrowIfNullOrEmpty(filePath);
             var (bucketName, key) = ParsePath(filePath);
@@ -33,7 +34,12 @@ namespace EveConv.Downloader
                 {
                     this._logger.LogDebug("Got object {key} in bucket {bucket} with size {size}", key, bucketName, response.ContentLength);
                 }
-                return response.ResponseStream;
+                return new(
+                    Path.GetFileName(key),
+                    response.ContentLength,
+                    async () => response.ResponseStream,
+                    response.Headers.ContentType,
+                    response.LastModified);
             }
             catch (NoSuchKeyException)
             {
@@ -41,7 +47,7 @@ namespace EveConv.Downloader
             }
         }
 
-        private (string BucketName, string Key) ParsePath(string filePath)
+        private static (string BucketName, string Key) ParsePath(string filePath)
         {
             ArgumentException.ThrowIfNullOrEmpty(filePath);
             filePath = filePath.Replace('\\', '/').TrimStart('/');
