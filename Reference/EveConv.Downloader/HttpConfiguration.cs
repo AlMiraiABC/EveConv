@@ -24,6 +24,7 @@ namespace EveConv.Downloader
         /// Configuration for caching url with proxies.
         /// </summary>
         public HttpCacheConfiguration UrlCache { get; init; } = new();
+
         public HttpConfiguration Value => this;
 
         internal new void Valid()
@@ -33,9 +34,13 @@ namespace EveConv.Downloader
             UrlCache.Valid();
             if (Hosts is not null)
             {
-                foreach (var host in Hosts.Values)
+                foreach (var (k, v) in Hosts)
                 {
-                    host.Valid();
+                    if (string.IsNullOrWhiteSpace(k))
+                    {
+                        throw new ArgumentException($"Host should not be null or whitespace.");
+                    }
+                    v.Valid();
                 }
             }
         }
@@ -43,12 +48,14 @@ namespace EveConv.Downloader
 
     public class HttpProxyConfiguration
     {
+        public const int DEFALT_PORT = 80;
+
         /// <summary>
-        /// Domain or IP address wihtout port of proxy.
+        /// Domain or IP address without port of proxy.
         /// </summary>
         public string Host { get; init; } = string.Empty;
         /// <summary>
-        /// Port number of proxy. Default is 8080.
+        /// Port number of proxy. Default is <see cref="DEFALT_PORT"/>.
         /// </summary>
         public int? Port { get; init; }
         /// <summary>
@@ -62,7 +69,7 @@ namespace EveConv.Downloader
         /// <summary>
         /// Optional passes through hosts.
         /// </summary>
-        public IEnumerable<string>? ByPass { get; init; }
+        public string[] ByPass { get; init; } = [];
 
         internal void Valid()
         {
@@ -83,11 +90,16 @@ namespace EveConv.Downloader
         /// <summary>
         /// Optional headers to add for this host requests.
         /// </summary>
+        /// <remarks>Such as <c>Authorization</c>, <c>Referer</c>, <c>Cookie</c>, <c>User-Agent</c>, ...</remarks>
         public IDictionary<string, string> RequestHeaders { get; init; } = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         internal void Valid()
         {
             HttpProxy?.Valid();
+            if (RequestHeaders.Any(i => string.IsNullOrWhiteSpace(i.Key)))
+            {
+                throw new ArgumentException("RequestHeaders key should not be null or whitespace.");
+            }
         }
     }
 
