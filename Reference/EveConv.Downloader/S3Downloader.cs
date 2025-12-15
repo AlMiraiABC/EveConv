@@ -16,7 +16,7 @@ namespace EveConv.Downloader
         private readonly ILogger<S3Downloader> _logger;
         private readonly S3ObjectHelper _client;
 
-        public S3Downloader(IOptions<S3Configuration> options, ILoggerFactory? loggerFactory)
+        public S3Downloader(IOptions<S3Configuration> options, ILoggerFactory? loggerFactory = null)
         {
             ArgumentNullException.ThrowIfNull(options);
             this._logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<S3Downloader>();
@@ -41,7 +41,8 @@ namespace EveConv.Downloader
                     response.Headers.ContentType,
                     response.LastModified);
             }
-            catch (NoSuchKeyException)
+            catch (Exception ex) when (ex is NoSuchBucketException or NoSuchKeyException
+                || ex is Amazon.S3.AmazonS3Exception s3ex && (s3ex.StatusCode == System.Net.HttpStatusCode.NotFound))
             {
                 throw new FileNotFoundException($"File not found in bucket {bucketName}", key);
             }
@@ -50,13 +51,15 @@ namespace EveConv.Downloader
         private static (string BucketName, string Key) ParsePath(string filePath)
         {
             ArgumentException.ThrowIfNullOrEmpty(filePath);
-            filePath = filePath.Replace('\\', '/').TrimStart('/');
-            var parts = filePath.Split('/', 2);
-            if (parts.Length == 1)
+            filePath = filePath.Trim().Replace('\\', '/');
+            if (!Uri.TryCreate(filePath, UriKind.Absolute, out var uri)
+                || !uri.Scheme.Equals("s3", StringComparison.CurrentCultureIgnoreCase)
+                || string.IsNullOrWhiteSpace(uri.Host)
+                || string.IsNullOrWhiteSpace(uri.AbsolutePath?.TrimStart('/')))
             {
-                throw new ArgumentException("Invalid S3 file path format. Except '<bucketName>/<key>'.", nameof(filePath));
+                throw new ArgumentException("Invalid S3 file path format. Except 's3://<bucketName>/<key>'", nameof(filePath));
             }
-            return (parts[0], parts[1]);
+            return (uri.Host, uri.AbsolutePath[1..]);
         }
     }
 }
