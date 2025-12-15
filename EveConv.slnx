@@ -10,6 +10,9 @@
   <Folder Name="/Memory/">
     <Project Path="Memory/EveConv.Memory/EveConv.Memory.csproj" />
   </Folder>
+  <Folder Name="/ModelExecutor/">
+    <Project Path="ModelExecutor/EveConv.Onnx/EveConv.Onnx.csproj" Id="f3053c5b-246a-4895-a7fc-1ee87c16ddab" />
+  </Folder>
   <Folder Name="/Reference/">
     <Project Path="Reference/EveConv.Downloader/EveConv.Downloader.csproj" Id="36ab8f2a-b7a5-46fd-a42f-a26609d04f10" />
     <Project Path="Reference/EveConv.GraphStorage/EveConv.GraphStorage.csproj" />
@@ -34,6 +37,7 @@
     <File Path=".editorconfig" />
   </Folder>
   <Folder Name="/Tests/">
+    <Project Path="Tests/EveConv.Downloader.Tests/EveConv.Downloader.Tests.csproj" Id="4182d8da-1dd4-4112-8e48-b03a1a87a4fc" />
     <Project Path="Tests/EveConv.FileStorage.Local.Tests/EveConv.FileStorage.Local.Tests.csproj" Id="3f8e86d1-4c64-4320-b152-60ba0aa26503" />
     <Project Path="Tests/EveConv.FileStorage.S3.Tests/EveConv.FileStorage.S3.Tests.csproj" Id="8f599cd8-1ca1-40c5-b573-e6316adfb27d" />
     <Project Path="Tests/EveConv.S3Helper.Tests/EveConv.S3Helper.Tests.csproj" />
