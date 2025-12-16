@@ -15,12 +15,13 @@ namespace EveConv.Onnx
     {
         private readonly ILogger<OnnxExecutor> _logger;
         private readonly OnnxExecutorConfiguration _config;
-        private readonly IDownloader _downloader;
+        private readonly IDownloader? _downloader;
         private readonly string[] _availableEps;
 
-        public OnnxExecutor(IOptions<OnnxExecutorConfiguration> options, IDownloader downloader, ILoggerFactory? loggerFactory = null)
+        public OnnxExecutor(IOptions<OnnxExecutorConfiguration> options, IDownloader? downloader, ILoggerFactory? loggerFactory = null)
         {
             ArgumentNullException.ThrowIfNull(options);
+            options.Value.Valid();
             this._config = options.Value;
             this._logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<OnnxExecutor>();
             this._downloader = downloader;
@@ -43,7 +44,7 @@ namespace EveConv.Onnx
         public async Task<InferenceSession> CreateSession(string model, string name, CancellationToken token = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(name);
-            return await CreateSession(model, CreateDefaultSessioOptions(name), token);
+            return await CreateSession(model, CreateDefaultSessionOptions(name), token);
         }
 
         /// <summary>
@@ -60,7 +61,7 @@ namespace EveConv.Onnx
         public async Task<InferenceSession> CreateSession(byte[] model, string name, CancellationToken token = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(name);
-            return await CreateSession(model, CreateDefaultSessioOptions(name), token);
+            return await CreateSession(model, CreateDefaultSessionOptions(name), token);
         }
 
         /// <summary>
@@ -121,6 +122,7 @@ namespace EveConv.Onnx
 
         private async Task<byte[]> ReadModelFile(string model, CancellationToken token = default)
         {
+            ArgumentNullException.ThrowIfNull(_downloader, "Downloader is not configured.");
             using var file = await _downloader.DownloadAsync(model, token);
             using var memoryStream = new MemoryStream();
             await file.GetStreamAsync().ContinueWith(i => i.Result.CopyToAsync(memoryStream, token));
@@ -132,7 +134,8 @@ namespace EveConv.Onnx
             return bytes;
         }
 
-        private SessionOptions CreateDefaultSessioOptions(string name)
+        private readonly static string[] ExcludedEps = ["CPUExecutionProvider"];
+        private SessionOptions CreateDefaultSessionOptions(string name)
         {
             var opt = new SessionOptions()
             {
@@ -140,7 +143,7 @@ namespace EveConv.Onnx
                 GraphOptimizationLevel = _config.DefaultGraphOptimizationLevel,
                 OptimizedModelFilePath = Path.Join(_config.DefaultOptimizedModelSaveFolder, $"{name}{_config.DefaultOptimizedModelSaveExtension}"),
             };
-            foreach (var ep in _availableEps)
+            foreach (var ep in _availableEps.Except(ExcludedEps))
             {
                 opt.AppendExecutionProvider(ep);
             }

@@ -38,7 +38,7 @@ namespace EveConv.Onnx
 
         public void Valid()
         {
-
+            Directory.CreateDirectory(DefaultOptimizedModelSaveFolder);
         }
     }
 }
