@@ -7,11 +7,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="AWSSDK.S3" Version="4.0.13.1" />
+		<PackageReference Include="AWSSDK.S3" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\..\..\EveConv.Abstraction\EveConv.Abstraction.csproj" />
 	</ItemGroup>
-	
+
 </Project>
