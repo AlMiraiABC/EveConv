@@ -16,9 +16,9 @@ namespace EveConv.Downloader
     {
         private readonly ILogger<HttpDownloader> _logger;
 
-        private readonly HttpClient _defaultClient;
-        private readonly Dictionary<Regex, HttpClient> _httpClients = [];
-        private readonly MemoryCache _urlCache;
+        internal readonly HttpClient _defaultClient;
+        internal readonly Dictionary<Regex, HttpClient> _httpClients = [];
+        internal readonly MemoryCache _urlCache;
 
         /// <summary>
         /// Create a new instance of <see cref="HttpDownloader"/> with default client factory.
@@ -69,19 +69,35 @@ namespace EveConv.Downloader
                 if (!string.IsNullOrWhiteSpace(cd.FileNameStar))
                 {
                     filename = cd.FileNameStar.Trim('"');
+                    if (_logger.IsEnabled(LogLevel.Trace))
+                    {
+                        _logger.LogTrace("Got filename {filename} from content disposition file*", filename);
+                    }
                 }
                 if (!string.IsNullOrWhiteSpace(cd.FileName))
                 {
                     filename = cd.FileName.Trim('"');
+                    if (_logger.IsEnabled(LogLevel.Trace))
+                    {
+                        _logger.LogTrace("Got filename {filename} from content disposition file", filename);
+                    }
                 }
             }
             if (string.IsNullOrWhiteSpace(filename))
             {
                 filename = Path.GetFileName(uri.LocalPath);
+                if (_logger.IsEnabled(LogLevel.Trace))
+                {
+                    _logger.LogTrace("Got filename {filename} from uri path", filename);
+                }
             }
             if (string.IsNullOrWhiteSpace(filename))
             {
                 filename = Guid.NewGuid().ToString("N");
+                if (_logger.IsEnabled(LogLevel.Trace))
+                {
+                    _logger.LogTrace("Generated filename {filename}", filename);
+                }
             }
             return new(
                 filename,
@@ -96,7 +112,19 @@ namespace EveConv.Downloader
             uri = new(url);
             if (this._urlCache.TryGetValue(uri.Host, out var httpClient))
             {
-                return (httpClient as HttpClient)!;
+                if (httpClient is HttpClient c)
+                {
+                    if (_logger.IsEnabled(LogLevel.Trace))
+                    {
+                        _logger.LogTrace("Got cached http client of uri {uri}", uri);
+                    }
+                    return c;
+                }
+                if (_logger.IsEnabled(LogLevel.Warning))
+                {
+                    _logger.LogWarning("Excepted {cachetype} but got {actual} of cache key {key}. Delete and recreate it.", typeof(HttpClient), httpClient?.GetType(), uri.Host);
+                }
+                this._urlCache.Remove(uri.Host);
             }
             foreach (var (pattern, client) in this._httpClients)
             {
@@ -104,9 +132,18 @@ namespace EveConv.Downloader
                 {
                     continue;
                 }
+                if (_logger.IsEnabled(LogLevel.Trace))
+                {
+                    _logger.LogTrace("Matched http client for uri {uri} with pattern {pattern}", uri, pattern);
+                }
                 this._urlCache.Set(uri.Host, client);
                 return client;
             }
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("Using default http client for uri {uri}", uri);
+            }
+            this._urlCache.Set(uri.Host, _defaultClient);
             return _defaultClient;
         }
 
