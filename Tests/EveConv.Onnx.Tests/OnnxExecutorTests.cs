@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.ML.OnnxRuntime;
@@ -29,9 +30,9 @@ namespace EveConv.Onnx.Tests
             var input = ReadEmbedded("input.data");
             var model = ReadModel("squeezenet.onnx");
             var executor = new OnnxExecutor(new OnnxExecutorConfiguration(), null, NullLoggerFactory.Instance);
-            using var session = await executor.CreateSession(model, "squeezent", TestContext.Current.CancellationToken);
-            var (names, inputData) = ReadData(session, input);
-            using var output = session.Run(new(), names, inputData, session.OutputNames);
+            using var session = await executor.CreateSessionAsync(model, "squeezent", TestContext.Current.CancellationToken);
+            var @params = new OnnxInferenceSessionExecuteParameter(MemoryMarshal.AsBytes(input).ToArray(), session.Instance);
+            using var output = await session.ExecuteAsync(@params, null, TestContext.Current.CancellationToken);
             Assert.Single(output);
             var actualData = output[0].GetTensorDataAsSpan<float>();
             var expectedData = ReadEmbedded("expected_output.data");
@@ -51,21 +52,6 @@ namespace EveConv.Onnx.Tests
         static byte[] ReadModel(string path)
         {
             return File.ReadAllBytes(path);
-        }
-
-        static (List<string> Names, List<OrtValue> Values) ReadData(InferenceSession session, float[] input)
-        {
-            var meta = session.InputMetadata;
-            var names = new List<string>(meta.Count);
-            var values = new List<OrtValue>(meta.Count);
-            foreach (var name in meta.Keys)
-            {
-                var shape = Array.ConvertAll(meta[name].Dimensions, Convert.ToInt64);
-                var value = OrtValue.CreateTensorValueFromMemory(input, shape);
-                names.Add(name);
-                values.Add(value);
-            }
-            return (names, values);
         }
     }
 }

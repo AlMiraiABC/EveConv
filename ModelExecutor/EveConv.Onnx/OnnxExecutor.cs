@@ -5,17 +5,17 @@ using System.Text;
 using System.Xml.Linq;
 using EveConv.Abstraction.Diagnostic;
 using EveConv.Abstraction.Downloader;
+using EveConv.Abstraction.ModelExecutor;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.ML.OnnxRuntime;
 
 namespace EveConv.Onnx
 {
-    public class OnnxExecutor
+    public class OnnxExecutor : ModelInferable<SessionOptions, OnnxInferenceSession>
     {
         private readonly ILogger<OnnxExecutor> _logger;
         private readonly OnnxExecutorConfiguration _config;
-        private readonly IDownloader? _downloader;
         private readonly string[] _availableEps;
 
         public OnnxExecutor(IOptions<OnnxExecutorConfiguration> options, IDownloader? downloader, ILoggerFactory? loggerFactory = null)
@@ -41,10 +41,10 @@ namespace EveConv.Onnx
         /// </param>
         /// <param name="token">Cancellation token.</param>
         /// <returns>A task that has an inference session.</returns>
-        public async Task<InferenceSession> CreateSession(string model, string name, CancellationToken token = default)
+        public async Task<OnnxInferenceSession> CreateSessionAsync(string model, string name, CancellationToken token = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(name);
-            return await CreateSession(model, CreateDefaultSessionOptions(name), token);
+            return await CreateSessionAsync(model, CreateDefaultSessionOptions(name), token).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -58,10 +58,10 @@ namespace EveConv.Onnx
         /// </param>
         /// <param name="token">Cancellation token.</param>
         /// <returns>A task that has an inference session.</returns>
-        public async Task<InferenceSession> CreateSession(byte[] model, string name, CancellationToken token = default)
+        public async Task<OnnxInferenceSession> CreateSessionAsync(byte[] model, string name, CancellationToken token = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(name);
-            return await CreateSession(model, CreateDefaultSessionOptions(name), token);
+            return await CreateSessionAsync(model, CreateDefaultSessionOptions(name), token).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -71,9 +71,9 @@ namespace EveConv.Onnx
         /// <param name="factory">Session options builder.</param>
         /// <param name="token">Cancellation token.</param>
         /// <returns>A task that has an inference session.</returns>
-        public async Task<InferenceSession> CreateSession(string model, Func<string[], CancellationToken, Task<SessionOptions>> factory, CancellationToken token = default)
+        public async Task<OnnxInferenceSession> CreateSessionAsync(string model, Func<string[], CancellationToken, Task<SessionOptions>> factory, CancellationToken token = default)
         {
-            return await CreateSession(model, await factory(_availableEps, token), token);
+            return await CreateSessionAsync(model, await factory(_availableEps, token), token).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -83,23 +83,20 @@ namespace EveConv.Onnx
         /// <param name="factory">Session options builder.</param>
         /// <param name="token">Cancellation token.</param>
         /// <returns>A task that has an inference session.</returns>
-        public async Task<InferenceSession> CreateSession(byte[] model, Func<string[], CancellationToken, Task<SessionOptions>> factory, CancellationToken token = default)
+        public async Task<OnnxInferenceSession> CreateSessionAsync(byte[] model, Func<string[], CancellationToken, Task<SessionOptions>> factory, CancellationToken token = default)
         {
-            return await CreateSession(model, await factory(_availableEps, token), token);
+            return await CreateSessionAsync(model, await factory(_availableEps, token), token).ConfigureAwait(false);
         }
 
-        /// <summary>
-        /// Create an inference session from model file with given options.
-        /// </summary>
-        /// <param name="model">Model file path.</param>
-        /// <param name="options">Session options.</param>
-        /// <param name="token">Cancellation token.</param>
-        /// <returns>A task that has an inference session.</returns>
-        public async Task<InferenceSession> CreateSession(string model, SessionOptions options, CancellationToken token = default)
+        public override async Task<OnnxInferenceSession> CreateSessionAsync(Stream model, SessionOptions? options, CancellationToken token = default)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(model);
-            return await CreateSession(await ReadModelFile(model, token), options, token);
+            options ??= new();
+            using var memoryStream = new MemoryStream();
+            await model.CopyToAsync(memoryStream, token);
+            var bytes = memoryStream.ToArray();
+            return await CreateSessionAsync(bytes, options, token);
         }
+
 
         /// <summary>
         /// Create an inference session from model binary with given options.
@@ -109,7 +106,7 @@ namespace EveConv.Onnx
         /// <param name="token">Cancellation token.</param>
         /// <returns>A task that has an inference session.</returns>
 #pragma warning disable IDE0060 // 删除未使用的参数
-        public async Task<InferenceSession> CreateSession(byte[] model, SessionOptions options, CancellationToken token = default)
+        public async Task<OnnxInferenceSession> CreateSessionAsync(byte[] model, SessionOptions options, CancellationToken token = default)
 #pragma warning restore IDE0060 // 删除未使用的参数
         {
             var session = new InferenceSession(model, options);
@@ -117,21 +114,7 @@ namespace EveConv.Onnx
             {
                 _logger.LogDebug("ONNX Runtime Inference Session created");
             }
-            return session;
-        }
-
-        private async Task<byte[]> ReadModelFile(string model, CancellationToken token = default)
-        {
-            ArgumentNullException.ThrowIfNull(_downloader, "Downloader is not configured.");
-            using var file = await _downloader.DownloadAsync(model, token);
-            using var memoryStream = new MemoryStream();
-            await file.GetStreamAsync().ContinueWith(i => i.Result.CopyToAsync(memoryStream, token));
-            var bytes = memoryStream.ToArray();
-            if (_logger.IsEnabled(LogLevel.Debug))
-            {
-                _logger.LogDebug("ONNX model file '{model}' read, size: {size} bytes", model, bytes.Length);
-            }
-            return bytes;
+            return new(session);
         }
 
         private readonly static string[] ExcludedEps = ["CPUExecutionProvider"];
