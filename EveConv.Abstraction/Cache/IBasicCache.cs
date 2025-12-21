@@ -19,7 +19,7 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task representing the asynchronous set operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
-        Task SetAsync(string key, TValue value, TimeSpan? ttl = null);
+        Task SetAsync(string key, TValue value, TimeSpan? ttl = null, CancellationToken token = default);
 
         /// <summary>
         /// Retrieves a value from the cache by its key.
@@ -28,13 +28,13 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task containing the cached value if found, or null if the key does not exist or has expired.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
-        Task<TValue?> GetAsync(string key);
+        Task<TValue?> GetAsync(string key, CancellationToken token = default);
 
         /// <summary>
         /// Retrieves all available cache keys.
         /// </summary>
         /// <returns>A task containing an enumerable of all cache keys currently stored.</returns>
-        Task<IEnumerable<string>> ListKeysAsync();
+        Task<IEnumerable<string>> ListKeysAsync(CancellationToken token = default);
 
         /// <summary>
         /// Removes a value from the cache by its key.
@@ -43,6 +43,13 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task containing true if the key was found and removed, false if the key was not found.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
-        Task<bool> DeleteAsync(string key);
+        Task<bool> DeleteAsync(string key, CancellationToken token = default);
+
+        /// <summary>
+        /// Get count of keys.
+        /// </summary>
+        /// <param name="token">A cancellation token.</param>
+        /// <returns>A task containing the count value.</returns>
+        Task<long> CountAsync(CancellationToken token = default);
     }
 }

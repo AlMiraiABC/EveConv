@@ -32,6 +32,6 @@ namespace EveConv.Abstraction.Cache
         /// </list>
         /// <para>Returns only the matching keys for flexibility in subsequent cache operations.</para>
         /// </remarks>
-        Task<IEnumerable<string>> GetKeysByPatternAsync(string pattern, int size);
+        Task<IEnumerable<string>> GetKeysByPatternAsync(string pattern, int size, CancellationToken token = default);
     }
 }

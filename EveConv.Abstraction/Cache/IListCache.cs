@@ -21,9 +21,9 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task containing the length of the list after the push operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
-        virtual Task<int> ListLeftPushAsync(string key, TValue value, TimeSpan? ttl = null)
+        virtual Task<int> ListLeftPushAsync(string key, TValue value, TimeSpan? ttl = null, CancellationToken token = default)
         {
-            return ListLeftPushAsync(key, [value], ttl);
+            return ListLeftPushAsync(key, [value], ttl, token);
         }
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task containing the length of the list after the push operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key or values is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
-        Task<int> ListLeftPushAsync(string key, IEnumerable<TValue> values, TimeSpan? ttl = null);
+        Task<int> ListLeftPushAsync(string key, IEnumerable<TValue> values, TimeSpan? ttl = null, CancellationToken token = default);
 
         /// <summary>
         /// Pushes a value to the right (tail) of the list stored at the specified key.
@@ -46,9 +46,9 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task containing the length of the list after the push operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
-        virtual Task<int> ListRightPushAsync(string key, TValue value, TimeSpan? ttl = null)
+        virtual Task<int> ListRightPushAsync(string key, TValue value, TimeSpan? ttl = null, CancellationToken token = default)
         {
-            return ListRightPushAsync(key, [value], ttl);
+            return ListRightPushAsync(key, [value], ttl, token);
         }
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task containing the length of the list after the push operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key or values is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
-        Task<int> ListRightPushAsync(string key, IEnumerable<TValue> values, TimeSpan? ttl = null);
+        Task<int> ListRightPushAsync(string key, IEnumerable<TValue> values, TimeSpan? ttl = null, CancellationToken token = default);
 
         #endregion
 
@@ -73,9 +73,9 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task containing the popped value if the list exists and is not empty, or null if the key does not exist or the list is empty.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
-        virtual async Task<TValue?> ListLeftPopAsync(string key)
+        virtual async Task<TValue?> ListLeftPopAsync(string key, CancellationToken token = default)
         {
-            var removed = await ListLeftPopAsync(key, 1);
+            var removed = await ListLeftPopAsync(key, 1, token);
             if (removed.Count == 0)
             {
                 return default;
@@ -91,7 +91,7 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task containing a list of popped values. The list may contain fewer elements if the list has fewer items than requested.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters, or count is less than 1.</exception>
-        Task<IList<TValue>> ListLeftPopAsync(string key, int count);
+        Task<IList<TValue>> ListLeftPopAsync(string key, int count, CancellationToken token = default);
 
         /// <summary>
         /// Removes and returns the last element from the right (tail) of the list stored at the specified key.
@@ -100,9 +100,9 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task containing the popped value if the list exists and is not empty, or null if the key does not exist or the list is empty.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
-        virtual async Task<TValue?> ListRightPopAsync(string key)
+        virtual async Task<TValue?> ListRightPopAsync(string key, CancellationToken token = default)
         {
-            var removed = await ListRightPopAsync(key, 1);
+            var removed = await ListRightPopAsync(key, 1, token);
             if (removed.Count == 0)
             {
                 return default;
@@ -118,7 +118,7 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task containing a list of popped values. The list may contain fewer elements if the list has fewer items than requested.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters, or count is less than 1.</exception>
-        Task<IList<TValue>> ListRightPopAsync(string key, int count);
+        Task<IList<TValue>> ListRightPopAsync(string key, int count, CancellationToken token = default);
 
         #endregion
 
@@ -132,7 +132,7 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task containing the value at the specified index, or null if the key does not exist or the index is out of range.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
-        Task<TValue?> ListGetByIndexAsync(string key, int index);
+        Task<TValue?> ListGetByIndexAsync(string key, int index, CancellationToken token = default);
 
         /// <summary>
         /// Gets a range of elements from the list stored at the specified key.
@@ -147,7 +147,7 @@ namespace EveConv.Abstraction.Cache
         /// Both start and stop are inclusive indices. Use 0 for the first element and -1 for the last element.
         /// ListRangeAsync("mylist", 0, -1) returns all elements in the list.
         /// </remarks>
-        Task<IList<TValue>> ListRangeAsync(string key, int start = 0, int stop = -1);
+        Task<IList<TValue>> ListRangeAsync(string key, int start = 0, int stop = -1, CancellationToken token = default);
 
         /// <summary>
         /// Gets the length of the list stored at the specified key.
@@ -156,7 +156,7 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task containing the length of the list, or 0 if the key does not exist.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
-        Task<int> ListLengthAsync(string key);
+        Task<int> ListLengthAsync(string key, CancellationToken token = default);
 
         #endregion
 
@@ -171,7 +171,7 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task representing the asynchronous operation. Returns true if successful, false if the key doesn't exist or index is out of range.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
-        Task<bool> ListSetByIndexAsync(string key, int index, TValue value);
+        Task<bool> ListSetByIndexAsync(string key, int index, TValue value, CancellationToken token = default);
 
         /// <summary>
         /// Trims the list stored at the specified key to contain only the elements in the specified range.
@@ -186,7 +186,7 @@ namespace EveConv.Abstraction.Cache
         /// Elements outside the specified range will be removed.
         /// ListTrimAsync("mylist", 0, 2) keeps only the first three elements.
         /// </remarks>
-        Task ListTrimAsync(string key, int start, int stop);
+        Task ListTrimAsync(string key, int start, int stop, CancellationToken token = default);
 
         /// <summary>
         /// Removes the first count occurrences of elements equal to value from the list stored at the specified key.
@@ -197,11 +197,7 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task containing the number of elements removed.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
-        Task<int> ListRemoveAsync(string key, TValue value, int count = 0);
-
-        #endregion
-
-        #region Utility Operations
+        Task<int> ListRemoveAsync(string key, TValue value, int count = 0, CancellationToken token = default);
 
         #endregion
     }

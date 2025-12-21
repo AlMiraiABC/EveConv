@@ -22,7 +22,7 @@ namespace EveConv.Abstraction.Cache
         /// This operation processes all items atomically where possible to maintain data consistency.
         /// The TTL parameter applies uniformly to all items in the batch.
         /// </remarks>
-        Task BatchSetAsync(IDictionary<string, TValue> items, TimeSpan? ttl = null);
+        Task BatchSetAsync(IDictionary<string, TValue> items, TimeSpan? ttl = null, CancellationToken token = default);
 
         /// <summary>
         /// Retrieves multiple values from the cache by their keys in a single operation.
@@ -35,6 +35,6 @@ namespace EveConv.Abstraction.Cache
         /// The returned dictionary maintains the association between keys and values.
         /// Keys that are not found or have expired will be included in the result with null values.
         /// </remarks>
-        Task<IDictionary<string, TValue?>> BatchGetAsync(IEnumerable<string> keys);
+        Task<IDictionary<string, TValue?>> BatchGetAsync(IEnumerable<string> keys, CancellationToken token = default);
     }
 }
