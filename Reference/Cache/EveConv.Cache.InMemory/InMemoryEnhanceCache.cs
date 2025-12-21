@@ -22,7 +22,7 @@ public partial class InMemoryCache : IEnhanceCache<object>
     /// <exception cref="ArgumentNullException">Thrown when pattern is null.</exception>
     /// <exception cref="ArgumentException">Thrown when pattern contains invalid syntax or size is not positive.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when the cache has been disposed.</exception>
-    public Task<IEnumerable<string>> GetKeysByPatternAsync(string pattern, int size)
+    public Task<IEnumerable<string>> GetKeysByPatternAsync(string pattern, int size, CancellationToken token = default)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(pattern);

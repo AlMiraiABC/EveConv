@@ -181,7 +181,7 @@ public partial class RedisCache : IDisposable
     /// Throws an ObjectDisposedException if the cache has been disposed.
     /// </summary>
     /// <exception cref="ObjectDisposedException">Thrown when the cache has been disposed.</exception>
-    protected void ThrowIfDisposed()
+    private void ThrowIfDisposed()
     {
         if (!_disposed)
         {
@@ -189,4 +189,33 @@ public partial class RedisCache : IDisposable
         }
         throw new ObjectDisposedException(nameof(RedisCache));
     }
+
+    /// <summary>
+    /// Validates that a cache key is not null or empty and meets Redis requirements.
+    /// </summary>
+    /// <param name="key">The key to validate.</param>
+    /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
+    private static void ValidateKey(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            throw new ArgumentException("Cache key cannot be empty or whitespace.", nameof(key));
+        }
+
+        // Redis keys have a maximum size of 512MB, but we'll use a more reasonable limit
+        if (key.Length > 1024)
+        {
+            throw new ArgumentException("Cache key cannot exceed 1024 characters.", nameof(key));
+        }
+
+        // Check for problematic characters that might cause issues
+        if (key.Contains('\0'))
+        {
+            throw new ArgumentException("Cache key cannot contain null characters.", nameof(key));
+        }
+    }
+
 }

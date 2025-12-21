@@ -13,7 +13,7 @@ public partial class RedisCache : IEnhanceCache<object>
     private const int MaxScanPageSize = 1000;
 
     /// <inheritdoc />
-    public async Task<IEnumerable<string>> GetKeysByPatternAsync(string pattern, int size)
+    public async Task<IEnumerable<string>> GetKeysByPatternAsync(string pattern, int size, CancellationToken token = default)
     {
         ThrowIfDisposed();
         ValidatePattern(pattern);
@@ -150,64 +150,6 @@ public partial class RedisCache : IEnhanceCache<object>
     }
 
     /// <summary>
-    /// Gets keys by pattern with additional filtering options.
-    /// </summary>
-    /// <param name="pattern">The search pattern.</param>
-    /// <param name="maxResults">Maximum number of results to return (0 for unlimited).</param>
-    /// <param name="cancellationToken">Cancellation token for the operation.</param>
-    /// <returns>An enumerable of matching keys, limited by maxResults if specified.</returns>
-    public async Task<IEnumerable<string>> GetKeysByPatternAsync(string pattern, int maxResults, CancellationToken cancellationToken = default)
-    {
-        ThrowIfDisposed();
-        ValidatePattern(pattern);
-
-        if (maxResults < 0)
-        {
-            throw new ArgumentException("Maximum results cannot be negative.", nameof(maxResults));
-        }
-
-        try
-        {
-            var redisPattern = ConvertToRedisPattern(pattern);
-            var keys = new List<string>();
-            var server = Connection.GetServer(Connection.GetEndPoints().First());
-
-            _logger.LogDebug("Scanning for keys with pattern: {Pattern} (max results: {MaxResults})",
-                pattern, maxResults == 0 ? "unlimited" : maxResults.ToString());
-
-            var count = 0;
-            await foreach (var key in server.KeysAsync(pattern: redisPattern, pageSize: DefaultScanPageSize))
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    break;
-                }
-
-                keys.Add(key.ToString());
-                count++;
-
-                if (maxResults > 0 && count >= maxResults)
-                {
-                    break;
-                }
-            }
-
-            _logger.LogDebug("Found {KeyCount} keys matching pattern: {Pattern}", keys.Count, pattern);
-            return keys;
-        }
-        catch (OperationCanceledException)
-        {
-            _logger.LogInformation("Pattern scan operation was cancelled for pattern: {Pattern}", pattern);
-            throw;
-        }
-        catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
-        {
-            _logger.LogError(ex, "Error scanning for keys with pattern: {Pattern}", pattern);
-            throw new InvalidOperationException($"Error scanning for keys with pattern: {pattern}", ex);
-        }
-    }
-
-    /// <summary>
     /// Checks if a key matches the specified pattern.
     /// </summary>
     /// <param name="key">The key to check.</param>
@@ -217,7 +159,7 @@ public partial class RedisCache : IEnhanceCache<object>
     /// This method provides local pattern matching without querying Redis.
     /// Useful for filtering results or validating patterns.
     /// </remarks>
-    public static bool IsKeyMatchingPattern(string key, string pattern)
+    public static bool IsKeyMatchingPattern(string key, string pattern, CancellationToken token = default)
     {
         if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(pattern))
         {

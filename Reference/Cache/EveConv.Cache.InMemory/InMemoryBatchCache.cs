@@ -22,7 +22,7 @@ public partial class InMemoryCache : IBatchCache<object>
     /// <exception cref="ArgumentNullException">Thrown when items dictionary is null or contains null keys.</exception>
     /// <exception cref="ArgumentException">Thrown when items dictionary contains empty keys.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when the cache has been disposed.</exception>
-    public Task BatchSetAsync(IDictionary<string, object> items, TimeSpan? ttl = null)
+    public Task BatchSetAsync(IDictionary<string, object> items, TimeSpan? ttl = null, CancellationToken token = default)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(items);
@@ -54,7 +54,7 @@ public partial class InMemoryCache : IBatchCache<object>
     /// <exception cref="ArgumentNullException">Thrown when keys enumerable is null or contains null keys.</exception>
     /// <exception cref="ArgumentException">Thrown when keys enumerable contains empty keys.</exception>
     /// <exception cref="ObjectDisposedException">Thrown when the cache has been disposed.</exception>
-    public Task<IDictionary<string, object?>> BatchGetAsync(IEnumerable<string> keys)
+    public Task<IDictionary<string, object?>> BatchGetAsync(IEnumerable<string> keys, CancellationToken token = default)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(keys);

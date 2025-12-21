@@ -13,7 +13,7 @@ public partial class RedisCache : IBatchCache<object>
     private const int MaxBatchSize = 1000;
 
     /// <inheritdoc />
-    public async Task BatchSetAsync(IDictionary<string, object> items, TimeSpan? ttl = null)
+    public async Task BatchSetAsync(IDictionary<string, object> items, TimeSpan? ttl = null, CancellationToken token = default)
     {
         ThrowIfDisposed();
         ValidateBatchItems(items);
@@ -44,7 +44,7 @@ public partial class RedisCache : IBatchCache<object>
     }
 
     /// <inheritdoc />
-    public async Task<IDictionary<string, object?>> BatchGetAsync(IEnumerable<string> keys)
+    public async Task<IDictionary<string, object?>> BatchGetAsync(IEnumerable<string> keys, CancellationToken token = default)
     {
         ThrowIfDisposed();
         ValidateBatchKeys(keys);
@@ -132,7 +132,7 @@ public partial class RedisCache : IBatchCache<object>
     /// </summary>
     /// <param name="keys">The keys to retrieve in this chunk.</param>
     /// <returns>A dictionary containing the retrieved key-value pairs.</returns>
-    private async Task<IDictionary<string, object?>> ProcessBatchGetChunk(IList<string> keys)
+    private async Task<Dictionary<string, object?>> ProcessBatchGetChunk(List<string> keys)
     {
         var batch = Database.CreateBatch();
         var tasks = new List<Task<RedisValue>>();
@@ -233,7 +233,7 @@ public partial class RedisCache : IBatchCache<object>
     /// <param name="keys">The keys to chunk.</param>
     /// <param name="chunkSize">The maximum size of each chunk.</param>
     /// <returns>An enumerable of chunked key lists.</returns>
-    private static IEnumerable<IList<string>> ChunkKeys(IList<string> keys, int chunkSize)
+    private static IEnumerable<List<string>> ChunkKeys(List<string> keys, int chunkSize)
     {
         for (int i = 0; i < keys.Count; i += chunkSize)
         {
