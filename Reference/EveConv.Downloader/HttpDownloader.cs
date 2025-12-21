@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 using EveConv.Abstraction;
 using EveConv.Abstraction.Diagnostic;
 using EveConv.Abstraction.Downloader;
-using Microsoft.Extensions.Caching.Memory;
+using EveConv.Cache.InMemory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -18,7 +18,7 @@ namespace EveConv.Downloader
 
         internal readonly HttpClient _defaultClient;
         internal readonly Dictionary<Regex, HttpClient> _httpClients = [];
-        internal readonly MemoryCache _urlCache;
+        internal readonly InMemoryCache _urlCache;
 
         /// <summary>
         /// Create a new instance of <see cref="HttpDownloader"/> with default client factory.
@@ -49,12 +49,12 @@ namespace EveConv.Downloader
                     );
             }
             this._defaultClient = clientFactory(options.Value);
-            this._urlCache = new MemoryCache(options.Value.UrlCache, loggerFactory ?? DefaultLogger.Factory);
+            this._urlCache = new InMemoryCache(options.Value.UrlCache, loggerFactory);
         }
 
         public async Task<StreamableFileContent> DownloadAsync(string filePath, CancellationToken token = default)
         {
-            var client = GetHttpClient(filePath, out var uri);
+            var (client, uri) = await GetHttpClientAsync(filePath, token).ConfigureAwait(false);
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
             var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false);
             if (this._logger.IsEnabled(LogLevel.Debug))
@@ -107,10 +107,11 @@ namespace EveConv.Downloader
                 response.Content.Headers.LastModified);
         }
 
-        private HttpClient GetHttpClient(string url, out Uri uri)
+        private async Task<(HttpClient HttpClient, Uri Uri)> GetHttpClientAsync(string url, CancellationToken token = default)
         {
-            uri = new(url);
-            if (this._urlCache.TryGetValue(uri.Host, out var httpClient))
+            var uri = new Uri(url);
+            var httpClient = await this._urlCache.GetAsync(uri.Host, token);
+            if (httpClient is not null)
             {
                 if (httpClient is HttpClient c)
                 {
@@ -118,13 +119,13 @@ namespace EveConv.Downloader
                     {
                         _logger.LogTrace("Got cached http client of uri {uri}", uri);
                     }
-                    return c;
+                    return (c, uri);
                 }
                 if (_logger.IsEnabled(LogLevel.Warning))
                 {
                     _logger.LogWarning("Excepted {cachetype} but got {actual} of cache key {key}. Delete and recreate it.", typeof(HttpClient), httpClient?.GetType(), uri.Host);
                 }
-                this._urlCache.Remove(uri.Host);
+                await this._urlCache.DeleteAsync(uri.Host, token);
             }
             foreach (var (pattern, client) in this._httpClients)
             {
@@ -136,15 +137,15 @@ namespace EveConv.Downloader
                 {
                     _logger.LogTrace("Matched http client for uri {uri} with pattern {pattern}", uri, pattern);
                 }
-                this._urlCache.Set(uri.Host, client);
-                return client;
+                await this._urlCache.SetAsync(uri.Host, client, token: token);
+                return (client, uri);
             }
             if (_logger.IsEnabled(LogLevel.Trace))
             {
                 _logger.LogTrace("Using default http client for uri {uri}", uri);
             }
-            this._urlCache.Set(uri.Host, _defaultClient);
-            return _defaultClient;
+            await this._urlCache.SetAsync(uri.Host, _defaultClient, token: token);
+            return (_defaultClient, uri);
         }
 
         private static HttpClient CreateHttpClient(HttpHostedConfiguration config)

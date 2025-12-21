@@ -4,7 +4,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Mime;
 using System.Text;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Moq.Protected;
@@ -82,13 +81,13 @@ namespace EveConv.Downloader.Tests
             };
             var downloader = new HttpDownloader(options, CreateHttpClient, NullLoggerFactory.Instance);
             _ = await downloader.DownloadAsync("http://file1.matched.com/resource", CurrentCT);
-            Assert.Equal(1, downloader._urlCache.Count);
+            Assert.Equal(1, await downloader._urlCache.CountAsync(CurrentCT));
             var c = downloader._httpClients.First().Value;
-            var c1 = downloader._urlCache.Get<HttpClient>("file1.matched.com");
+            var c1 = await downloader._urlCache.GetAsync("file1.matched.com", CurrentCT) as HttpClient;
             Assert.Equal(c, c1);
             _ = await downloader.DownloadAsync("http://file2.matched.com/resource", CurrentCT);
-            Assert.Equal(2, downloader._urlCache.Count);
-            var c2 = downloader._urlCache.Get<HttpClient>("file2.matched.com");
+            Assert.Equal(2, await downloader._urlCache.CountAsync(CurrentCT));
+            var c2 = await downloader._urlCache.GetAsync("file2.matched.com", CurrentCT) as HttpClient;
             Assert.Equal(c, c2);
         }
 
@@ -104,9 +103,9 @@ namespace EveConv.Downloader.Tests
             };
             var downloader = new HttpDownloader(options, CreateHttpClient, NullLoggerFactory.Instance);
             _ = await downloader.DownloadAsync("http://file.unmatched.com/resource", CurrentCT);
-            Assert.Equal(1, downloader._urlCache.Count);
+            Assert.Equal(1, await downloader._urlCache.CountAsync(CurrentCT));
             var c = downloader._defaultClient;
-            var c1 = downloader._urlCache.Get<HttpClient>("file.unmatched.com");
+            var c1 = await downloader._urlCache.GetAsync("file.unmatched.com", CurrentCT) as HttpClient;
             Assert.Equal(c, c1);
         }
 

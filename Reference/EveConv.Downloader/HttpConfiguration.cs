@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Microsoft.Extensions.Caching.Memory;
+using EveConv.Cache.InMemory;
 using Microsoft.Extensions.Options;
 
 namespace EveConv.Downloader
@@ -23,7 +23,7 @@ namespace EveConv.Downloader
         /// <summary>
         /// Configuration for caching url with proxies.
         /// </summary>
-        public HttpCacheConfiguration UrlCache { get; init; } = new();
+        public InMemoryConfiguration UrlCache { get; init; } = new();
 
         public HttpConfiguration Value => this;
 
@@ -31,7 +31,6 @@ namespace EveConv.Downloader
         {
             base.Valid();
             ArgumentNullException.ThrowIfNull(UrlCache);
-            UrlCache.Valid();
             if (Hosts is not null)
             {
                 foreach (var (k, v) in Hosts)
@@ -100,16 +99,6 @@ namespace EveConv.Downloader
             {
                 throw new ArgumentException("RequestHeaders key should not be null or whitespace.");
             }
-        }
-    }
-
-    public class HttpCacheConfiguration : MemoryCacheOptions
-    {
-        public TimeSpan Expiration { get; init; } = TimeSpan.FromMinutes(10);
-
-        internal void Valid()
-        {
-            ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(Expiration, TimeSpan.Zero);
         }
     }
 }
