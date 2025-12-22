@@ -25,7 +25,10 @@ namespace EveConv.Cache.InMemory
                 }
                 if (list.Count == 0)
                 {
-                    _logger.LogDebug("Remove empty list value of key {key}", key);
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        _logger.LogDebug("Remove empty list value of key {key}", key);
+                    }
                     _memoryCache.Remove(key);
                     return new();
                 }

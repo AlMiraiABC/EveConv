@@ -22,7 +22,10 @@ namespace EveConv.Cache.InMemory
 
             _memoryCache.Set(key, value, options);
 
-            _logger.LogDebug("Set cache item with key: {Key}, TTL: {TTL}", key, effectiveTtl);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Set cache item with key: {Key}, TTL: {TTL}", key, effectiveTtl);
+            }
             return;
         }
 
@@ -33,7 +36,10 @@ namespace EveConv.Cache.InMemory
 
             var result = _memoryCache.Get(key);
 
-            _logger.LogDebug("Get cache item with key: {Key}, Found: {Found}", key, result != null);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Get cache item with key: {Key}, Found: {Found}", key, result != null);
+            }
             return result;
         }
 
@@ -42,7 +48,10 @@ namespace EveConv.Cache.InMemory
             ThrowIfDisposed();
 
             var keys = _memoryCache.Keys.Cast<string>().ToList();
-            _logger.LogDebug("Listed {Count} cache keys", keys.Count);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Listed {Count} cache keys", keys.Count);
+            }
             return keys;
         }
 
@@ -52,7 +61,10 @@ namespace EveConv.Cache.InMemory
             ValidateKey(key);
             _memoryCache.Remove(key);
 
-            _logger.LogDebug("Delete cache item with key: {Key}", key);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Delete cache item with key: {Key}", key);
+            }
             return true;
         }
 

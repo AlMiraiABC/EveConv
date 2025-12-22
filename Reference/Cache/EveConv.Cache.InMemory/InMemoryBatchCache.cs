@@ -42,7 +42,10 @@ public partial class InMemoryCache : IBatchCache<object>
             _memoryCache.Set(kvp.Key, kvp.Value, options);
         }
 
-        _logger.LogDebug("Batch set {Count} cache items with TTL: {TTL}", items.Count, effectiveTtl);
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Batch set {Count} cache items with TTL: {TTL}", items.Count, effectiveTtl);
+        }
         return Task.CompletedTask;
     }
 
@@ -75,8 +78,11 @@ public partial class InMemoryCache : IBatchCache<object>
             result[key] = value;
         }
 
-        _logger.LogDebug("Batch get {Count} cache items, Found: {Found}", 
-            keyList.Count, result.Values.Count(v => v != null));
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Batch get {Count} cache items, Found: {Found}",
+                keyList.Count, result.Values.Count(v => v != null));
+        }
 
         return Task.FromResult<IDictionary<string, object?>>(result);
     }

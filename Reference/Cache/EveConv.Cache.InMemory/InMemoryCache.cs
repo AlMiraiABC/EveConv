@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using EveConv.Abstraction.Cache;
 using EveConv.Abstraction.Diagnostic;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -36,8 +35,11 @@ public partial class InMemoryCache : IDisposable
         _configuration = configuration.Value;
         _logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<InMemoryCache>();
 
-        _logger.LogInformation("InMemoryCache initialized with SizeLimit: {SizeLimit}, CompactionPercentage: {CompactionPercentage}",
-            _configuration.SizeLimit, _configuration.CompactionPercentage);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("InMemoryCache initialized with SizeLimit: {SizeLimit}, CompactionPercentage: {CompactionPercentage}",
+                _configuration.SizeLimit, _configuration.CompactionPercentage);
+        }
     }
 
     /// <summary>
@@ -106,7 +108,10 @@ public partial class InMemoryCache : IDisposable
         if (!_disposed && disposing)
         {
             _disposed = true;
-            _logger.LogInformation($"{nameof(InMemoryCache)} disposed");
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation($"{nameof(InMemoryCache)} disposed");
+            }
         }
     }
 }
