@@ -28,8 +28,11 @@ public partial class RedisCache : IEnhanceCache<object>
             var keys = new List<string>();
             var server = Connection.GetServer(Connection.GetEndPoints().First());
 
-            _logger.LogDebug("Scanning for keys with pattern: {Pattern} (Redis pattern: {RedisPattern})",
-                pattern, redisPattern);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Scanning for keys with pattern: {Pattern} (Redis pattern: {RedisPattern})",
+                    pattern, redisPattern);
+            }
 
             // Use SCAN with pattern for safe key enumeration
             await foreach (var key in server.KeysAsync(pattern: redisPattern, pageSize: DefaultScanPageSize))
@@ -37,12 +40,18 @@ public partial class RedisCache : IEnhanceCache<object>
                 keys.Add(key.ToString());
             }
 
-            _logger.LogDebug("Found {KeyCount} keys matching pattern: {Pattern}", keys.Count, pattern);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Found {KeyCount} keys matching pattern: {Pattern}", keys.Count, pattern);
+            }
             return keys;
         }
         catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
         {
-            _logger.LogError(ex, "Error scanning for keys with pattern: {Pattern}", pattern);
+            if (_logger.IsEnabled(LogLevel.Error))
+            {
+                _logger.LogError(ex, "Error scanning for keys with pattern: {Pattern}", pattern);
+            }
             throw new InvalidOperationException($"Error scanning for keys with pattern: {pattern}", ex);
         }
     }

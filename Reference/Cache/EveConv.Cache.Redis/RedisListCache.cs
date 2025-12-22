@@ -22,18 +22,27 @@ namespace EveConv.Cache.Redis
 
                 if (!serializedValue.HasValue)
                 {
-                    _logger.LogDebug("No value found at index {Index} for key: {Key}", index, key);
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        _logger.LogDebug("No value found at index {Index} for key: {Key}", index, key);
+                    }
                     return null;
                 }
 
                 var deserializedValue = DeserializeValue(serializedValue);
-                _logger.LogDebug("Successfully retrieved value at index {Index} for key: {Key}", index, key);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Successfully retrieved value at index {Index} for key: {Key}", index, key);
+                }
 
                 return deserializedValue;
             }
             catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
             {
-                _logger.LogError(ex, "Error getting value by index {Index} for key: {Key}", index, key);
+                if (_logger.IsEnabled(LogLevel.Error))
+                {
+                    _logger.LogError(ex, "Error getting value by index {Index} for key: {Key}", index, key);
+                }
                 throw new InvalidOperationException($"Error getting value by index {index} for key: {key}", ex);
             }
         }
@@ -46,12 +55,18 @@ namespace EveConv.Cache.Redis
             try
             {
                 var length = await Database.ListLengthAsync(key);
-                _logger.LogDebug("List length for key {Key}: {Length}", key, length);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("List length for key {Key}: {Length}", key, length);
+                }
                 return (int)length;
             }
             catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
             {
-                _logger.LogError(ex, "Error getting list length for key: {Key}", key);
+                if (_logger.IsEnabled(LogLevel.Error))
+                {
+                    _logger.LogError(ex, "Error getting list length for key: {Key}", key);
+                }
                 throw new InvalidOperationException($"Error getting list length for key: {key}", ex);
             }
         }
@@ -67,7 +82,10 @@ namespace EveConv.Cache.Redis
 
                 if (serializedValues.Length == 0)
                 {
-                    _logger.LogDebug("No values found in range [{Start}, {Stop}] for key: {Key}", start, stop, key);
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                    {
+                        _logger.LogDebug("No values found in range [{Start}, {Stop}] for key: {Key}", start, stop, key);
+                    }
                     return Array.Empty<object>();
                 }
 
@@ -81,14 +99,20 @@ namespace EveConv.Cache.Redis
                     }
                 }
 
-                _logger.LogDebug("Successfully retrieved {Count} values in range [{Start}, {Stop}] for key: {Key}",
-                    result.Count, start, stop, key);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Successfully retrieved {Count} values in range [{Start}, {Stop}] for key: {Key}",
+                        result.Count, start, stop, key);
+                }
 
                 return result;
             }
             catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
             {
-                _logger.LogError(ex, "Error getting range [{Start}, {Stop}] for key: {Key}", start, stop, key);
+                if (_logger.IsEnabled(LogLevel.Error))
+                {
+                    _logger.LogError(ex, "Error getting range [{Start}, {Stop}] for key: {Key}", start, stop, key);
+                }
                 throw new InvalidOperationException($"Error getting range [{start}, {stop}] for key: {key}", ex);
             }
         }
@@ -124,12 +148,18 @@ namespace EveConv.Cache.Redis
                     }
                 }
 
-                _logger.LogDebug("Successfully left-popped {Count} values from key: {Key}", result.Count, key);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Successfully left-popped {Count} values from key: {Key}", result.Count, key);
+                }
                 return result;
             }
             catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
             {
-                _logger.LogError(ex, "Error left-popping {Count} values from key: {Key}", count, key);
+                if (_logger.IsEnabled(LogLevel.Error))
+                {
+                    _logger.LogError(ex, "Error left-popping {Count} values from key: {Key}", count, key);
+                }
                 throw new InvalidOperationException($"Error left-popping {count} values from key: {key}", ex);
             }
         }
@@ -143,7 +173,10 @@ namespace EveConv.Cache.Redis
             var valueList = values.ToList();
             if (valueList.Count == 0)
             {
-                _logger.LogDebug("LeftPushAsync called with empty values for key: {Key}", key);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("LeftPushAsync called with empty values for key: {Key}", key);
+                }
                 return await ListLengthAsync(key, token);
             }
 
@@ -161,14 +194,20 @@ namespace EveConv.Cache.Redis
                     await Database.KeyExpireAsync(key, ttl.Value);
                 }
 
-                _logger.LogDebug("Successfully left-pushed {Count} values to key: {Key}, new length: {Length}",
-                    valueList.Count, key, length);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Successfully left-pushed {Count} values to key: {Key}, new length: {Length}",
+                        valueList.Count, key, length);
+                }
 
                 return (int)length;
             }
             catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
             {
-                _logger.LogError(ex, "Error left-pushing {Count} values to key: {Key}", valueList.Count, key);
+                if (_logger.IsEnabled(LogLevel.Error))
+                {
+                    _logger.LogError(ex, "Error left-pushing {Count} values to key: {Key}", valueList.Count, key);
+                }
                 throw new InvalidOperationException($"Error left-pushing {valueList.Count} values to key: {key}", ex);
             }
         }
@@ -183,12 +222,18 @@ namespace EveConv.Cache.Redis
                 var serializedValue = SerializeValue(value);
                 var removed = await Database.ListRemoveAsync(key, serializedValue, count);
 
-                _logger.LogDebug("Removed {Count} occurrences of value from key: {Key}", removed, key);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Removed {Count} occurrences of value from key: {Key}", removed, key);
+                }
                 return (int)removed;
             }
             catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
             {
-                _logger.LogError(ex, "Error removing value from key: {Key}", key);
+                if (_logger.IsEnabled(LogLevel.Error))
+                {
+                    _logger.LogError(ex, "Error removing value from key: {Key}", key);
+                }
                 throw new InvalidOperationException($"Error removing value from key: {key}", ex);
             }
         }
@@ -224,12 +269,18 @@ namespace EveConv.Cache.Redis
                     }
                 }
 
-                _logger.LogDebug("Successfully right-popped {Count} values from key: {Key}", result.Count, key);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Successfully right-popped {Count} values from key: {Key}", result.Count, key);
+                }
                 return result;
             }
             catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
             {
-                _logger.LogError(ex, "Error right-popping {Count} values from key: {Key}", count, key);
+                if (_logger.IsEnabled(LogLevel.Error))
+                {
+                    _logger.LogError(ex, "Error right-popping {Count} values from key: {Key}", count, key);
+                }
                 throw new InvalidOperationException($"Error right-popping {count} values from key: {key}", ex);
             }
         }
@@ -243,7 +294,10 @@ namespace EveConv.Cache.Redis
             var valueList = values.ToList();
             if (valueList.Count == 0)
             {
-                _logger.LogDebug("RightPushAsync called with empty values for key: {Key}", key);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("RightPushAsync called with empty values for key: {Key}", key);
+                }
                 return await ListLengthAsync(key, token);
             }
 
@@ -261,14 +315,20 @@ namespace EveConv.Cache.Redis
                     await Database.KeyExpireAsync(key, ttl.Value);
                 }
 
-                _logger.LogDebug("Successfully right-pushed {Count} values to key: {Key}, new length: {Length}",
-                    valueList.Count, key, length);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Successfully right-pushed {Count} values to key: {Key}, new length: {Length}",
+                        valueList.Count, key, length);
+                }
 
                 return (int)length;
             }
             catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
             {
-                _logger.LogError(ex, "Error right-pushing {Count} values to key: {Key}", valueList.Count, key);
+                if (_logger.IsEnabled(LogLevel.Error))
+                {
+                    _logger.LogError(ex, "Error right-pushing {Count} values to key: {Key}", valueList.Count, key);
+                }
                 throw new InvalidOperationException($"Error right-pushing {valueList.Count} values to key: {key}", ex);
             }
         }
@@ -283,19 +343,28 @@ namespace EveConv.Cache.Redis
                 var serializedValue = SerializeValue(value);
                 await Database.ListSetByIndexAsync(key, index, serializedValue);
 
-                _logger.LogDebug("Successfully set value at index {Index} for key: {Key}", index, key);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Successfully set value at index {Index} for key: {Key}", index, key);
+                }
                 return true;
             }
             catch (RedisServerException ex) when (ex.Message.Contains("ERR index out of range") ||
                  ex.Message.Contains("no such key"))
             {
-                _logger.LogDebug("Failed to set value at index {Index} for key: {Key} - index out of range or key doesn't exist",
-                    index, key);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Failed to set value at index {Index} for key: {Key} - index out of range or key doesn't exist",
+                        index, key);
+                }
                 return false;
             }
             catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
             {
-                _logger.LogError(ex, "Error setting value at index {Index} for key: {Key}", index, key);
+                if (_logger.IsEnabled(LogLevel.Error))
+                {
+                    _logger.LogError(ex, "Error setting value at index {Index} for key: {Key}", index, key);
+                }
                 throw new InvalidOperationException($"Error setting value at index {index} for key: {key}", ex);
             }
         }
@@ -308,11 +377,17 @@ namespace EveConv.Cache.Redis
             try
             {
                 await Database.ListTrimAsync(key, start, stop);
-                _logger.LogDebug("Successfully trimmed list to range [{Start}, {Stop}] for key: {Key}", start, stop, key);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Successfully trimmed list to range [{Start}, {Stop}] for key: {Key}", start, stop, key);
+                }
             }
             catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
             {
-                _logger.LogError(ex, "Error trimming list to range [{Start}, {Stop}] for key: {Key}", start, stop, key);
+                if (_logger.IsEnabled(LogLevel.Error))
+                {
+                    _logger.LogError(ex, "Error trimming list to range [{Start}, {Stop}] for key: {Key}", start, stop, key);
+                }
                 throw new InvalidOperationException($"Error trimming list to range [{start}, {stop}] for key: {key}", ex);
             }
         }

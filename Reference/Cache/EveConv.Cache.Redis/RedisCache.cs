@@ -38,8 +38,11 @@ public partial class RedisCache : IDisposable
         _connectionMultiplexer = new Lazy<ConnectionMultiplexer>(CreateConnection);
         _database = new Lazy<IDatabase>(() => _connectionMultiplexer.Value.GetDatabase());
 
-        _logger.LogInformation("RedisCache initialized with connection string: {ConnectionString}",
-            MaskConnectionString(_configuration.ConnectionString));
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("RedisCache initialized with connection string: {ConnectionString}",
+                MaskConnectionString(_configuration.ConnectionString));
+        }
     }
 
     /// <summary>
@@ -84,12 +87,18 @@ public partial class RedisCache : IDisposable
 
         try
         {
-            _logger.LogDebug("Attempting to connect to Redis server: {ConnectionString}",
-                MaskConnectionString(_configuration.ConnectionString));
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Attempting to connect to Redis server: {ConnectionString}",
+                    MaskConnectionString(_configuration.ConnectionString));
+            }
 
             var connection = ConnectionMultiplexer.Connect(configurationOptions);
 
-            _logger.LogInformation("Successfully connected to Redis server");
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("Successfully connected to Redis server");
+            }
 
             // Subscribe to connection events
             connection.ConnectionFailed += OnConnectionFailed;
@@ -100,8 +109,11 @@ public partial class RedisCache : IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to connect to Redis server after {RetryCount} attempts",
-                _configuration.ConnectRetry);
+            if (_logger.IsEnabled(LogLevel.Error))
+            {
+                _logger.LogError(ex, "Failed to connect to Redis server after {RetryCount} attempts",
+                    _configuration.ConnectRetry);
+            }
             throw new RedisConnectionException("Unable to connect to Redis server", ex);
         }
     }
@@ -111,8 +123,11 @@ public partial class RedisCache : IDisposable
     /// </summary>
     private void OnConnectionFailed(object? sender, ConnectionFailedEventArgs e)
     {
-        _logger.LogWarning("Redis connection failed: {FailureType} - {Exception}",
-            e.FailureType, e.Exception?.Message);
+        if (_logger.IsEnabled(LogLevel.Warning))
+        {
+            _logger.LogWarning("Redis connection failed: {FailureType} - {Exception}",
+                e.FailureType, e.Exception?.Message);
+        }
     }
 
     /// <summary>
@@ -120,7 +135,10 @@ public partial class RedisCache : IDisposable
     /// </summary>
     private void OnConnectionRestored(object? sender, ConnectionFailedEventArgs e)
     {
-        _logger.LogInformation("Redis connection restored: {FailureType}", e.FailureType);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Redis connection restored: {FailureType}", e.FailureType);
+        }
     }
 
     /// <summary>
@@ -128,7 +146,10 @@ public partial class RedisCache : IDisposable
     /// </summary>
     private void OnErrorMessage(object? sender, RedisErrorEventArgs e)
     {
-        _logger.LogError("Redis error: {Message}", e.Message);
+        if (_logger.IsEnabled(LogLevel.Error))
+        {
+            _logger.LogError("Redis error: {Message}", e.Message);
+        }
     }
 
     /// <summary>
@@ -173,7 +194,10 @@ public partial class RedisCache : IDisposable
             }
 
             _disposed = true;
-            _logger.LogInformation("RedisCache disposed");
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("RedisCache disposed");
+            }
         }
     }
 

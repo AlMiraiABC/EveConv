@@ -20,7 +20,10 @@ public partial class RedisCache : IBatchCache<object>
 
         if (items.Count == 0)
         {
-            _logger.LogDebug("BatchSetAsync called with empty items dictionary");
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("BatchSetAsync called with empty items dictionary");
+            }
             return;
         }
 
@@ -34,11 +37,17 @@ public partial class RedisCache : IBatchCache<object>
                 await ProcessBatchSetChunk(chunk, ttl);
             }
 
-            _logger.LogDebug("Successfully completed batch set operation for {ItemCount} items", items.Count);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Successfully completed batch set operation for {ItemCount} items", items.Count);
+            }
         }
         catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
         {
-            _logger.LogError(ex, "Error in batch set operation for {ItemCount} items", items.Count);
+            if (_logger.IsEnabled(LogLevel.Error))
+            {
+                _logger.LogError(ex, "Error in batch set operation for {ItemCount} items", items.Count);
+            }
             throw new InvalidOperationException($"Error in batch set operation for {items.Count} items", ex);
         }
     }
@@ -52,7 +61,10 @@ public partial class RedisCache : IBatchCache<object>
         var keyList = keys.ToList();
         if (keyList.Count == 0)
         {
-            _logger.LogDebug("BatchGetAsync called with empty keys collection");
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("BatchGetAsync called with empty keys collection");
+            }
             return new Dictionary<string, object?>();
         }
 
@@ -72,12 +84,18 @@ public partial class RedisCache : IBatchCache<object>
                 }
             }
 
-            _logger.LogDebug("Successfully completed batch get operation for {KeyCount} keys", keyList.Count);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Successfully completed batch get operation for {KeyCount} keys", keyList.Count);
+            }
             return result;
         }
         catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
         {
-            _logger.LogError(ex, "Error in batch get operation for {KeyCount} keys", keyList.Count);
+            if (_logger.IsEnabled(LogLevel.Error))
+            {
+                _logger.LogError(ex, "Error in batch get operation for {KeyCount} keys", keyList.Count);
+            }
             throw new InvalidOperationException($"Error in batch get operation for {keyList.Count} keys", ex);
         }
     }
@@ -85,8 +103,6 @@ public partial class RedisCache : IBatchCache<object>
     /// <summary>
     /// Processes a chunk of items for batch set operation using Redis pipeline.
     /// </summary>
-    /// <param name="items">The items to set in this chunk.</param>
-    /// <param name="ttl">The optional time-to-live for all items.</param>
     private async Task ProcessBatchSetChunk(IDictionary<string, object> items, TimeSpan? ttl)
     {
         var batch = Database.CreateBatch();
@@ -116,11 +132,14 @@ public partial class RedisCache : IBatchCache<object>
             {
                 failedCount++;
                 var key = items.ElementAt(i).Key;
-                _logger.LogWarning("Failed to set cache value for key in batch: {Key}", key);
+                if (_logger.IsEnabled(LogLevel.Warning))
+                {
+                    _logger.LogWarning("Failed to set cache value for key in batch: {Key}", key);
+                }
             }
         }
 
-        if (failedCount > 0)
+        if (failedCount > 0 && _logger.IsEnabled(LogLevel.Warning))
         {
             _logger.LogWarning("Batch set operation completed with {FailedCount} failures out of {TotalCount} items",
                 failedCount, items.Count);
@@ -130,8 +149,6 @@ public partial class RedisCache : IBatchCache<object>
     /// <summary>
     /// Processes a chunk of keys for batch get operation using Redis pipeline.
     /// </summary>
-    /// <param name="keys">The keys to retrieve in this chunk.</param>
-    /// <returns>A dictionary containing the retrieved key-value pairs.</returns>
     private async Task<Dictionary<string, object?>> ProcessBatchGetChunk(List<string> keys)
     {
         var batch = Database.CreateBatch();
@@ -164,7 +181,10 @@ public partial class RedisCache : IBatchCache<object>
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to deserialize value for key in batch: {Key}", key);
+                    if (_logger.IsEnabled(LogLevel.Warning))
+                    {
+                        _logger.LogWarning(ex, "Failed to deserialize value for key in batch: {Key}", key);
+                    }
                     result[key] = null;
                 }
             }

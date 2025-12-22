@@ -23,15 +23,24 @@ public partial class RedisCache : IBasicCache<object>
 
             if (!success)
             {
-                _logger.LogWarning("Failed to set cache value for key: {Key}", key);
+                if (_logger.IsEnabled(LogLevel.Warning))
+                {
+                    _logger.LogWarning("Failed to set cache value for key: {Key}", key);
+                }
                 throw new InvalidOperationException($"Failed to set cache value for key: {key}");
             }
 
-            _logger.LogDebug("Successfully set cache value for key: {Key} with TTL: {TTL}", key, ttl);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Successfully set cache value for key: {Key} with TTL: {TTL}", key, ttl);
+            }
         }
         catch (Exception ex) when (ex is not (ArgumentException or InvalidOperationException or ObjectDisposedException))
         {
-            _logger.LogError(ex, "Error setting cache value for key: {Key}", key);
+            if (_logger.IsEnabled(LogLevel.Error))
+            {
+                _logger.LogError(ex, "Error setting cache value for key: {Key}", key);
+            }
             throw new InvalidOperationException($"Error setting cache value for key: {key}", ex);
         }
     }
@@ -48,18 +57,27 @@ public partial class RedisCache : IBasicCache<object>
 
             if (!serializedValue.HasValue)
             {
-                _logger.LogDebug("Cache miss for key: {Key}", key);
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Cache miss for key: {Key}", key);
+                }
                 return null;
             }
 
             var deserializedValue = DeserializeValue(serializedValue);
-            _logger.LogDebug("Cache hit for key: {Key}", key);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Cache hit for key: {Key}", key);
+            }
 
             return deserializedValue;
         }
         catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
         {
-            _logger.LogError(ex, "Error getting cache value for key: {Key}", key);
+            if (_logger.IsEnabled(LogLevel.Error))
+            {
+                _logger.LogError(ex, "Error getting cache value for key: {Key}", key);
+            }
             throw new InvalidOperationException($"Error getting cache value for key: {key}", ex);
         }
     }
@@ -80,12 +98,18 @@ public partial class RedisCache : IBasicCache<object>
                 keys.Add(key.ToString());
             }
 
-            _logger.LogDebug("Retrieved {KeyCount} keys from cache", keys.Count);
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Retrieved {KeyCount} keys from cache", keys.Count);
+            }
             return keys;
         }
         catch (Exception ex) when (ex is not ObjectDisposedException)
         {
-            _logger.LogError(ex, "Error listing cache keys");
+            if (_logger.IsEnabled(LogLevel.Error))
+            {
+                _logger.LogError(ex, "Error listing cache keys");
+            }
             throw new InvalidOperationException("Error listing cache keys", ex);
         }
     }
@@ -101,20 +125,26 @@ public partial class RedisCache : IBasicCache<object>
             // Use UNLINK for non-blocking deletion
             var result = await Database.KeyDeleteAsync(key);
 
-            if (result)
+            if (_logger.IsEnabled(LogLevel.Debug))
             {
-                _logger.LogDebug("Successfully deleted cache key: {Key}", key);
-            }
-            else
-            {
-                _logger.LogDebug("Cache key not found for deletion: {Key}", key);
+                if (result)
+                {
+                    _logger.LogDebug("Successfully deleted cache key: {Key}", key);
+                }
+                else
+                {
+                    _logger.LogDebug("Cache key not found for deletion: {Key}", key);
+                }
             }
 
             return result;
         }
         catch (Exception ex) when (ex is not (ArgumentException or ObjectDisposedException))
         {
-            _logger.LogError(ex, "Error deleting cache key: {Key}", key);
+            if (_logger.IsEnabled(LogLevel.Error))
+            {
+                _logger.LogError(ex, "Error deleting cache key: {Key}", key);
+            }
             throw new InvalidOperationException($"Error deleting cache key: {key}", ex);
         }
     }

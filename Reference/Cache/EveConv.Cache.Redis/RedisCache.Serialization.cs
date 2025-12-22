@@ -54,7 +54,10 @@ public partial class RedisCache
         }
         catch (Exception ex) when (ex is not RedisCacheSerializationException)
         {
-            _logger.LogError(ex, "Failed to serialize value of type {ValueType}", value?.GetType().Name ?? "null");
+            if (_logger.IsEnabled(LogLevel.Error))
+            {
+                _logger.LogError(ex, "Failed to serialize value of type {ValueType}", value?.GetType().Name ?? "null");
+            }
             throw new RedisCacheSerializationException($"Failed to serialize value of type {value?.GetType().Name ?? "null"}", ex);
         }
     }
@@ -89,7 +92,10 @@ public partial class RedisCache
         }
         catch (Exception ex) when (ex is not RedisCacheSerializationException)
         {
-            _logger.LogError(ex, "Failed to deserialize value: {SerializedValue}", serializedValue);
+            if (_logger.IsEnabled(LogLevel.Error))
+            {
+                _logger.LogError(ex, "Failed to deserialize value: {SerializedValue}", serializedValue);
+            }
             throw new RedisCacheSerializationException($"Failed to deserialize value: {serializedValue}", ex);
         }
     }
@@ -143,8 +149,11 @@ public partial class RedisCache
         }
         catch (Exception ex) when (ex is not RedisCacheSerializationException)
         {
-            _logger.LogError(ex, "Failed to deserialize value to type {TargetType}: {SerializedValue}",
-                typeof(T).Name, serializedValue);
+            if (_logger.IsEnabled(LogLevel.Error))
+            {
+                _logger.LogError(ex, "Failed to deserialize value to type {TargetType}: {SerializedValue}",
+                    typeof(T).Name, serializedValue);
+            }
             throw new RedisCacheSerializationException($"Failed to deserialize value to type {typeof(T).Name}: {serializedValue}", ex);
         }
     }
