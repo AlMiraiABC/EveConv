@@ -15,20 +15,21 @@ namespace EveConv.Abstraction.Cache
         /// </summary>
         /// <param name="pattern">The search pattern string supporting wildcard characters. Cannot be null.</param>
         /// <param name="size">The maximum number of keys to return. Must be positive.</param>
+        /// <param name="token">A cancellation token.</param>
         /// <returns>A task containing an enumerable of keys that match the specified pattern.</returns>
         /// <exception cref="ArgumentNullException">Thrown when pattern is null.</exception>
         /// <exception cref="ArgumentException">Thrown when pattern contains invalid syntax.</exception>
         /// <remarks>
         /// <para>Supported wildcard characters:</para>
         /// <list type="bullet">
-        /// <item><description>* - Matches zero or more characters</description></item>
-        /// <item><description>? - Matches exactly one character</description></item>
+        ///     <item><description>* - Matches zero or more characters</description></item>
+        ///     <item><description>? - Matches exactly one character</description></item>
         /// </list>
         /// <para>Pattern examples:</para>
         /// <list type="bullet">
-        /// <item><description>"user:*" - Matches all keys starting with "user:"</description></item>
-        /// <item><description>"temp:???:*" - Matches keys with "temp:" prefix and exactly 3 characters before additional content</description></item>
-        /// <item><description>"*:profile" - Matches all keys ending with ":profile"</description></item>
+        ///     <item><description>"user:*" - Matches all keys starting with "user:"</description></item>
+        ///     <item><description>"temp:???:*" - Matches keys with "temp:" prefix and exactly 3 characters before additional content</description></item>
+        ///     <item><description>"*:profile" - Matches all keys ending with ":profile"</description></item>
         /// </list>
         /// <para>Returns only the matching keys for flexibility in subsequent cache operations.</para>
         /// </remarks>

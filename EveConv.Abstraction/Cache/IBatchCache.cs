@@ -15,6 +15,7 @@ namespace EveConv.Abstraction.Cache
         /// </summary>
         /// <param name="items">A dictionary containing the key-value pairs to store. Keys cannot be null or empty.</param>
         /// <param name="ttl">Optional time-to-live for all cached items. If null, the items will not expire automatically.</param>
+        /// <param name="token">A cancellation token.</param>
         /// <returns>A task representing the asynchronous batch set operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when items dictionary is null or contains null keys.</exception>
         /// <exception cref="ArgumentException">Thrown when items dictionary contains empty keys or invalid characters.</exception>
@@ -28,6 +29,7 @@ namespace EveConv.Abstraction.Cache
         /// Retrieves multiple values from the cache by their keys in a single operation.
         /// </summary>
         /// <param name="keys">An enumerable of keys to retrieve. Keys cannot be null or empty.</param>
+        /// <param name="token">A cancellation token.</param>
         /// <returns>A task containing a dictionary with the requested keys and their corresponding values. Missing or expired keys will have null values.</returns>
         /// <exception cref="ArgumentNullException">Thrown when keys enumerable is null or contains null keys.</exception>
         /// <exception cref="ArgumentException">Thrown when keys enumerable contains empty keys or invalid characters.</exception>
