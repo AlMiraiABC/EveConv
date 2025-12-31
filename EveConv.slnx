@@ -28,6 +28,7 @@
     <Project Path="Reference/FileStorage/EveConv.FileStorage.S3/EveConv.FileStorage.S3.csproj" Id="050ff246-b66e-4a0d-9ec8-a7bb94dd4f58" />
   </Folder>
   <Folder Name="/Reference/Helper/">
+    <Project Path="Reference/Helper/EveConv.HuggingFaceFastTokenizer/EveConv.HuggingFaceFastTokenizer.csproj" />
     <Project Path="Reference/Helper/EveConv.S3Helper/EveConv.S3Helper.csproj" Id="3b473ce7-027a-4615-a033-11583bcc0faa" />
   </Folder>
   <Folder Name="/Reference/VectorStorage/">
@@ -40,6 +41,8 @@
     <Project Path="Tests/EveConv.Downloader.Tests/EveConv.Downloader.Tests.csproj" Id="4182d8da-1dd4-4112-8e48-b03a1a87a4fc" />
     <Project Path="Tests/EveConv.FileStorage.Local.Tests/EveConv.FileStorage.Local.Tests.csproj" Id="3f8e86d1-4c64-4320-b152-60ba0aa26503" />
     <Project Path="Tests/EveConv.FileStorage.S3.Tests/EveConv.FileStorage.S3.Tests.csproj" Id="8f599cd8-1ca1-40c5-b573-e6316adfb27d" />
+    <Project Path="Tests/EveConv.HuggingFaceFastTokenizer.Tests/EveConv.HuggingFaceFastTokenizer.Tests.csproj" Id="39b8ead9-f6a4-4163-a86e-880f899df010">
+    </Project>
     <Project Path="Tests/EveConv.Onnx.Tests/EveConv.Onnx.Tests.csproj" Id="20448772-1fc6-45a5-9634-8b6cfc263c54" />
     <Project Path="Tests/EveConv.S3Helper.Tests/EveConv.S3Helper.Tests.csproj" />
   </Folder>

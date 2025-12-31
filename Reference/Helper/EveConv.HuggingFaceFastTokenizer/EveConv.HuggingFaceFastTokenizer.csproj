@@ -1,0 +1,88 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--Windows-->
+    <None Update="dll/aarch64-pc-windows-gnu/hf_tokenizers_c.dll">
+      <Link>runtimes/win-arm64/native/hf_tokenizers_c.dll</Link>
+      <PackagePath>runtimes/win-arm64/native/hf_tokenizers_c.dll</PackagePath>
+      <Pack>true</Pack>
+    </None>
+    <None Update="dll/x86_64-pc-windows-gnu/hf_tokenizers_c.dll">
+      <Link>runtimes/win-x64/native/hf_tokenizers_c.dll</Link>
+      <PackagePath>runtimes/win-x64/native/hf_tokenizers_c.dll</PackagePath>
+      <Pack>true</Pack>
+    </None>
+    <!--Linux-->
+    <None Update="dll/aarch64-unknown-linux-gnu/libhf_tokenizers_c.so">
+      <Link>runtimes/linux-arm64/native/libhf_tokenizers_c.so</Link>
+      <PackagePath>runtimes/linux-arm64/native/libhf_tokenizers_c.so</PackagePath>
+      <Pack>true</Pack>
+    </None>
+    <None Update="dll/armv7-unknown-linux-gnueabihf/libhf_tokenizers_c.so">
+      <Link>runtimes/linux-arm/native/libhf_tokenizers_c.so</Link>
+      <PackagePath>runtimes/linux-arm/native/libhf_tokenizers_c.so</PackagePath>
+      <Pack>true</Pack>
+    </None>
+    <None Update="dll/i686-unknown-linux-gnu/libhf_tokenizers_c.so">
+      <Link>runtimes/linux-x86/native/libhf_tokenizers_c.so</Link>
+      <PackagePath>runtimes/linux-x86/native/libhf_tokenizers_c.so</PackagePath>
+      <Pack>true</Pack>
+    </None>
+    <None Update="dll/x86_64-unknown-linux-gnu/libhf_tokenizers_c.so">
+      <Link>runtimes/linux-x64/native/libhf_tokenizers_c.so</Link>
+      <PackagePath>runtimes/linux-x64/native/libhf_tokenizers_c.so</PackagePath>
+      <Pack>true</Pack>
+    </None>
+    <None Update="dll/loongarch64-unknown-linux-gnu/libhf_tokenizers_c.so">
+      <Link>runtimes/linux-loongarch64/native/libhf_tokenizers_c.so</Link>
+      <PackagePath>runtimes/linux-loongarch64/native/libhf_tokenizers_c.so</PackagePath>
+      <Pack>true</Pack>
+    </None>
+  </ItemGroup>
+
+  <!-- When RID is not specified, copy {OS}/{ARCH} native to output folder.-->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == ''">
+    <LocalRid Condition="'$(LocalRidOverride)' != ''">$(LocalRidOverride)</LocalRid>
+    <!-- Windows -->
+    <LocalRid Condition="'$(LocalRid)' == '' and $([MSBuild]::IsOsPlatform('Windows')) and '$(PROCESSOR_ARCHITECTURE)' == 'ARM64'">win-arm64</LocalRid>
+    <LocalRid Condition="'$(LocalRid)' == '' and $([MSBuild]::IsOsPlatform('Windows')) and '$(PROCESSOR_ARCHITECTURE)' == 'AMD64'">win-x64</LocalRid>
+    <!-- Linux -->
+    <LocalRid Condition="'$(LocalRid)' == '' and $([MSBuild]::IsOsPlatform('Linux')) and '$(PROCESSOR_ARCHITECTURE)' == 'ARM'">linux-arm</LocalRid>
+    <LocalRid Condition="'$(LocalRid)' == '' and $([MSBuild]::IsOsPlatform('Linux')) and '$(PROCESSOR_ARCHITECTURE)' == 'ARM64'">linux-arm64</LocalRid>
+    <LocalRid Condition="'$(LocalRid)' == '' and $([MSBuild]::IsOsPlatform('Linux')) and '$(PROCESSOR_ARCHITECTURE)' == 'X64'">linux-x64</LocalRid>
+    <LocalRid Condition="'$(LocalRid)' == '' and $([MSBuild]::IsOsPlatform('Linux')) and '$(PROCESSOR_ARCHITECTURE)' == 'X86'">linux-x86</LocalRid>
+    <LocalRid Condition="'$(LocalRid)' == '' and $([MSBuild]::IsOsPlatform('Linux')) and '$(PROCESSOR_ARCHITECTURE)' == 'LOONGARCH64'">linux-loongarch64</LocalRid>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(RuntimeIdentifier)' == ''">
+    <!--Windows-->
+    <LocalNative Include="dll/aarch64-pc-windows-gnu/hf_tokenizers_c.dll"
+                 Condition="'$(LocalRid)' == 'win-arm64'" />
+    <LocalNative Include="dll/x86_64-pc-windows-gnu/hf_tokenizers_c.dll"
+                 Condition="'$(LocalRid)' == 'win-x64'" />
+    <!--Linux-->
+    <LocalNative Include="dll/armv7-unknown-linux-gnueabihf/libhf_tokenizers_c.so"
+                 Condition="'$(LocalRid)' == 'linux-arm'" />
+    <LocalNative Include="dll/aarch64-unknown-linux-gnu/libhf_tokenizers_c.so"
+                 Condition="'$(LocalRid)' == 'linux-arm64'" />
+    <LocalNative Include="dll/x86_64-unknown-linux-gnu/libhf_tokenizers_c.so"
+                 Condition="'$(LocalRid)' == 'linux-x64'" />
+    <LocalNative Include="dll/i686-unknown-linux-gnu/libhf_tokenizers_c.so"
+                 Condition="'$(LocalRid)' == 'linux-x86'" />
+    <LocalNative Include="dll/loongarch64-unknown-linux-gnu/libhf_tokenizers_c.so"
+                 Condition="'$(LocalRid)' == 'linux-loongarch64'" />
+  </ItemGroup>
+	<ItemGroup Condition="'$(RuntimeIdentifier)' == '' and '@(LocalNative)' != ''">
+		<None Include="@(LocalNative)">
+			<TargetPath>%(Filename)%(Extension)</TargetPath>
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</None>
+	</ItemGroup>
+</Project>
