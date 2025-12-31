@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using Amazon.S3;
 using EveConv.Abstraction;
-using Renci.SshNet.Security;
 using Testcontainers.Minio;
 
 namespace EveConv.FileStorage.S3.Tests
