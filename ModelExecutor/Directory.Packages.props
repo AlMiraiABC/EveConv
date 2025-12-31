@@ -3,6 +3,6 @@
           Condition="$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props', '$(MSBuildThisFileDirectory)../')) != ''" />
 
   <ItemGroup>
-    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="$(HFTKVersion)" />
+    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.23.2" />
   </ItemGroup>
 </Project>
