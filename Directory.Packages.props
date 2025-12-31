@@ -12,19 +12,17 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="$(MSEXVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="$(MSEXVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="$(MSEXVersion)" />
-		<PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(MSEXVersion)" />
-		<PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="$(MSEXVersion)" />
-		<PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="$(MSEXVersion)" />
-		<PackageVersion Include="Microsoft.Extensions.Logging" Version="$(MSEXVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="$(MSEXVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="$(MSEXVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="$(MSEXVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="$(MSEXVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="$(MSEXVersion)" />
-		<PackageVersion Include="Microsoft.Extensions.Options" Version="$(MSEXVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="$(MSEXVersion)" />
     <!-- Web -->
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="$(ASPNETVersion)" />
     <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="$(ASPNETVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="$(MSEXVersion)" />
     <!-- AI -->
     <PackageVersion Include="Microsoft.Extensions.AI.Abstractions" Version="$(MSEXVersion)" />
-    <PackageVersion Include="Microsoft.ML.OnnxRuntime" Version="1.23.2" />
-    <PackageVersion Include="OpenAI" Version="2.8.0" />
   </ItemGroup>
 </Project>
