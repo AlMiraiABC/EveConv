@@ -16,67 +16,65 @@ namespace EveConv.Abstraction.ModelExecutor
         /// <param name="context">Extra context.</param>
         /// <param name="token">A cancellation token.</param>
         /// <returns>A task that contains a output results.</returns>
-        Task<ReadOnlyMemory<byte>> ExecuteAsync(ReadOnlyMemory<byte> input, IDictionary<string, object>? context = null, CancellationToken token = default);
+        Task<object?> ExecuteAsync(object input, IDictionary<string, object>? context = null, CancellationToken token = default);
     }
 
     /// <summary>
     /// Session for model inference.
     /// </summary>
-    /// <typeparam name="I">Type of session instance.</typeparam>
-    /// <typeparam name="P">Type of execute parameter.</typeparam>
-    /// <typeparam name="O">Type of execute output.</typeparam>
-    public abstract class InferenceSession<I, P, O> : IInferenceSession
+    /// <typeparam name="Ins">Type of session instance.</typeparam>
+    /// <typeparam name="In">Type of execute parameter.</typeparam>
+    /// <typeparam name="Out">Type of execute result.</typeparam>
+    public abstract class InferenceSession<Ins, In, Out> : IInferenceSession
     {
         protected bool _disposed;
 
         /// <summary>
         /// Actual session instance.
         /// </summary>
-        public I Instance { get; set; }
+        public Ins Instance { get; set; }
 
         /// <summary>
         /// Create an inference session with specified instance.
         /// </summary>
         /// <param name="instance">The specified instance.</param>
-        public InferenceSession(I instance)
+        public InferenceSession(Ins instance)
         {
             ArgumentNullException.ThrowIfNull(instance);
             Instance = instance;
         }
 
-        public async Task<ReadOnlyMemory<byte>> ExecuteAsync(ReadOnlyMemory<byte> input, IDictionary<string, object>? context = null, CancellationToken token = default)
+        public virtual async Task<object?> ExecuteAsync(object input, IDictionary<string, object>? context = null, CancellationToken token = default)
         {
-            var param = await ProcessInputAsync(input, context, token);
-            var output = await ExecuteAsync(param, context, token);
-            return await ProcessOutputAsync(output, context, token);
+            ArgumentNullException.ThrowIfNull(input);
+            if (input is not In inParam)
+            {
+                throw new NotSupportedException($"Input type of {input.GetType()} is not supported. Only {typeof(In)} is supported.");
+            }
+            if (context is not null)
+            {
+                context = new Dictionary<string, object>(context, StringComparer.OrdinalIgnoreCase);
+            }
+            return await ExecuteAsync(inParam, context, token).ConfigureAwait(false);
         }
 
         /// <summary>
-        /// Pre process inputs.
+        /// Execute an inference with specified type.
         /// </summary>
-        /// <param name="param">Input parameters.</param>
-        /// <param name="context">Extra context.</param>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>A task that contains a processed inputs.</returns>
-        protected abstract Task<P> ProcessInputAsync(ReadOnlyMemory<byte> param, IDictionary<string, object>? context = null, CancellationToken token = default);
-
-        /// <summary>
-        /// Post process outputs.
-        /// </summary>
-        /// <param name="output">Output result.</param>
-        /// <param name="context">Extra context.</param>
-        /// <param name="token">The cancellation token.</param>
-        /// <returns>A task contains a processed outputs.</returns>
-        protected abstract Task<ReadOnlyMemory<byte>> ProcessOutputAsync(O output, IDictionary<string, object>? context = null, CancellationToken token = default);
-
-        /// <summary>
-        /// Asynchronously execute an inference.
-        /// </summary>
-        /// <param name="param">Input parameters</param>
+        /// <param name="input">Input parameters.</param>
         /// <param name="context">Extra context.</param>
         /// <param name="token">A cancellation token.</param>
-        /// <returns>A task that contains a output result.</returns>
-        public abstract Task<O> ExecuteAsync(P param, IDictionary<string, object>? context = null, CancellationToken token = default);
+        /// <returns>A task that contains a output results.</returns>
+        public abstract Task<Out> ExecuteAsync(In input, IDictionary<string, object>? context = null, CancellationToken token = default);
+
+        protected virtual T? GetContextValue<T>(IDictionary<string, object>? context, string key, T? defaultValue = default)
+        {
+            if (context is not null && context.TryGetValue(key, out var v) && v is T value)
+            {
+                return value;
+            }
+            return defaultValue;
+        }
 
         public virtual void Dispose()
         {

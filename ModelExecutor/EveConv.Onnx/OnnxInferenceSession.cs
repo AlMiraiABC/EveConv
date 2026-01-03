@@ -1,15 +1,15 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
+using System.Collections.Immutable;
 using System.Text;
 using EveConv.Abstraction.ModelExecutor;
 using Microsoft.ML.OnnxRuntime;
-using Microsoft.ML.OnnxRuntime.Tensors;
 
 namespace EveConv.Onnx
 {
     public class OnnxInferenceSession
-        : InferenceSession<InferenceSession, OnnxInferenceSessionExecuteParameter, IDisposableReadOnlyCollection<OrtValue>>
+        : InferenceSession<InferenceSession, IDictionary<string, Array?>, OnnxInferenceSessionInformation>
     {
         public OnnxInferenceSession(InferenceSession instance) : base(instance)
         {
@@ -22,120 +22,91 @@ namespace EveConv.Onnx
             this.Instance.Dispose();
         }
 
-        public override async Task<IDisposableReadOnlyCollection<OrtValue>> ExecuteAsync(OnnxInferenceSessionExecuteParameter param, IDictionary<string, object>? context = null, CancellationToken token = default)
+        public override async Task<OnnxInferenceSessionInformation> ExecuteAsync(IDictionary<string, Array?> input, IDictionary<string, object>? context = null, CancellationToken token = default)
         {
-            return this.Instance.Run(param.RunOptions, param.InputNames, param.InputValues, param.OutputNames);
-        }
-
-        protected override async Task<OnnxInferenceSessionExecuteParameter> ProcessInputAsync(ReadOnlyMemory<byte> param, IDictionary<string, object>? context = null, CancellationToken token = default)
-        {
-            if (param.Length == 0)
-            {
-                throw new ArgumentException("Input should not be empty.", nameof(param));
-            }
-            RunOptions? options = null;
-            if (context is not null)
-            {
-                context = new Dictionary<string, object>(context, StringComparer.OrdinalIgnoreCase);
-                if (context.TryGetValue("RunOptions", out var v) && v is RunOptions opt)
-                {
-                    options = opt;
-                }
-            }
-            return new(param, this.Instance, options);
-        }
-
-        protected override async Task<ReadOnlyMemory<byte>> ProcessOutputAsync(IDisposableReadOnlyCollection<OrtValue> output, IDictionary<string, object>? context = null, CancellationToken token = default)
-        {
-            var result = new List<byte>(sizeof(float) * output.Count);
+            var runoptions = context is not null
+                && context.TryGetValue(nameof(OnnxInferenceSessionInformation.RunOptions), out var v)
+                && v is RunOptions opt
+                ? opt : null;
+            input = new Dictionary<string, Array?>(input, StringComparer.OrdinalIgnoreCase);
+            var info = new OnnxInferenceSessionInformation(input, this.Instance, runoptions);
+            using var output = this.Instance.Run(info.InputNames, info.InputValues, info.OutputNames, info.RunOptions);
+            var result = new Dictionary<string, Array?>(StringComparer.OrdinalIgnoreCase);
             foreach (var o in output)
             {
-                var dt = o.GetTensorTypeAndShape().ElementDataType;
-                var value = dt switch
+                try
                 {
-                    TensorElementType.Float => GetOrtValue<float>(o),
-                    TensorElementType.UInt8 => GetOrtValue<byte>(o),
-                    TensorElementType.Int8 => GetOrtValue<sbyte>(o),
-                    TensorElementType.UInt16 => GetOrtValue<ushort>(o),
-                    TensorElementType.Int16 => GetOrtValue<short>(o),
-                    TensorElementType.Int32 => GetOrtValue<int>(o),
-                    TensorElementType.UInt32 => GetOrtValue<uint>(o),
-                    TensorElementType.Int64 => GetOrtValue<long>(o),
-                    TensorElementType.UInt64 => GetOrtValue<ulong>(o),
-                    TensorElementType.Bool => GetOrtValue<bool>(o),
-                    TensorElementType.Float16 => GetOrtValue<Float16>(o),
-                    TensorElementType.BFloat16 => GetOrtValue<BFloat16>(o),
-                    TensorElementType.Double => GetOrtValue<double>(o),
-                    _ => throw new NotSupportedException($"Type of {dt} is not supported.")
-                };
-                result.AddRange(value);
+                    result.TryAdd(o.Name, OnnxValueExtension.ToArray(o));
+                    o.Dispose();
+                }
+                catch (Exception ex)
+                {
+                    throw new OnnxException($"Failed to create output tensor for '{o.Name}'.", ex);
+                }
             }
-            output.Dispose();
-            return new ReadOnlyMemory<byte>([.. result]);
-
-            static ReadOnlySpan<byte> GetOrtValue<T>(OrtValue value)
-                where T : unmanaged
-            {
-                return MemoryMarshal.Cast<T, byte>(value.GetTensorDataAsSpan<T>());
-            }
+            info.Outputs = result.ToImmutableDictionary();
+            return info;
         }
     }
 
-    public class OnnxInferenceSessionExecuteParameter
+    public class OnnxInferenceSessionInformation : IDisposable
     {
-        public RunOptions RunOptions { get; set; } = new();
-        public IReadOnlyCollection<string> InputNames { get; set; } = [];
-        public IReadOnlyCollection<string> OutputNames { get; set; } = [];
-        public IReadOnlyCollection<OrtValue> InputValues { get; set; } = [];
+        private bool _disposed = false;
 
-        public OnnxInferenceSessionExecuteParameter(ReadOnlyMemory<byte> inputData, InferenceSession session, RunOptions? options = null)
+        public RunOptions RunOptions { get; set; } = new();
+        public IReadOnlyDictionary<string, Array?> Inputs { get; }
+        public IReadOnlyDictionary<string, Array?> Outputs { get; internal set; }
+        public IReadOnlyCollection<string> InputNames { get; }
+        public IReadOnlyCollection<string> OutputNames { get; }
+
+        internal IReadOnlyCollection<FixedBufferOnnxValue> InputValues { get; }
+
+        internal OnnxInferenceSessionInformation(IDictionary<string, Array?> inputData, InferenceSession session, RunOptions? options = null)
         {
             ArgumentNullException.ThrowIfNull(session);
             var metadata = session.InputMetadata;
             var names = new List<string>(metadata.Count);
-            var values = new List<OrtValue>(metadata.Count);
+            var inputs = new Dictionary<string, Array?>(StringComparer.OrdinalIgnoreCase);
+            var inputValues = new List<FixedBufferOnnxValue>(metadata.Count);
             foreach (var (k, v) in metadata)
             {
-                var shape = Array.ConvertAll(v.Dimensions, Convert.ToInt64);
-                var value = CreateOrtValue(v.ElementDataType, inputData, shape);
-                names.Add(k);
-                values.Add(value);
+                try
+                {
+                    var shape = Array.ConvertAll(v.Dimensions, Convert.ToInt64);
+                    var data = inputData.TryGetValue(k, out var i)
+                        ? i
+                        : default;
+                    var value = ArrayExtension.ToFixedBufferOnnxValue(data, v.ElementDataType, shape);
+                    inputValues.Add(value);
+                    inputs.TryAdd(k, data);
+                }
+                catch (Exception ex)
+                {
+                    throw new OnnxException($"Failed to create input tensor for '{k}'.", ex);
+                }
             }
             RunOptions = options ?? new();
-            InputNames = [.. names];
-            InputValues = [.. values];
+            Inputs = inputs.ToImmutableDictionary();
+            Outputs = session.OutputNames
+                .Select(i => (i, (Array?)null))
+                .ToImmutableDictionary(i => i.i, i => i.Item2, StringComparer.OrdinalIgnoreCase);
+            InputNames = session.InputNames;
+            InputValues = inputValues;
             OutputNames = session.OutputNames;
         }
 
-        private static OrtValue CreateOrtValue(TensorElementType dt, ReadOnlyMemory<byte> data, long[] shape)
+        public void Dispose()
         {
-            return dt switch
+            if (_disposed)
             {
-                TensorElementType.Float => InnerCreate<float>(),
-                TensorElementType.UInt8 => InnerCreate<byte>(),
-                TensorElementType.Int8 => InnerCreate<sbyte>(),
-                TensorElementType.UInt16 => InnerCreate<ushort>(),
-                TensorElementType.Int16 => InnerCreate<short>(),
-                TensorElementType.Int32 => InnerCreate<int>(),
-                TensorElementType.UInt32 => InnerCreate<uint>(),
-                TensorElementType.Int64 => InnerCreate<long>(),
-                TensorElementType.UInt64 => InnerCreate<ulong>(),
-                TensorElementType.Bool => InnerCreate<bool>(),
-                TensorElementType.Float16 => InnerCreate<Float16>(),
-                TensorElementType.BFloat16 => InnerCreate<BFloat16>(),
-                TensorElementType.Double => InnerCreate<double>(),
-                _ => throw new NotSupportedException($"Type of {dt} is not supported.")
-            };
-
-            OrtValue InnerCreate<T>()
-                where T : unmanaged
-            {
-                if (data.Length % Marshal.SizeOf<T>() != 0)
-                {
-                    throw new ArgumentException($"Malformed data length {data.Length} for type {typeof(T)}");
-                }
-                return OrtValue.CreateTensorValueFromMemory(MemoryMarshal.Cast<byte, T>(data.Span).ToArray(), shape);
+                return;
             }
+            GC.SuppressFinalize(this);
+            foreach (var i in InputValues)
+            {
+                i.Dispose();
+            }
+            _disposed = true;
         }
     }
 }
