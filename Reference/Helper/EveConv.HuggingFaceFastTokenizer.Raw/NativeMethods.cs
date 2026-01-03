@@ -8,7 +8,7 @@ using System;
 using System.Runtime.InteropServices;
 
 
-namespace EveConv.HuggingFaceFastTokenizer
+namespace EveConv.HuggingFaceFastTokenizer.Raw
 {
     internal static unsafe partial class NativeMethods
     {

@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Reference\Helper\EveConv.HuggingFaceFastTokenizer\EveConv.HuggingFaceFastTokenizer.csproj" />
+    <ProjectReference Include="..\..\Reference\Helper\EveConv.HuggingFaceFastTokenizer.Raw\EveConv.HuggingFaceFastTokenizer.Raw.csproj" />
   </ItemGroup>
 
   <ItemGroup>

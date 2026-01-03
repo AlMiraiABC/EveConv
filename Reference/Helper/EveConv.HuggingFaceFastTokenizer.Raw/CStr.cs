@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace EveConv.HuggingFaceFastTokenizer
+namespace EveConv.HuggingFaceFastTokenizer.Raw
 {
     /// <summary>
     /// Convert string to C-style string (null-terminated)

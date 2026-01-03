@@ -1,4 +1,4 @@
-namespace EveConv.HuggingFaceFastTokenizer.Tests
+namespace EveConv.HuggingFaceFastTokenizer.Raw.Tests
 {
     public class HFTokenizerTests
     {

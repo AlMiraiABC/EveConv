@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace EveConv.HuggingFaceFastTokenizer
+namespace EveConv.HuggingFaceFastTokenizer.Raw
 {
     /// <summary>
     /// Hugging Face Fast Tokenizer wrapper.
