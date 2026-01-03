@@ -1,3 +1,4 @@
+using System.Numerics.Tensors;
 using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -27,7 +28,7 @@ namespace EveConv.Onnx.Tests
         [Fact]
         public async Task Execute_Success()
         {
-            var input = new Dictionary<string, Array>{
+            var input = new Dictionary<string, Array?>{
                 {"data_0", ReadEmbedded("input.data") }
             };
             var model = ReadModel("squeezenet.onnx");
@@ -39,10 +40,10 @@ namespace EveConv.Onnx.Tests
             Assert.NotNull(actualData);
             var expectedData = ReadEmbedded("expected_output.data");
             Assert.Equal(expectedData.Length, actualData.Length);
-            for (int i = 0; i < actualData.Length; i++)
-            {
-                Assert.Equal(expectedData[i], actualData[i], 1e-5f);
-            }
+            var act = Tensor.Create(actualData);
+            var exp = Tensor.Create(expectedData);
+            var diff = Tensor.Distance<float>(act, exp);
+            Assert.True(diff < 1e-5);
         }
 
         static float[] ReadEmbedded(string path)
