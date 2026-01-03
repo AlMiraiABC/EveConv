@@ -41,6 +41,9 @@
     <Project Path="Tests/EveConv.Onnx.Tests/EveConv.Onnx.Tests.csproj" Id="20448772-1fc6-45a5-9634-8b6cfc263c54" />
     <Project Path="Tests/EveConv.S3Helper.Tests/EveConv.S3Helper.Tests.csproj" />
   </Folder>
+  <Folder Name="/Tokenizer/">
+    <Project Path="Tokenizer/EveConv.HuggingFaceFastTokenizer/EveConv.HuggingFaceFastTokenizer.csproj" Id="6e880fbc-d2ca-4311-97e7-39c90836e2b7" />
+  </Folder>
   <Project Path="EveConv.Abstraction/EveConv.Abstraction.csproj" />
   <Project Path="EveConv.Api/EveConv.Api.csproj" />
 </Solution>
