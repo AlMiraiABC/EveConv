@@ -24,7 +24,7 @@ param(
     [bool]$Build = $true,
     [bool]$Bindgen = $true,
     [bool]$Copy = $true,
-    [string]$CopyDist = "../EveConv.HuggingFaceFastTokenizer/dll/"
+    [string]$CopyDist = "../EveConv.HuggingFaceFastTokenizer/native/"
 )
 
 if ($Clean) {

@@ -9,38 +9,38 @@
 
   <ItemGroup>
     <!--Windows-->
-    <None Update="dll/aarch64-pc-windows-gnu/hf_tokenizers_c.dll">
+    <None Update="native/aarch64-pc-windows-gnu/hf_tokenizers_c.dll">
       <Link>runtimes/win-arm64/native/hf_tokenizers_c.dll</Link>
       <PackagePath>runtimes/win-arm64/native/hf_tokenizers_c.dll</PackagePath>
       <Pack>true</Pack>
     </None>
-    <None Update="dll/x86_64-pc-windows-gnu/hf_tokenizers_c.dll">
+    <None Update="native/x86_64-pc-windows-gnu/hf_tokenizers_c.dll">
       <Link>runtimes/win-x64/native/hf_tokenizers_c.dll</Link>
       <PackagePath>runtimes/win-x64/native/hf_tokenizers_c.dll</PackagePath>
       <Pack>true</Pack>
     </None>
     <!--Linux-->
-    <None Update="dll/aarch64-unknown-linux-gnu/libhf_tokenizers_c.so">
+    <None Update="native/aarch64-unknown-linux-gnu/libhf_tokenizers_c.so">
       <Link>runtimes/linux-arm64/native/libhf_tokenizers_c.so</Link>
       <PackagePath>runtimes/linux-arm64/native/libhf_tokenizers_c.so</PackagePath>
       <Pack>true</Pack>
     </None>
-    <None Update="dll/armv7-unknown-linux-gnueabihf/libhf_tokenizers_c.so">
+    <None Update="native/armv7-unknown-linux-gnueabihf/libhf_tokenizers_c.so">
       <Link>runtimes/linux-arm/native/libhf_tokenizers_c.so</Link>
       <PackagePath>runtimes/linux-arm/native/libhf_tokenizers_c.so</PackagePath>
       <Pack>true</Pack>
     </None>
-    <None Update="dll/i686-unknown-linux-gnu/libhf_tokenizers_c.so">
+    <None Update="native/i686-unknown-linux-gnu/libhf_tokenizers_c.so">
       <Link>runtimes/linux-x86/native/libhf_tokenizers_c.so</Link>
       <PackagePath>runtimes/linux-x86/native/libhf_tokenizers_c.so</PackagePath>
       <Pack>true</Pack>
     </None>
-    <None Update="dll/x86_64-unknown-linux-gnu/libhf_tokenizers_c.so">
+    <None Update="native/x86_64-unknown-linux-gnu/libhf_tokenizers_c.so">
       <Link>runtimes/linux-x64/native/libhf_tokenizers_c.so</Link>
       <PackagePath>runtimes/linux-x64/native/libhf_tokenizers_c.so</PackagePath>
       <Pack>true</Pack>
     </None>
-    <None Update="dll/loongarch64-unknown-linux-gnu/libhf_tokenizers_c.so">
+    <None Update="native/loongarch64-unknown-linux-gnu/libhf_tokenizers_c.so">
       <Link>runtimes/linux-loongarch64/native/libhf_tokenizers_c.so</Link>
       <PackagePath>runtimes/linux-loongarch64/native/libhf_tokenizers_c.so</PackagePath>
       <Pack>true</Pack>
@@ -62,20 +62,20 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(RuntimeIdentifier)' == ''">
     <!--Windows-->
-    <LocalNative Include="dll/aarch64-pc-windows-gnu/hf_tokenizers_c.dll"
+    <LocalNative Include="native/aarch64-pc-windows-gnu/hf_tokenizers_c.dll"
                  Condition="'$(LocalRid)' == 'win-arm64'" />
-    <LocalNative Include="dll/x86_64-pc-windows-gnu/hf_tokenizers_c.dll"
+    <LocalNative Include="native/x86_64-pc-windows-gnu/hf_tokenizers_c.dll"
                  Condition="'$(LocalRid)' == 'win-x64'" />
     <!--Linux-->
-    <LocalNative Include="dll/armv7-unknown-linux-gnueabihf/libhf_tokenizers_c.so"
+    <LocalNative Include="native/armv7-unknown-linux-gnueabihf/libhf_tokenizers_c.so"
                  Condition="'$(LocalRid)' == 'linux-arm'" />
-    <LocalNative Include="dll/aarch64-unknown-linux-gnu/libhf_tokenizers_c.so"
+    <LocalNative Include="native/aarch64-unknown-linux-gnu/libhf_tokenizers_c.so"
                  Condition="'$(LocalRid)' == 'linux-arm64'" />
-    <LocalNative Include="dll/x86_64-unknown-linux-gnu/libhf_tokenizers_c.so"
+    <LocalNative Include="native/x86_64-unknown-linux-gnu/libhf_tokenizers_c.so"
                  Condition="'$(LocalRid)' == 'linux-x64'" />
-    <LocalNative Include="dll/i686-unknown-linux-gnu/libhf_tokenizers_c.so"
+    <LocalNative Include="native/i686-unknown-linux-gnu/libhf_tokenizers_c.so"
                  Condition="'$(LocalRid)' == 'linux-x86'" />
-    <LocalNative Include="dll/loongarch64-unknown-linux-gnu/libhf_tokenizers_c.so"
+    <LocalNative Include="native/loongarch64-unknown-linux-gnu/libhf_tokenizers_c.so"
                  Condition="'$(LocalRid)' == 'linux-loongarch64'" />
   </ItemGroup>
 	<ItemGroup Condition="'$(RuntimeIdentifier)' == '' and '@(LocalNative)' != ''">
