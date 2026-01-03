@@ -3,10 +3,6 @@
     <Project Path="Knowledge/EveConv.DocDecoder/EveConv.DocDecoder.csproj" Id="483ae9aa-c906-4a94-a276-ece6351029d8" />
     <Project Path="Knowledge/EveConv.Knowledge/EveConv.Knowledge.csproj" />
   </Folder>
-  <Folder Name="/LLM/">
-    <Project Path="LLM/EveConv.Embedding/EveConv.Embedding.csproj" />
-    <Project Path="LLM/EveConv.TextGeneration/EveConv.TextGeneration.csproj" />
-  </Folder>
   <Folder Name="/Memory/">
     <Project Path="Memory/EveConv.Memory/EveConv.Memory.csproj" />
   </Folder>
