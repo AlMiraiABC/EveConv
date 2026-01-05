@@ -4,15 +4,15 @@ using System.Text;
 using EveConv.Abstraction;
 using EveConv.Abstraction.DocParser;
 
-namespace EveConv.DocDecoder
+namespace EveConv.DocDecoder.Parser
 {
-    internal abstract class DocDecodeable : IDocumentParser
+    internal abstract class DocParseable : IDocumentParser
     {
         public const int DEFAULT_PRIORITY = 100;
 
         protected IMimeTypeDetection _mimeTypeDetection;
 
-        protected DocDecodeable(IMimeTypeDetection mimeTypeDetection)
+        protected DocParseable(IMimeTypeDetection mimeTypeDetection)
         {
             this._mimeTypeDetection = mimeTypeDetection;
         }
@@ -36,9 +36,9 @@ namespace EveConv.DocDecoder
             return _mimeTypeDetection.GetFileType(source);
         }
 
-        protected virtual Task<(IEnumerable<Paragraph> Paragraphs, IEnumerable<Section> Sections)> ParseAsync(Stream fileStream, CancellationToken cancellationToken = default)
+        protected virtual Task<(IEnumerable<IParagraph> Paragraphs, IEnumerable<Section> Sections)> ParseAsync(Stream fileStream, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult<(IEnumerable<Paragraph>, IEnumerable<Section>)>(([], []));
+            return Task.FromResult<(IEnumerable<IParagraph>, IEnumerable<Section>)>(([], []));
         }
     }
 }

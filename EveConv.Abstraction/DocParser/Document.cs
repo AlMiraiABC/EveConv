@@ -37,7 +37,7 @@ namespace EveConv.Abstraction.DocParser
         /// <remarks>
         /// It may be empty if the document is fully organized by sections.
         /// </remarks>
-        public IEnumerable<Paragraph> Paragraphs { get; init; } = [];
+        public IEnumerable<IParagraph> Paragraphs { get; init; } = [];
 
         /// <summary>
         /// The collection of sections in this document.
@@ -69,7 +69,7 @@ namespace EveConv.Abstraction.DocParser
         /// <remarks>
         /// It could be empty if it contains only sub-sections.
         /// </remarks>
-        public IEnumerable<Paragraph> Paragraphs { get; init; } = [];
+        public IEnumerable<IParagraph> Paragraphs { get; init; } = [];
 
         /// <summary>
         /// The collection of sub-sections contained in this section.
@@ -93,113 +93,4 @@ namespace EveConv.Abstraction.DocParser
         }
     }
 
-    /// <summary>
-    /// A paragraph content.
-    /// </summary>
-    public sealed record Paragraph
-    {
-        /// <summary>
-        /// Textual content.
-        /// </summary>
-        public string? Text { get; }
-
-        /// <summary>
-        /// Media content.
-        /// </summary>
-        public Media? Media { get; }
-
-        /// <summary>
-        /// Paragraph type.
-        /// </summary>
-        public ParagraphType Type { get; }
-
-        /// <summary>
-        /// Create a paragraph instance from text.
-        /// </summary>
-        /// <param name="text"><see cref="Text"/></param>
-        public Paragraph(string text)
-        {
-            Text = text ?? string.Empty;
-            Type = ParagraphType.Text;
-        }
-
-        /// <summary>
-        /// Create a paragraph instance from media.
-        /// </summary>
-        /// <param name="media"><see cref="Media"/></param>
-        public Paragraph(Media media)
-        {
-            Media = media ?? throw new ArgumentNullException(nameof(media));
-            Type = ParagraphType.Media;
-        }
-
-        /// <summary>
-        /// Type of paragraph.
-        /// </summary>
-        public enum ParagraphType
-        {
-            /// <summary>
-            /// The paragraph contains textual content to <see cref="Text"/>.
-            /// </summary>
-            Text,
-            /// <summary>
-            /// The paragraph contains media content to <see cref="Media"/>.
-            /// </summary>
-            Media
-        }
-    }
-
-    /// <summary>
-    /// A media content.
-    /// </summary>
-    /// <remarks>
-    /// A media could be represented by local path/URI or binary data.
-    /// </remarks>
-    public sealed record Media
-    {
-        /// <summary>
-        /// Local path or URI of this media.
-        /// </summary>
-        public string? Path { get; }
-        /// <summary>
-        /// Binary data of this media.
-        /// </summary>
-        public byte[]? Data { get; }
-        /// <summary>
-        /// Media type, e.g. image/png, video/mp4, application/json
-        /// </summary>
-        public string MediaType { get; }
-
-        /// <summary>
-        /// Create a media instance from path or URI.
-        /// </summary>
-        /// <param name="path"><see cref="Path"/></param>
-        /// <param name="type"><see cref="MediaType"/></param>
-        public Media(string path, string type)
-        {
-            this.Path = path;
-            this.MediaType = type;
-        }
-
-        /// <summary>
-        /// Create a media instance from binary data.
-        /// </summary>
-        /// <param name="data"><see cref="Data"/></param>
-        /// <param name="type"><see cref="MediaType"/></param>
-        public Media(byte[] data, string type)
-        {
-            this.Data = data;
-            this.MediaType = type;
-        }
-
-        /// <summary>
-        /// Optional meida description.
-        /// </summary>
-        public string? Description { get; init; }
-
-        /// <summary>
-        /// Optional media name.
-        /// </summary>
-        public string? Name { get; init; }
-    }
 }
