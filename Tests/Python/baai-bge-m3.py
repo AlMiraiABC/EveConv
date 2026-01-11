@@ -18,7 +18,7 @@ MODEL_ID = "Qwen/Qwen3-Embedding-0.6B"
 
 local_model_dir = snapshot_download(
     repo_id=MODEL_ID,
-    cache_dir=os.path.join(os.environ.get("HF_HOME", DEFAULT_HF_CACHE_DIR), "hub"),
+    cache_dir=os.environ.get("HF_HOME", DEFAULT_HF_CACHE_DIR),
     local_files_only=True,
 )
 

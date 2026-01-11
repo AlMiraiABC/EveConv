@@ -1,1 +1,6 @@
-hf download --cache-dir ./.transformers_cache 'Qwen/Qen3-Embedding-0.6B'
+$env:HF_HOME = "./.transformers_cache"
+$env:HF_HUB_OFFLINE = "0"
+$env:TRANSFORMERS_OFFLINE = "0"
+hf download --cache-dir ./.transformers_cache "Qwen/Qwen3-Embedding-0.6B"
+hf download --cache-dir ./.transformers_cache "BAAI/bge-m3"
+hf download --cache-dir ./.transformers_cache "Alibaba-NLP/gte-multilingual-base"
