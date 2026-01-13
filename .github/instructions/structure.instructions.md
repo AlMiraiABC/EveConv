@@ -1,3 +1,6 @@
+---
+applyTo: "**/*.cs,**/*.csproj"
+---
 # Project Structure
 
 ## Solution Organization

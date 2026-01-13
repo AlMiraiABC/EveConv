@@ -18,6 +18,7 @@ For more detail instructions, refer to [instructions](./instructions/) folder.
 
 - **Tests**: Each component has a corresponding test project and created in `Tests/` folder. (e.g., `EveConv.Abstraction.Tests`) that uses xUnit for unit testing.
 
+For more details, refer to the [Product Overview](./instructions/product.instructions.md) documentation.
 
 ## Developer Workflows
 - **Building the Project**: Use the command `dotnet build` from the root directory to compile all projects. Ensure that all dependencies are restored first with `dotnet restore`.
@@ -45,6 +46,8 @@ For more detail instructions, refer to [instructions](./instructions/) folder.
 - **Documentation**: Each folder and project should contains a README file, and public class and methods should has documentation comments. Maintain up-to-date documentation for any new features or changes in the architecture to facilitate onboarding and collaboration.
 
 ## Key Files and Directories
-- **[EveConv.Api]**: Main HTTP API project.
-- **[EveConv.Abstraction]**: Contains core interfaces and abstractions.
-- **[Tests]**: Unit tests for various components.
+- **EveConv.Api**: Main HTTP API project.
+- **EveConv.Abstraction**: Contains core interfaces and abstractions.
+- **Tests**: Unit tests for various components.
+
+For more details, refer to the [Project Structure](./instructions/structure.instructions.md) documentation.

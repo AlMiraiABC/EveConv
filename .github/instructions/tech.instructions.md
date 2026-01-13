@@ -1,3 +1,6 @@
+---
+applyTo: "**/*.cs,**/*.csproj"
+---
 # Technology Stack
 
 ## Framework & Runtime
@@ -5,7 +8,7 @@
 - **.NET 10.0**: Target framework for all projects
 - **ASP.NET Core**: Web API framework with Swagger/OpenAPI support
 - **C#**: Primary programming language with nullable reference types enabled
-- **Rust**: For native libraries (e.g., HuggingFace tokenizer C-API)
+- **Rust**: For native libraries (e.g., HuggingFace tokenizer C-API), obeying [Rust Coding Conventions and Best Practices](./rust.instructions.md)
 
 ## Key Libraries & Packages
 

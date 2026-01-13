@@ -1,3 +1,6 @@
+---
+applyTo: "**/*.cs,**/*.csproj"
+---
 # Product Overview
 
 EveConv is a conversational AI system built with a modular architecture focusing on knowledge management, memory, data storage and model executor capabilities.
