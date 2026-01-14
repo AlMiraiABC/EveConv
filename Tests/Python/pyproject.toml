@@ -17,3 +17,14 @@ dependencies = [
 [[tool.uv.index]]
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 default = true
+
+# GPU
+# [[tool.uv.index]]
+# name = "pytorch-cu128"
+# url = "https://download.pytorch.org/whl/cu128"
+# explicit = true
+
+# [tool.uv.sources]
+# torch = [
+#   { index = "pytorch-cu128", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+# ]
