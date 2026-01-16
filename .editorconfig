@@ -8,12 +8,20 @@ end_of_line = lf
 trim_trailing_whitespace = true
 max_line_length = 120
 
+# .net specified
 [*.{cs,csx,vb,vbx,vbs}]
+indent_size = 4
+tab_width = 4
 end_of_line = crlf
 # IDE0290: 使用主构造函数
 dotnet_diagnostic.IDE0290.severity = none
 
+# code
+[*.{csproj,js,ts,jsx,tsx,html,css,scss,md}]
+indent_size = 2
+tab_width = 2
 
-[*.{csproj,js,ts,jsx,tsx,json,html,css,scss,md}]
+# config
+[*.{json,yml,yaml,toml,sh,ps1}]
 indent_size = 2
 tab_width = 2
