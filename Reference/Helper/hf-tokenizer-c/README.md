@@ -7,7 +7,7 @@ to read HF format `tokenizer.json` file.
 
 Build targets via `cross` container.
 
-MSRV: 1.62
+MSRV: 1.82
 
 ## Support platforms
 
