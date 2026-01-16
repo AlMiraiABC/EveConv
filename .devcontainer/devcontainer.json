@@ -3,13 +3,15 @@
 {
   "name": "EveConv Dev Container",
   "image": "almirai/eveconv:dev-0.1.0",
+  "remoteUser": "ubuntu",
+  "containerUser": "ubuntu",
   // Features to add to the dev container. More info: https://containers.dev/features.
   // "features": {},
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
   // Uncomment the next line to run commands after the container is created.
   // "postCreateCommand": "cat /etc/os-release",
-  "postCreateCommand": "dotnet restore",
+  "postCreateCommand": "sh /workspaces/EveConv/.devcontainer/post-create.sh",
   // Configure tool-specific properties.
   // "customizations": {},
   "customizations": {
@@ -22,10 +24,63 @@
         "ms-python.python",
         "ms-python.vscode-pylance",
         "ms-python.vscode-python-envs",
-        "rust-lang.rust-analyzer"
+        "rust-lang.rust-analyzer",
+        "tamasfe.even-better-toml"
       ]
     }
-  }
+  },
   // Uncomment to connect as an existing user other than the container default. More info: https://aka.ms/dev-containers-non-root.
-  // "remoteUser": "devcontainer"
+  // "remoteUser": "devcontainer",
+  // container volume
+  "mounts": [
+    // Nuget caches
+    {
+      "source": "nuget-global-packages",
+      "target": "/home/ubuntu/.nuget/packages",
+      "type": "volume"
+    },
+    {
+      "source": "nuget-http-cache",
+      "target": "/home/ubuntu/.local/share/NuGet/http-cache",
+      "type": "volume"
+    },
+    {
+      "source": "nuget-plugins-cache",
+      "target": "/home/ubuntu/.local/share/NuGet/plugin-cache",
+      "type": "volume"
+    },
+    // Cargo caches
+    {
+      "source": "cargo-git-db",
+      "target": "/home/ubuntu/.cargo/git/db",
+      "type": "volume"
+    },
+    {
+      "source": "cargo-registry-index",
+      "target": "/home/ubuntu/.cargo/registry/index",
+      "type": "volume"
+    },
+    {
+      "source": "cargo-registry-cache",
+      "target": "/home/ubuntu/.cargo/registry/cache",
+      "type": "volume"
+    },
+    // UV caches
+    {
+      "source": "uv-cache",
+      "target": "/home/ubuntu/.cache/uv",
+      "type": "volume"
+    },
+    // Mounting overrides to ignore specific folders
+    {
+      "source": "eveconv-uv-cache-venv",
+      "target": "/workspaces/EveConv/Tests/Python/.venv",
+      "type": "volume"
+    },
+    {
+      "source": "eveconv-cargo-cache-target",
+      "target": "/workspaces/EveConv/Reference/Helper/hf-tokenizer-c/target",
+      "type": "volume"
+    }
+  ]
 }
