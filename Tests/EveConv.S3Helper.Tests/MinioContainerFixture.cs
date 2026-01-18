@@ -7,7 +7,7 @@ using Xunit.Sdk;
 
 namespace EveConv.S3Helper.Tests
 {
-    public class MinioContainerFixture(IMessageSink messageSink) 
+    public class MinioContainerFixture(IMessageSink messageSink)
         : ContainerFixture<MinioBuilder, MinioContainer>(messageSink)
     {
         protected override MinioBuilder Configure(MinioBuilder builder)

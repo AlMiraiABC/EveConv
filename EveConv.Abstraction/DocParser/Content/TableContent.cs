@@ -63,10 +63,10 @@ namespace EveConv.Abstraction.DocParser.Content
                         // DO NOT Repeat
                         table.AddRange(Enumerable.Sequence(1, expandRowCount, 1).Select(i => new List<TableCellContent>()));
                     }
-                    for (int rowspanidx = 0; rowspanidx<cell.RowSpan; rowspanidx++)
+                    for (int rowspanidx = 0; rowspanidx < cell.RowSpan; rowspanidx++)
                     {
                         var r = table[rowidx + rowspanidx];
-                        for (int colspanidx = 0; colspanidx<cell.ColSpan; colspanidx++)
+                        for (int colspanidx = 0; colspanidx < cell.ColSpan; colspanidx++)
                         {
                             if (rowspanidx == 0 && colspanidx == 0)
                             {
@@ -113,34 +113,34 @@ namespace EveConv.Abstraction.DocParser.Content
     /// A cell content in table data.
     /// </summary>
     public sealed record TableCellContent : Paragraph<IParagraph>
-{
-    public readonly static TableCellContent EmptyCell = new(new PlainTextContent(string.Empty));
-
-    public TableCellSpanSource SpanSource = TableCellSpanSource.None;
-    public int RowSpan { get; }
-    public int ColSpan { get; }
-    public TableCellContent(IParagraph content, int rowSpan = 1, int colSpan = 1) : base(content)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rowSpan);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(colSpan);
-        RowSpan = rowSpan;
-        ColSpan = colSpan;
-    }
+        public readonly static TableCellContent EmptyCell = new(new PlainTextContent(string.Empty));
 
-    public enum TableCellSpanSource
-    {
-        /// <summary>
-        /// This cell is not merged.
-        /// </summary>
-        None,
-        /// <summary>
-        /// This cell is merged with the cell above.
-        /// </summary>
-        Up,
-        /// <summary>
-        /// This cell is merged with the cell on the left.
-        /// </summary>
-        Left,
+        public TableCellSpanSource SpanSource = TableCellSpanSource.None;
+        public int RowSpan { get; }
+        public int ColSpan { get; }
+        public TableCellContent(IParagraph content, int rowSpan = 1, int colSpan = 1) : base(content)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rowSpan);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(colSpan);
+            RowSpan = rowSpan;
+            ColSpan = colSpan;
+        }
+
+        public enum TableCellSpanSource
+        {
+            /// <summary>
+            /// This cell is not merged.
+            /// </summary>
+            None,
+            /// <summary>
+            /// This cell is merged with the cell above.
+            /// </summary>
+            Up,
+            /// <summary>
+            /// This cell is merged with the cell on the left.
+            /// </summary>
+            Left,
+        }
     }
-}
 }
