@@ -1,11 +1,5 @@
 {
-    "conventionalCommits.scopes": [
-        "abstraction",
-        "cache",
-        "memory",
-        "knowledge",
-        "vector",
-        "file",
-        "helper"
+    "rust-analyzer.linkedProjects": [
+        "Reference/Helper/hf-tokenizer-c/Cargo.toml"
     ]
 }
