@@ -50,7 +50,7 @@ namespace EveConv.HuggingFaceFastTokenizer.Raw
             unsafe
             {
                 using var ccontent = new CStr(content); // safe to dispose, reading immediately.
-                var wrapper = NativeMethods.tokenizers_new_from_file(ccontent.Ptr, ccontent.Len);
+                var wrapper = NativeMethods.tokenizers_new_from_str(ccontent.Ptr, ccontent.Len);
                 return new HFTokenizer(wrapper);
             }
         }
@@ -181,7 +181,7 @@ namespace EveConv.HuggingFaceFastTokenizer.Raw
                         {
                             throw ex;
                         }
-                        using var decoded = new HFTokenizerDecodeResultHandle(decodeResult);
+                        using var decoded = new HFTokenizerDecodeResultHandle(&decodeResult);
                         return decoded.ToString();
                     }
                 }
@@ -318,7 +318,7 @@ namespace EveConv.HuggingFaceFastTokenizer.Raw
                     {
                         throw ex;
                     }
-                    using var decoded = new HFTokenizerDecodeResultHandle(decodeResult);
+                    using var decoded = new HFTokenizerDecodeResultHandle(&decodeResult);
                     return decoded.ToString();
                 }
             });

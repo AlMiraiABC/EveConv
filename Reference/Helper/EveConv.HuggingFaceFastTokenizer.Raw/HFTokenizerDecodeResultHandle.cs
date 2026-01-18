@@ -14,11 +14,6 @@ namespace EveConv.HuggingFaceFastTokenizer.Raw
             decodeResult = result;
         }
 
-        public unsafe HFTokenizerDecodeResultHandle(TokenizerDecodeResult result) : this(&result)
-        {
-
-        }
-
         public override bool IsInvalid => handle == 0;
 
         protected override bool ReleaseHandle()
