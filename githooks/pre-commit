@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+set -eu
+
+printf "pre-commit: running dotnet build...\n"
+
+# Build solution
+if dotnet build; then
+  printf "pre-commit: dotnet build succeeded.\n"
+else
+  printf "pre-commit: dotnet build failed; aborting commit.\n"
+  exit 1
+fi
+
+dotnet format;
