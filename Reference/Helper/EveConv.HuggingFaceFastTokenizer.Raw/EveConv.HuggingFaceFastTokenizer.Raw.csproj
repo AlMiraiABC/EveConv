@@ -50,15 +50,16 @@
   <!-- When RID is not specified, copy {OS}/{ARCH} native to output folder.-->
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == ''">
     <LocalRid Condition="'$(LocalRidOverride)' != ''">$(LocalRidOverride)</LocalRid>
+    <_Arch>$([System.String]::Copy('$(NETCoreSdkRuntimeIdentifier)').Split('-').GetValue(1).ToLowerInvariant())</_Arch>
     <!-- Windows -->
-    <LocalRid Condition="'$(LocalRid)' == '' and $([MSBuild]::IsOsPlatform('Windows')) and '$(PROCESSOR_ARCHITECTURE)' == 'ARM64'">win-arm64</LocalRid>
-    <LocalRid Condition="'$(LocalRid)' == '' and $([MSBuild]::IsOsPlatform('Windows')) and '$(PROCESSOR_ARCHITECTURE)' == 'AMD64'">win-x64</LocalRid>
+    <LocalRid Condition="'$(LocalRid)' == '' and '$(OS)' == 'Windows_NT' and '$(_Arch)' == 'arm64'">win-arm64</LocalRid>
+    <LocalRid Condition="'$(LocalRid)' == '' and '$(OS)' == 'Windows_NT' and '$(_Arch)' == 'x64'">win-x64</LocalRid>
     <!-- Linux -->
-    <LocalRid Condition="'$(LocalRid)' == '' and $([MSBuild]::IsOsPlatform('Linux')) and '$(PROCESSOR_ARCHITECTURE)' == 'ARM'">linux-arm</LocalRid>
-    <LocalRid Condition="'$(LocalRid)' == '' and $([MSBuild]::IsOsPlatform('Linux')) and '$(PROCESSOR_ARCHITECTURE)' == 'ARM64'">linux-arm64</LocalRid>
-    <LocalRid Condition="'$(LocalRid)' == '' and $([MSBuild]::IsOsPlatform('Linux')) and '$(PROCESSOR_ARCHITECTURE)' == 'X64'">linux-x64</LocalRid>
-    <LocalRid Condition="'$(LocalRid)' == '' and $([MSBuild]::IsOsPlatform('Linux')) and '$(PROCESSOR_ARCHITECTURE)' == 'X86'">linux-x86</LocalRid>
-    <LocalRid Condition="'$(LocalRid)' == '' and $([MSBuild]::IsOsPlatform('Linux')) and '$(PROCESSOR_ARCHITECTURE)' == 'LOONGARCH64'">linux-loongarch64</LocalRid>
+    <LocalRid Condition="'$(LocalRid)' == '' and '$(OS)' == 'Unix' and '$(_Arch)' == 'arm'">linux-arm</LocalRid>
+    <LocalRid Condition="'$(LocalRid)' == '' and '$(OS)' == 'Unix' and '$(_Arch)' == 'arm64'">linux-arm64</LocalRid>
+    <LocalRid Condition="'$(LocalRid)' == '' and '$(OS)' == 'Unix' and '$(_Arch)' == 'x64'">linux-x64</LocalRid>
+    <LocalRid Condition="'$(LocalRid)' == '' and '$(OS)' == 'Unix' and '$(_Arch)' == 'x86'">linux-x86</LocalRid>
+    <LocalRid Condition="'$(LocalRid)' == '' and '$(OS)' == 'Unix' and '$(_Arch)' == 'loongarch64'">linux-loongarch64</LocalRid>
   </PropertyGroup>
   <ItemGroup Condition="'$(RuntimeIdentifier)' == ''">
     <!--Windows-->
@@ -78,6 +79,13 @@
     <LocalNative Include="native/loongarch64-unknown-linux-gnu/libhf_tokenizers_c.so"
                  Condition="'$(LocalRid)' == 'linux-loongarch64'" />
   </ItemGroup>
+  <Target Name="LogDbgBuild" BeforeTargets="Build" Condition="'$(LogDbgBuild)' == 'true' and '$(Configuration)' == 'Debug'">
+    <Message Importance="High" Text="
+      _Arch=$(_Arch)
+      LocalRid=$(LocalRid)
+      LocalNative='@(LocalNative)'
+     " />
+  </Target>
 	<ItemGroup Condition="'$(RuntimeIdentifier)' == '' and '@(LocalNative)' != ''">
 		<None Include="@(LocalNative)">
 			<TargetPath>%(Filename)%(Extension)</TargetPath>
