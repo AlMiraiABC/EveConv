@@ -24,7 +24,7 @@ param(
     [bool]$Build = $true,
     [bool]$Bindgen = $true,
     [bool]$Copy = $true,
-    [string]$CopyDist = "../EveConv.HuggingFaceFastTokenizer/native/"
+    [string]$CopyDist = "../EveConv.HuggingFaceFastTokenizer.Raw/native/"
 )
 
 if ($Clean) {
@@ -60,7 +60,7 @@ if ($Copy) {
             Write-Warning "Build failed of target $target."
             continue
         }
-        $destination = Join-Path $currentDir "../EveConv.HuggingFaceFastTokenizer/dll/$target"
+        $destination = Join-Path $currentDir "../EveConv.HuggingFaceFastTokenizer.Raw/dll/$target"
         if (-not (Test-Path $destination)) {
             New-Item -ItemType Directory -Path $destination -Force | Out-Null
         }
