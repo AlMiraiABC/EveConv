@@ -11,6 +11,9 @@ using Microsoft.Extensions.Options;
 
 namespace EveConv.Downloader
 {
+    /// <summary>
+    /// Download file from S3 compatible API.
+    /// </summary>
     public class S3Downloader : IDownloader
     {
         private readonly ILogger<S3Downloader> _logger;

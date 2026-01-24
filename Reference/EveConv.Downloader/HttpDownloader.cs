@@ -12,6 +12,9 @@ using Microsoft.Extensions.Options;
 
 namespace EveConv.Downloader
 {
+    /// <summary>
+    /// Download file from http or https.
+    /// </summary>
     public class HttpDownloader : IDownloader
     {
         private readonly ILogger<HttpDownloader> _logger;
