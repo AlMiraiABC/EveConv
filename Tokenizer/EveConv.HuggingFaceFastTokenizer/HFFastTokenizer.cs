@@ -13,7 +13,7 @@ namespace EveConv.HuggingFaceFastTokenizer
 
         private readonly HFTokenizer _tokenizer;
 
-        public HFFastTokenizer(IOptions<HFFastTokenizerConfiguration> options, ILoggerFactory? loggerFactory)
+        public HFFastTokenizer(IOptions<HFFastTokenizerConfiguration> options, ILoggerFactory? loggerFactory = null)
         {
             ArgumentNullException.ThrowIfNull(options);
             options.Value.Valid();
