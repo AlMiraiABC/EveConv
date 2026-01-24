@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<OutputType>Exe</OutputType>
+		<RootNamespace>EveConv.Downloader.Tests</RootNamespace>
+		<TargetFramework>net10.0</TargetFramework>
+		<!--
+    This template uses native xUnit.net command line options when using 'dotnet run' and
+    VSTest by default when using 'dotnet test'. For more information on how to enable support
+    for Microsoft Testing Platform, please visit:
+      https://xunit.net/docs/getting-started/v3/microsoft-testing-platform
+    -->
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Xunit" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.NET.Test.Sdk" />
+		<PackageReference Include="xunit.v3" />
+		<PackageReference Include="xunit.runner.visualstudio" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\Embedder\EveConv.Embedder\EveConv.Embedder.csproj" />
+	  <ProjectReference Include="..\..\ModelExecutor\EveConv.Onnx\EveConv.Onnx.csproj" />
+	  <ProjectReference Include="..\..\Reference\EveConv.Downloader\EveConv.Downloader.csproj" />
+	  <ProjectReference Include="..\..\Reference\EveConv.MimeType\EveConv.MimeType.csproj" />
+	  <ProjectReference Include="..\..\Tokenizer\EveConv.HuggingFaceFastTokenizer\EveConv.HuggingFaceFastTokenizer.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Update="Resources\bge-small-zh-v1.5-model_quantized.onnx">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	  <None Update="Resources\bge-small-zh-v1.5-tokenizer.json">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+	
+</Project>

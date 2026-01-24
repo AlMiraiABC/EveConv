@@ -39,6 +39,7 @@
   <Folder Name="/Tests/">
     <Project Path="Tests/EveConv.Abstraction.Tests/EveConv.Abstraction.Tests.csproj" Id="903074b3-1695-40f9-b49b-a110333d83b0" />
     <Project Path="Tests/EveConv.Downloader.Tests/EveConv.Downloader.Tests.csproj" Id="4182d8da-1dd4-4112-8e48-b03a1a87a4fc" />
+    <Project Path="Tests/EveConv.Embedder.Tests/EveConv.Embedder.Tests.csproj" Id="78966aec-2b65-4ed1-b1f2-8ceb56925e5f" />
     <Project Path="Tests/EveConv.FileStorage.Local.Tests/EveConv.FileStorage.Local.Tests.csproj" Id="3f8e86d1-4c64-4320-b152-60ba0aa26503" />
     <Project Path="Tests/EveConv.FileStorage.S3.Tests/EveConv.FileStorage.S3.Tests.csproj" Id="8f599cd8-1ca1-40c5-b573-e6316adfb27d" />
     <Project Path="Tests/EveConv.HuggingFaceFastTokenizer.Raw.Tests/EveConv.HuggingFaceFastTokenizer.Raw.Tests.csproj" Id="39b8ead9-f6a4-4163-a86e-880f899df010" />
