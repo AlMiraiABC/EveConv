@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Embedder/">
+    <Project Path="Embedder/EveConv.Embedder/EveConv.Embedder.csproj" Id="946d3ddf-f951-454a-a33a-63d47fe042f9" />
+  </Folder>
   <Folder Name="/Knowledge/">
     <Project Path="Knowledge/EveConv.DocDecoder/EveConv.DocDecoder.csproj" Id="483ae9aa-c906-4a94-a276-ece6351029d8" />
     <Project Path="Knowledge/EveConv.Knowledge/EveConv.Knowledge.csproj" />
