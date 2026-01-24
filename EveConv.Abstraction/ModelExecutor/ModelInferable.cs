@@ -8,7 +8,7 @@ using EveConv.Abstraction.Downloader;
 namespace EveConv.Abstraction.ModelExecutor
 {
     public abstract class ModelInferable<O, S> : IModelInference<O, S>
-        where O: class
+        where O : class
         where S : IInferenceSession
     {
         protected IDownloader? _downloader;
