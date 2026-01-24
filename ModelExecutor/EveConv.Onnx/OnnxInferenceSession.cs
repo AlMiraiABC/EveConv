@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using System.Text;
 using EveConv.Abstraction.ModelExecutor;
 using Microsoft.ML.OnnxRuntime;
@@ -22,91 +23,72 @@ namespace EveConv.Onnx
             this.Instance.Dispose();
         }
 
+        /// <inheritdoc/>
+        /// <param name="context">
+        /// <list type="bullet">
+        ///   <item><description>RunOptions: <see cref="RunOptions"/> Onnx run options. (default: <see langword="null"/>)</description></item>
+        ///   <item><description>ArrayedOutputs: <see cref="bool"/> Determine whether convert output to array and dispose ort values. (default: <see langword="true"/>)</description></item>
+        /// </list>
+        /// </param>
         public override async Task<OnnxInferenceSessionInformation> ExecuteAsync(IDictionary<string, Array?> input, IDictionary<string, object>? context = null, CancellationToken token = default)
+        {
+            var runoptions = context is not null
+                && context.TryGetValue(nameof(OnnxInferenceSessionInformation.RunOptions), out var v)
+                && v is RunOptions opt ? opt : null;
+            var arrayedoutputs = context is not null
+                && context.TryGetValue("ArrayedOutputs", out var ov)
+                && bool.TryParse(ov?.ToString(), out var oarr) ? oarr : true;
+            input = new Dictionary<string, Array?>(input, StringComparer.OrdinalIgnoreCase);
+            var info = new OnnxInferenceSessionInformation(input, this.Instance, runoptions);
+            // dispose manually
+            var output = this.Instance.Run(info.InputValues, info.OutputNames, info.RunOptions);
+            ArrayedOutputs(info, output, arrayedoutputs);
+            return info;
+        }
+
+        /// <inheritdoc/>
+        /// <param name="context">
+        /// <list type="bullet">
+        ///   <item><description>RunOptions: <see cref="RunOptions"/> Onnx run options. (default: <see langword="null"/>)</description></item>
+        ///   <item><description>ArrayedOutputs: <see cref="bool"/> Determine whether convert output to array and dispose ort values. (default: <see langword="false"/>)</description></item>
+        /// </list>
+        /// </param>
+        public async Task<OnnxInferenceSessionInformation> ExecuteAsync(IEnumerable<NamedOnnxValue> input, IDictionary<string, object>? context = null, CancellationToken token = default)
         {
             var runoptions = context is not null
                 && context.TryGetValue(nameof(OnnxInferenceSessionInformation.RunOptions), out var v)
                 && v is RunOptions opt
                 ? opt : null;
-            input = new Dictionary<string, Array?>(input, StringComparer.OrdinalIgnoreCase);
+            var arrayedoutputs = context is not null
+                && context.TryGetValue("ArrayedOutputs", out var ov)
+                && bool.TryParse(ov?.ToString(), out var oarr) ? oarr : false;
             var info = new OnnxInferenceSessionInformation(input, this.Instance, runoptions);
-            using var output = this.Instance.Run(info.InputNames, info.InputValues, info.OutputNames, info.RunOptions);
-            var result = new Dictionary<string, Array?>(StringComparer.OrdinalIgnoreCase);
-            foreach (var o in output)
-            {
-                try
-                {
-                    result.TryAdd(o.Name, OnnxValueExtension.ToArray(o));
-                    o.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    throw new OnnxException($"Failed to create output tensor for '{o.Name}'.", ex);
-                }
-            }
-            info.Outputs = result.ToImmutableDictionary();
+            // dispose manually
+            var output = this.Instance.Run(info.InputValues, info.OutputNames, runoptions);
+            ArrayedOutputs(info, output, arrayedoutputs);
             return info;
         }
-    }
 
-    public class OnnxInferenceSessionInformation : IDisposable
-    {
-        private bool _disposed = false;
-
-        public RunOptions RunOptions { get; set; } = new();
-        public IReadOnlyDictionary<string, Array?> Inputs { get; }
-        public IReadOnlyDictionary<string, Array?> Outputs { get; internal set; }
-        public IReadOnlyCollection<string> InputNames { get; }
-        public IReadOnlyCollection<string> OutputNames { get; }
-
-        internal IReadOnlyCollection<FixedBufferOnnxValue> InputValues { get; }
-
-        internal OnnxInferenceSessionInformation(IDictionary<string, Array?> inputData, InferenceSession session, RunOptions? options = null)
+        private static void ArrayedOutputs(OnnxInferenceSessionInformation info, IDisposableReadOnlyCollection<DisposableNamedOnnxValue> output, bool needArrayedOutputs = true)
         {
-            ArgumentNullException.ThrowIfNull(session);
-            var metadata = session.InputMetadata;
-            var names = new List<string>(metadata.Count);
-            var inputs = new Dictionary<string, Array?>(StringComparer.OrdinalIgnoreCase);
-            var inputValues = new List<FixedBufferOnnxValue>(metadata.Count);
-            foreach (var (k, v) in metadata)
+            if (!needArrayedOutputs)
+            {
+                info.OutputValues = output;
+                return;
+            }
+            var result = output.ToDictionary(i => i.Name, i =>
             {
                 try
                 {
-                    var shape = Array.ConvertAll(v.Dimensions, Convert.ToInt64);
-                    var data = inputData.TryGetValue(k, out var i)
-                        ? i
-                        : default;
-                    var value = ArrayExtension.ToFixedBufferOnnxValue(data, v.ElementDataType, shape);
-                    inputValues.Add(value);
-                    inputs.TryAdd(k, data);
+                    return OnnxValueExtension.ToArray(i);
                 }
                 catch (Exception ex)
                 {
-                    throw new OnnxException($"Failed to create input tensor for '{k}'.", ex);
+                    throw new OnnxException($"Failed to create output tensor for '{i.Name}'.", ex);
                 }
-            }
-            RunOptions = options ?? new();
-            Inputs = inputs.ToImmutableDictionary();
-            Outputs = session.OutputNames
-                .Select(i => (i, (Array?)null))
-                .ToImmutableDictionary(i => i.i, i => i.Item2, StringComparer.OrdinalIgnoreCase);
-            InputNames = session.InputNames;
-            InputValues = inputValues;
-            OutputNames = session.OutputNames;
-        }
-
-        public void Dispose()
-        {
-            if (_disposed)
-            {
-                return;
-            }
-            GC.SuppressFinalize(this);
-            foreach (var i in InputValues)
-            {
-                i.Dispose();
-            }
-            _disposed = true;
+            });
+            info.Outputs = result.ToImmutableDictionary();
+            output.Dispose();
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 
@@ -9,42 +10,67 @@ namespace EveConv.Onnx
 {
     internal static class ArrayExtension
     {
-        public static FixedBufferOnnxValue ToFixedBufferOnnxValue<T>(this IEnumerable<T>? flatData, long[] shape)
+        /// <summary>
+        /// Convert multi-dimensional array to <see cref="NamedOnnxValue"/>
+        /// </summary>
+        /// <typeparam name="T">Actual type of the elements in the array.</typeparam>
+        /// <param name="arr">The multi-dimensional array to convert.</param>
+        /// <param name="name">Name of the ONNX value.</param>
+        /// <param name="shape">Shape of the tensor.</param>
+        /// <returns>A <see cref="NamedOnnxValue"/> of this array.</returns>
+        public static NamedOnnxValue ToNamedOnnxValue<T>(this Array? arr, string name, long[] shape)
             where T : unmanaged
         {
-            ArgumentNullException.ThrowIfNull(flatData);
+            ArgumentNullException.ThrowIfNull(arr);
             ArgumentNullException.ThrowIfNull(shape);
 
             var dims = Array.ConvertAll(shape, static i => checked((int)i));
-            var data = flatData as T[] ?? [.. flatData];
-            var dt = new DenseTensor<T>(data, dims);
-            return FixedBufferOnnxValue.CreateFromTensor(dt);
+            var dt = new DenseTensor<T>(Flatten<T>(arr), dims);
+            return NamedOnnxValue.CreateFromTensor(name, dt);
         }
 
-        public static FixedBufferOnnxValue ToFixedBufferOnnxValue(this Array? data, TensorElementType elementType, long[] shape)
+        /// <summary>
+        /// Flatten multi-dimensional array to one-dimensional array.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="arr"></param>
+        /// <returns></returns>
+        public static T[] Flatten<T>(this Array arr)
+        {
+            if (arr is null)
+            {
+                return [];
+            }
+            var length = arr.Length;
+            var result = new T[length];
+            Buffer.BlockCopy(arr, 0, result, 0, length * Unsafe.SizeOf<T>());
+            return result;
+        }
+
+        public static NamedOnnxValue ToNamedOnnxValue(this Array? data, string name, TensorElementType elementType, long[] shape)
         {
             ArgumentNullException.ThrowIfNull(shape);
             return elementType switch
             {
-                TensorElementType.UInt8 => ToFixedBufferOnnxValue((IEnumerable<byte>?)data, shape),
-                TensorElementType.Int8 => ToFixedBufferOnnxValue((IEnumerable<sbyte>?)data, shape),
-                TensorElementType.UInt16 => ToFixedBufferOnnxValue((IEnumerable<ushort>?)data, shape),
-                TensorElementType.Int16 => ToFixedBufferOnnxValue((IEnumerable<short>?)data, shape),
-                TensorElementType.UInt32 => ToFixedBufferOnnxValue((IEnumerable<uint>?)data, shape),
-                TensorElementType.Int32 => ToFixedBufferOnnxValue((IEnumerable<int>?)data, shape),
-                TensorElementType.UInt64 => ToFixedBufferOnnxValue((IEnumerable<ulong>?)data, shape),
-                TensorElementType.Int64 => ToFixedBufferOnnxValue((IEnumerable<long>?)data, shape),
-                TensorElementType.Bool => ToFixedBufferOnnxValue((IEnumerable<bool>?)data, shape),
-                TensorElementType.Float => ToFixedBufferOnnxValue((IEnumerable<float>?)data, shape),
-                TensorElementType.Float16 => ToFixedBufferOnnxValue((IEnumerable<Float16>?)data, shape),
-                TensorElementType.BFloat16 => ToFixedBufferOnnxValue((IEnumerable<BFloat16>?)data, shape),
-                TensorElementType.Double => ToFixedBufferOnnxValue((IEnumerable<double>?)data, shape),
+                TensorElementType.UInt8 => ToNamedOnnxValue<byte>(data, name, shape),
+                TensorElementType.Int8 => ToNamedOnnxValue<sbyte>(data, name, shape),
+                TensorElementType.UInt16 => ToNamedOnnxValue<ushort>(data, name, shape),
+                TensorElementType.Int16 => ToNamedOnnxValue<short>(data, name, shape),
+                TensorElementType.UInt32 => ToNamedOnnxValue<uint>(data, name, shape),
+                TensorElementType.Int32 => ToNamedOnnxValue<int>(data, name, shape),
+                TensorElementType.UInt64 => ToNamedOnnxValue<ulong>(data, name, shape),
+                TensorElementType.Int64 => ToNamedOnnxValue<long>(data, name, shape),
+                TensorElementType.Bool => ToNamedOnnxValue<bool>(data, name, shape),
+                TensorElementType.Float => ToNamedOnnxValue<float>(data, name, shape),
+                TensorElementType.Float16 => ToNamedOnnxValue<Float16>(data, name, shape),
+                TensorElementType.BFloat16 => ToNamedOnnxValue<BFloat16>(data, name, shape),
+                TensorElementType.Double => ToNamedOnnxValue<double>(data, name, shape),
                 _ => throw new NotSupportedException($"Tensor element type '{elementType}' is not supported."),
             };
         }
     }
 
-    internal static class OnnxValueExtension
+    public static class OnnxValueExtension
     {
         public static Array? ToArray(NamedOnnxValue? value)
         {
