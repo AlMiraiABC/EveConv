@@ -11,9 +11,9 @@ namespace EveConv.Abstraction.Tokenizer
     /// <summary>
     /// Generic interface for tokenizer models.
     /// </summary>
-    /// <typeparam name="V"></typeparam>
-    /// <typeparam name="I"></typeparam>
-    public interface ITokenizer<V, I>
+    /// <typeparam name="V">Type of return item.</typeparam>
+    /// <typeparam name="I">Type of input item.</typeparam>
+    public interface ITokenizer<V, I> : ITokenizer
     {
         /// <summary>
         /// Asynchronously tokenizes the specified input value.
