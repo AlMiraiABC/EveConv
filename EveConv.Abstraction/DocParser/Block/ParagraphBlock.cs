@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace EveConv.Abstraction.DocParser
+namespace EveConv.Abstraction.DocParser.Block
 {
     /// <summary>
     /// Empty interface to represents a paragraph.
     /// </summary>
-    public interface IParagraph
+    public interface IParagraphBlock
     {
 
     }
@@ -16,7 +16,7 @@ namespace EveConv.Abstraction.DocParser
     /// Paragraph with content.
     /// </summary>
     /// <typeparam name="T">Type of <see cref="Content"/>.</typeparam>
-    public abstract record Paragraph<T> : IParagraph
+    public abstract record ParagraphBlock<T> : DocumentRangeBlock, IParagraphBlock
     {
         /// <summary>
         /// Content.
@@ -26,12 +26,11 @@ namespace EveConv.Abstraction.DocParser
         /// Content numbering. E.g. Figure-1, Table-2, etc.
         /// </summary>
         public string Numbering { get; init; } = string.Empty;
-
         /// <summary>
         /// Create a paragraph with specified content.
         /// </summary>
         /// <param name="content"></param>
-        protected Paragraph(T content)
+        protected ParagraphBlock(T content)
         {
             Content = content;
         }

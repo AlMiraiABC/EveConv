@@ -1,17 +1,16 @@
-using EveConv.Abstraction.DocParser.Content;
+using EveConv.Abstraction.DocParser.Block;
+using static EveConv.Abstraction.DocParser.Block.TableCellBlock.TableCellSpanSource;
 
-using static EveConv.Abstraction.DocParser.Content.TableCellContent.TableCellSpanSource;
+using Cell = (string Content, int RowSpan, int ColSpan, EveConv.Abstraction.DocParser.Block.TableCellBlock.TableCellSpanSource Source);
 
-using Cell = (string Content, int RowSpan, int ColSpan, EveConv.Abstraction.DocParser.Content.TableCellContent.TableCellSpanSource Source);
-
-namespace EveConv.Abstraction.Tests.DocParser.Content
+namespace EveConv.Abstraction.Tests.DocParser.Block
 {
-    public class TableContentTests
+    public class TableBlockTests
     {
         [Fact]
         public void TableContent_Normal_Success()
         {
-            var table = CreateTableContent([
+            var table = CreateTableBlock([
                     [("A1", 1, 1, default), ("A2", 1, 1, default), ("A3", 1, 1, default)],
                     [("B1", 1, 1, default), ("B2", 1, 1, default), ("B3", 1, 1, default)],
                 ]);
@@ -27,7 +26,7 @@ namespace EveConv.Abstraction.Tests.DocParser.Content
         [Fact]
         public void TableContent_RowSpan_Success()
         {
-            var table = CreateTableContent([
+            var table = CreateTableBlock([
                     [("A1", 1, 2, default), ("A3", 1, 1, default)],
                     [("B1", 1, 1, default), ("B2", 1, 2, default)],
                 ]);
@@ -43,7 +42,7 @@ namespace EveConv.Abstraction.Tests.DocParser.Content
         [Fact]
         public void TableContent_ColSpan_Success()
         {
-            var table = CreateTableContent([
+            var table = CreateTableBlock([
                     [("A1", 1, 1, default), ("A2", 2, 1, default), ("A3", 1, 1, default)],
                     [("B1", 1, 1, default), ("B3", 1, 1, default)],
                 ]);
@@ -59,7 +58,7 @@ namespace EveConv.Abstraction.Tests.DocParser.Content
         [Fact]
         public void TableContent_RCSpan_Success()
         {
-            var table = CreateTableContent([
+            var table = CreateTableBlock([
                     [("A1", 2, 2, default), ("A3", 1, 1, default)],
                     [("B3", 1, 1, default)],
                 ]);
@@ -75,7 +74,7 @@ namespace EveConv.Abstraction.Tests.DocParser.Content
         [Fact]
         public void TableContent_ExpandRowSpan_Success()
         {
-            var table = CreateTableContent([
+            var table = CreateTableBlock([
                 [("A1", 1, 1, default), ("A2", 1, 1, default)],
                 [("B1", 3, 3, default)],
             ]);
@@ -97,7 +96,7 @@ namespace EveConv.Abstraction.Tests.DocParser.Content
             // B2 is conflicted
             // 1. insert A2 row span to B2 with Up
             // 2. insert B1 row span to B2 with Left
-            var table = CreateTableContent([
+            var table = CreateTableBlock([
                 [("A1", 1, 1, default), ("A2", 2, 1, default)],
                 [("B1", 1, 2, default)],
             ]);
@@ -111,12 +110,12 @@ namespace EveConv.Abstraction.Tests.DocParser.Content
             Assert.Equal(expected, actual);
         }
 
-        private static TableCellContent?[,] CreateTableData(Cell?[,] cells)
+        private static TableCellBlock?[,] CreateTableData(Cell?[,] cells)
         {
             ArgumentNullException.ThrowIfNull(cells);
             int rowsize = cells.GetLength(0);
             int colsize = cells.GetLength(1);
-            var data = new TableCellContent?[rowsize, colsize];
+            var data = new TableCellBlock?[rowsize, colsize];
             for (int r = 0; r < rowsize; r++)
             {
                 for (int c = 0; c < colsize; c++)
@@ -127,7 +126,7 @@ namespace EveConv.Abstraction.Tests.DocParser.Content
                         data[r, c] = null;
                         continue;
                     }
-                    data[r, c] = new TableCellContent(new PlainTextContent(cell.Value.Content), cell.Value.RowSpan, cell.Value.ColSpan)
+                    data[r, c] = new TableCellBlock(new PlainTextBlock(cell.Value.Content), cell.Value.RowSpan, cell.Value.ColSpan)
                     {
                         SpanSource = cell.Value.Source,
                     };
@@ -136,20 +135,20 @@ namespace EveConv.Abstraction.Tests.DocParser.Content
             return data;
         }
 
-        private static TableContent CreateTableContent(List<List<Cell?>> cells)
+        private static TableBlock CreateTableBlock(List<List<Cell?>> cells)
         {
             var content = cells.Select(r => r.Select(cell =>
             {
                 if (cell is null)
                 {
-                    return TableCellContent.EmptyCell;
+                    return TableCellBlock.EmptyCell;
                 }
-                return new TableCellContent(new PlainTextContent(cell.Value.Content), cell.Value.RowSpan, cell.Value.ColSpan)
+                return new TableCellBlock(new PlainTextBlock(cell.Value.Content), cell.Value.RowSpan, cell.Value.ColSpan)
                 {
                     SpanSource = cell.Value.Source,
                 };
             }));
-            return new TableContent(content);
+            return new TableBlock(content);
         }
     }
 }

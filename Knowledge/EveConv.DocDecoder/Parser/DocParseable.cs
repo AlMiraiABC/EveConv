@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using EveConv.Abstraction;
 using EveConv.Abstraction.DocParser;
+using EveConv.Abstraction.DocParser.Block;
 
 namespace EveConv.DocDecoder.Parser
 {
@@ -36,9 +37,9 @@ namespace EveConv.DocDecoder.Parser
             return _mimeTypeDetection.GetFileType(source);
         }
 
-        protected virtual Task<(IEnumerable<IParagraph> Paragraphs, IEnumerable<Section> Sections)> ParseAsync(Stream fileStream, CancellationToken cancellationToken = default)
+        protected virtual Task<(IEnumerable<IParagraphBlock> Paragraphs, IEnumerable<SectionBlock> Sections)> ParseAsync(Stream fileStream, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult<(IEnumerable<IParagraph>, IEnumerable<Section>)>(([], []));
+            return Task.FromResult<(IEnumerable<IParagraphBlock>, IEnumerable<SectionBlock>)>(([], []));
         }
     }
 }

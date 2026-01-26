@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace EveConv.Abstraction.DocParser.Content
+namespace EveConv.Abstraction.DocParser.Block
 {
     // A table
-    public sealed record TableContent : Paragraph<TableDataContent>
+    public sealed record TableBlock : ParagraphBlock<TableDataBlock>
     {
         /// <summary>
         /// Optional title of this link.
@@ -13,32 +13,32 @@ namespace EveConv.Abstraction.DocParser.Content
         public string? Title { get; }
 
         /// <summary>
-        /// Alias of <see cref="Paragraph{T}.Content"/>.
+        /// Alias of <see cref="ParagraphBlock{T}.Content"/>.
         /// </summary>
-        public TableDataContent Data => Content;
+        public TableDataBlock Data => Content;
 
         /// <summary>
         /// Create a table content instance.
         /// </summary>
         /// <param name="content"></param>
-        public TableContent(IEnumerable<IEnumerable<TableCellContent>> content) : base(new TableDataContent(content))
+        public TableBlock(IEnumerable<IEnumerable<TableCellBlock>> content) : base(new TableDataBlock(content))
         {
         }
 
     }
 
     // The data content in table.
-    public sealed record TableDataContent : Paragraph<TableCellContent?[,]>
+    public sealed record TableDataBlock : ParagraphBlock<TableCellBlock?[,]>
     {
-        private readonly List<List<TableCellContent>> _content;
+        private readonly List<List<TableCellBlock>> _content;
 
-        internal TableDataContent(IEnumerable<IEnumerable<TableCellContent>> content) : base(ToArray(content))
+        internal TableDataBlock(IEnumerable<IEnumerable<TableCellBlock>> content) : base(ToArray(content))
         {
             // read all to avoid conflictions of enumerator modification.
             _content = [.. content.Select(i => i.ToList())];
         }
 
-        private static TableCellContent?[,] ToArray(IEnumerable<IEnumerable<TableCellContent>> content)
+        private static TableCellBlock?[,] ToArray(IEnumerable<IEnumerable<TableCellBlock>> content)
         {
             // fill spans
             var table = content.Select(i => i.ToList()).ToList();
@@ -50,7 +50,7 @@ namespace EveConv.Abstraction.DocParser.Content
                     var cell = row[colidx];
                     if (cell is null)
                     {
-                        table[rowidx][colidx] = TableCellContent.EmptyCell;
+                        table[rowidx][colidx] = TableCellBlock.EmptyCell;
                         continue;
                     }
                     if (cell.RowSpan <= 1 && cell.ColSpan <= 1)
@@ -61,7 +61,7 @@ namespace EveConv.Abstraction.DocParser.Content
                     if (expandRowCount > 0)
                     {
                         // DO NOT Repeat
-                        table.AddRange(Enumerable.Sequence(1, expandRowCount, 1).Select(i => new List<TableCellContent>()));
+                        table.AddRange(Enumerable.Sequence(1, expandRowCount, 1).Select(i => new List<TableCellBlock>()));
                     }
                     for (int rowspanidx = 0; rowspanidx < cell.RowSpan; rowspanidx++)
                     {
@@ -75,11 +75,11 @@ namespace EveConv.Abstraction.DocParser.Content
                             }
                             if (colidx > row.Count)
                             {
-                                r.AddRange(Enumerable.Repeat(TableCellContent.EmptyCell, rowidx - row.Count));
+                                r.AddRange(Enumerable.Repeat(TableCellBlock.EmptyCell, rowidx - row.Count));
                             }
-                            TableCellContent.TableCellSpanSource src = colspanidx == 0
-                                ? TableCellContent.TableCellSpanSource.Up
-                                : TableCellContent.TableCellSpanSource.Left;
+                            TableCellBlock.TableCellSpanSource src = colspanidx == 0
+                                ? TableCellBlock.TableCellSpanSource.Up
+                                : TableCellBlock.TableCellSpanSource.Left;
                             r.Insert(colidx + colspanidx, SpannedCell(src));
                         }
                     }
@@ -87,23 +87,23 @@ namespace EveConv.Abstraction.DocParser.Content
             }
             // build grid.
             var maxcols = table.Max(i => i.Count);
-            var grid = new TableCellContent?[table.Count, maxcols];
+            var grid = new TableCellBlock?[table.Count, maxcols];
             for (int i = 0; i < table.Count; i++)
             {
                 for (int j = 0; j < table[i].Count; j++)
                 {
-                    grid[i, j] = table[i][j] ?? TableCellContent.EmptyCell;
+                    grid[i, j] = table[i][j] ?? TableCellBlock.EmptyCell;
                 }
             }
             return grid;
 
-            static TableCellContent SpannedCell(TableCellContent.TableCellSpanSource source)
+            static TableCellBlock SpannedCell(TableCellBlock.TableCellSpanSource source)
             {
-                return TableCellContent.EmptyCell with { SpanSource = source };
+                return TableCellBlock.EmptyCell with { SpanSource = source };
             }
         }
 
-        public TableCellContent?[,] ToArray()
+        public TableCellBlock?[,] ToArray()
         {
             return ToArray(this._content);
         }
@@ -112,14 +112,14 @@ namespace EveConv.Abstraction.DocParser.Content
     /// <summary>
     /// A cell content in table data.
     /// </summary>
-    public sealed record TableCellContent : Paragraph<IParagraph>
+    public sealed record TableCellBlock : ParagraphBlock<IParagraphBlock>
     {
-        public readonly static TableCellContent EmptyCell = new(new PlainTextContent(string.Empty));
+        public readonly static TableCellBlock EmptyCell = new(new PlainTextBlock(string.Empty));
 
         public TableCellSpanSource SpanSource = TableCellSpanSource.None;
         public int RowSpan { get; }
         public int ColSpan { get; }
-        public TableCellContent(IParagraph content, int rowSpan = 1, int colSpan = 1) : base(content)
+        public TableCellBlock(IParagraphBlock content, int rowSpan = 1, int colSpan = 1) : base(content)
         {
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rowSpan);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(colSpan);

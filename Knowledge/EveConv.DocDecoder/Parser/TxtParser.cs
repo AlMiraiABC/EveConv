@@ -2,8 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using EveConv.Abstraction;
-using EveConv.Abstraction.DocParser;
-using EveConv.Abstraction.DocParser.Content;
+using EveConv.Abstraction.DocParser.Block;
 
 namespace EveConv.DocDecoder.Parser
 {
@@ -18,12 +17,12 @@ namespace EveConv.DocDecoder.Parser
             return true;
         }
 
-        protected override async Task<(IEnumerable<IParagraph> Paragraphs, IEnumerable<Section> Sections)> ParseAsync(Stream fileStream, CancellationToken cancellationToken = default)
+        protected override async Task<(IEnumerable<IParagraphBlock> Paragraphs, IEnumerable<SectionBlock> Sections)> ParseAsync(Stream fileStream, CancellationToken cancellationToken = default)
         {
             using var reader = new StreamReader(fileStream);
             var content = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
             var paragraphs = content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
-                .Select(c => new PlainTextContent(c))
+                .Select(c => new PlainTextBlock(c))
                 .ToList();
             return (paragraphs, []);
         }

@@ -2,29 +2,29 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace EveConv.Abstraction.DocParser.Content
+namespace EveConv.Abstraction.DocParser.Block
 {
     /// <summary>
     /// A rich text.
     /// </summary>
-    public sealed record RichTextContent : Paragraph<IParagraph>
+    public sealed record RichTextBlock : ParagraphBlock<IParagraphBlock>
     {
         /// <summary>
         /// Optional raw data encoded to base64 string. E.g. images.
         /// </summary>
-        public string? Base64Data { get; set; }
+        public string? Base64Data { get; init; }
 
         /// <summary>
         /// Type of <see cref="Content"/>. E.g. html, markdown, diagram, code, formula, etc.
         /// </summary>
-        public string ContentType { get; }
+        public string ContentType { get; init; }
 
         /// <summary>
         /// Create a rich text content instance.
         /// </summary>
         /// <param name="content"><see cref="Content"/></param>
         /// <param name="contentType"><see cref="ContentType"/></param>
-        public RichTextContent(IParagraph content, string contentType) : base(content)
+        public RichTextBlock(IParagraphBlock content, string contentType) : base(content)
         {
             ContentType = contentType;
         }
