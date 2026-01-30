@@ -32,5 +32,15 @@ namespace EveConv.Abstraction.Embedder
         /// <param name="cancellationToken">A cancellation token.</param>
         /// <returns>A task contains tokens of these input texts.</returns>
         Task<long[][]> GetTokensAsync(string[] inputs, IDictionary<string, object>? context = null, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Asynchronously normalize(reduce) the specified embeddings.
+        /// </summary>
+        /// <param name="embeddings">Generated embeddings.</param>
+        /// <param name="context">Context parameters.</param>
+        /// <param name="cancellationToken">A cancellation token.</param>
+        /// <returns>A task that contains normalized embeddings.</returns>
+        /// <remarks>Reduce dimensions to <c>[inputs_length, embedding_dimension]</c></remarks>
+        Task<V[,]> NormalizeAsync(V[,,] embeddings, IDictionary<string, object>? context = null, CancellationToken cancellationToken = default);
     }
 }

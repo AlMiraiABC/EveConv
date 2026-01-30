@@ -101,6 +101,8 @@ namespace EveConv.Embedder
             return await this._tokenizer.TokenizeBatchAsync(inputs, context, cancellationToken).ConfigureAwait(false);
         }
 
+        public abstract Task<V[,]> NormalizeAsync(V[,,] embeddings, IDictionary<string, object>? context = null, CancellationToken cancellationToken = default);
+
         /// <summary>
         /// Asynchronously executes the inference session to generate embedding and converts the result to the specified type.
         /// </summary>
@@ -125,5 +127,6 @@ namespace EveConv.Embedder
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
         }
+
     }
 }
