@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/Connectors/">
+    <Project Path="Connectors/EveConv.Connectors.Onnx/EveConv.Connectors.Onnx.csproj" Id="a305a2ec-46b2-4b86-85fb-aff35459545d" />
+    <Project Path="Connectors/EveConv.Connectors/EveConv.Connectors.csproj" Id="e63ddcb8-4179-4140-8295-c89f74d5c25c" />
+  </Folder>
   <Folder Name="/Embedder/">
     <Project Path="Embedder/EveConv.Embedder/EveConv.Embedder.csproj" Id="946d3ddf-f951-454a-a33a-63d47fe042f9" />
   </Folder>
