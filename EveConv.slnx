@@ -34,9 +34,6 @@
     <Project Path="Reference/Helper/EveConv.HuggingFaceFastTokenizer.Raw/EveConv.HuggingFaceFastTokenizer.Raw.csproj" />
     <Project Path="Reference/Helper/EveConv.S3Helper/EveConv.S3Helper.csproj" Id="3b473ce7-027a-4615-a033-11583bcc0faa" />
   </Folder>
-  <Folder Name="/Reference/VectorStorage/">
-    <Project Path="Reference/VectorStorage/EveConv.VectorStorage.Qdrant/EveConv.VectorStorage.Qdrant.csproj" Id="9d0c4525-2924-40c2-b97d-48c0517749a6" />
-  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
   </Folder>
