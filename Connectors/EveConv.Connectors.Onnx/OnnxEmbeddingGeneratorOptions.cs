@@ -8,7 +8,7 @@ namespace EveConv.Connectors.Onnx
 {
     public class OnnxEmbeddingGeneratorOptions : IOptions<OnnxEmbeddingGeneratorOptions>
     {
-        
+
 
         OnnxEmbeddingGeneratorOptions IOptions<OnnxEmbeddingGeneratorOptions>.Value => this;
 
