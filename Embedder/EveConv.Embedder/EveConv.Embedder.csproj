@@ -11,4 +11,7 @@
     <ProjectReference Include="..\..\ModelExecutor\EveConv.Onnx\EveConv.Onnx.csproj" />
   </ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="$(AssemblyName).Tests"/>
+	</ItemGroup>
 </Project>
