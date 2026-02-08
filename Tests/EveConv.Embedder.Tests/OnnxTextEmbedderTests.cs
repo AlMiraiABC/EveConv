@@ -4,12 +4,13 @@ using System.Text;
 using EveConv.Abstraction.Downloader;
 using EveConv.Abstraction.ModelExecutor;
 using EveConv.Abstraction.Tokenizer;
+using EveConv.Downloader;
 using EveConv.HuggingFaceFastTokenizer;
 using EveConv.MimeType;
 using EveConv.Onnx;
 using Microsoft.ML.OnnxRuntime;
 
-namespace EveConv.Downloader.Tests
+namespace EveConv.Embedder.Tests
 {
     public class OnnxTextEmbedderTests
     {

@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using System.Text;
 using EveConv.Abstraction.ModelExecutor;
 using EveConv.Abstraction.Tokenizer;
-using EveConv.Embedder;
 using EveConv.Onnx;
 
-namespace EveConv.Downloader.Tests
+namespace EveConv.Embedder.Tests
 {
     /// <summary>
     /// bge-small-zh-v1.5 embedder.

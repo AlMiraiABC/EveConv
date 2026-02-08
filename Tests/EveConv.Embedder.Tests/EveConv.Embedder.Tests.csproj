@@ -4,7 +4,6 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<OutputType>Exe</OutputType>
-		<RootNamespace>EveConv.Downloader.Tests</RootNamespace>
 		<TargetFramework>net10.0</TargetFramework>
 		<!--
     This template uses native xUnit.net command line options when using 'dotnet run' and
