@@ -1,27 +1,62 @@
-﻿using System.Threading.Tasks;
+﻿using System.Numerics;
+using System.Threading.Tasks;
 using EveConv.Abstraction.Embedder;
 using EveConv.Abstraction.ModelExecutor;
 using EveConv.Abstraction.Tokenizer;
 
 namespace EveConv.Embedder
 {
+    public delegate Task<V[,]> NormalizeAsyncCallback<V>(V[,,] embeddings, IDictionary<string, object>? context = null, CancellationToken cancellationToken = default)
+        where V : struct, INumber<V>;
+
     public abstract class TextEmbedder<V> : ITextEmbedder<V>, IDisposable
-        where V : struct
+        where V : struct, INumber<V>
     {
         protected readonly IModelInference _modelInference;
         protected readonly string _modelPath;
         protected readonly ITextTokenizer<long> _tokenizer;
         protected IInferenceSession? _inferenceSession;
+        protected NormalizeAsyncCallback<V> _normalizAsyncCallback;
 
         protected bool _disposed = false;
 
         protected TextEmbedder(IModelInference modelInference, string modelPath, ITextTokenizer<long> tokenizer)
+            : this(modelInference, modelPath, tokenizer, NormalizeMode.Mean)
+        {
+        }
+
+        protected TextEmbedder(IModelInference modelInference, string modelPath, ITextTokenizer<long> tokenizer,
+            NormalizeMode normalizeMode)
         {
             ArgumentNullException.ThrowIfNull(modelInference);
             ArgumentException.ThrowIfNullOrEmpty(modelPath);
             this._modelInference = modelInference;
             this._modelPath = modelPath;
             this._tokenizer = tokenizer;
+            _normalizAsyncCallback = async (embeddings, context, cancellationToken) =>
+            {
+                var normalized = NormalizeImpl<V>.Normalize(embeddings, normalizeMode);
+                var dimx = normalized.Length;
+                var dimy = normalized.Max(i => i.Length);
+                var matrix = new V[dimx, dimy];
+                for (var i = 0; i < dimx; i++)
+                {
+                    for (var j = 0; j < dimy; j++)
+                    {
+                        matrix[i, j] = normalized[i][j];
+                    }
+                }
+                return matrix;
+            };
+        }
+
+        protected TextEmbedder(IModelInference modelInference, string modelPath, ITextTokenizer<long> tokenizer,
+            NormalizeAsyncCallback<V> normalizeAsyncCallback) : this(modelInference, modelPath, tokenizer)
+        {
+            if (normalizeAsyncCallback is not null)
+            {
+                _normalizAsyncCallback = normalizeAsyncCallback;
+            }
         }
 
         /// <summary>
@@ -101,7 +136,10 @@ namespace EveConv.Embedder
             return await this._tokenizer.TokenizeBatchAsync(inputs, context, cancellationToken).ConfigureAwait(false);
         }
 
-        public abstract Task<V[,]> NormalizeAsync(V[,,] embeddings, IDictionary<string, object>? context = null, CancellationToken cancellationToken = default);
+        public virtual async Task<V[,]> NormalizeAsync(V[,,] embeddings, IDictionary<string, object>? context = null, CancellationToken cancellationToken = default)
+        {
+            return await _normalizAsyncCallback(embeddings, context, cancellationToken).ConfigureAwait(false);
+        }
 
         /// <summary>
         /// Asynchronously executes the inference session to generate embedding and converts the result to the specified type.

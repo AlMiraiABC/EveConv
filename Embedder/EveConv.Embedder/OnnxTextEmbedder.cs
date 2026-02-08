@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
 using System.Text;
 using System.Threading;
 using EveConv.Abstraction.ModelExecutor;
@@ -10,7 +11,7 @@ using EveConv.Onnx;
 namespace EveConv.Embedder
 {
     public abstract class OnnxTextEmbedder<V> : TextEmbedder<V>
-                where V : struct
+                where V : struct, INumber<V>
     {
         protected OnnxTextEmbedder(IModelInference modelInference, string modelPath, ITextTokenizer<long> tokenizer)
             : base(modelInference, modelPath, tokenizer)
