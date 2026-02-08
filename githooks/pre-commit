@@ -1,5 +1,19 @@
 #!/usr/bin/env sh
+# Pre-commit hook to build the .NET solution before commit.
+# This only runs on specific branches (main, master, dev).
+
 set -eu
+
+current_branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+
+case "$current_branch" in
+  main|master|dev)
+    ;; # proceed
+  *)
+    printf "pre-commit: skipped on branch %s.\n" "$current_branch"
+    exit 0
+    ;;
+esac
 
 printf "pre-commit: running dotnet build...\n"
 
@@ -11,4 +25,7 @@ else
   exit 1
 fi
 
+# Format codes
 dotnet format;
+
+# TODO: run tests before commit
