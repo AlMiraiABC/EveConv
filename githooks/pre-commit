@@ -26,6 +26,19 @@ else
 fi
 
 # Format codes
-dotnet format;
+printf "pre-commit: formatting changed files...\n"
+changed_files=$(git diff --cached --name-only --diff-filter=ACM | grep '\.cs$' || true)
+
+if [ -n "$changed_files" ]; then
+  for file in $changed_files; do
+    if [ -f "$file" ]; then
+      dotnet format --include "$file"
+      git add "$file" # Re-add the file to staging after formatting
+    fi
+  done
+  printf "pre-commit: formatting completed.\n"
+else
+  printf "pre-commit: no C# files changed, skipping format.\n"
+fi
 
 # TODO: run tests before commit
