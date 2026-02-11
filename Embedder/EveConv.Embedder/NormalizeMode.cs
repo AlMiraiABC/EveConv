@@ -171,11 +171,7 @@ namespace EveConv.Embedder
         private static V[] L1(V[] embedding)
         {
             var result = new V[embedding.Length];
-            var sum = V.Zero;
-            for (int i = 0; i < embedding.Length; i++)
-            {
-                sum += V.Abs(embedding[i]);
-            }
+            var sum = TensorPrimitives.SumOfMagnitudes(embedding);
             TensorPrimitives.Divide(embedding, sum, result);
             return result;
         }
@@ -183,11 +179,7 @@ namespace EveConv.Embedder
         private static V[] L2(V[] embedding)
         {
             var result = new V[embedding.Length];
-            var sum = V.Zero;
-            for (int i = 0; i < embedding.Length; i++)
-            {
-                sum += embedding[i] * embedding[i];
-            }
+            var sum = TensorPrimitives.SumOfSquares(embedding);
             var sqrt = V.CreateChecked(Math.Sqrt(double.CreateChecked(sum)));
             TensorPrimitives.Divide(embedding, sqrt, result);
             return result;
@@ -204,10 +196,8 @@ namespace EveConv.Embedder
                 var sum = TensorPrimitives.Sum(embedding);
                 s = sum / V.CreateChecked(embedding.Length);
             }
-            for (int i = 0; i < embedding.Length; i++)
-            {
-                result[i] = (embedding[i] - s) / (max - min);
-            }
+            TensorPrimitives.Subtract(embedding, s, result);
+            TensorPrimitives.Divide(result, max - min, result);
             return result;
         }
 
@@ -215,17 +205,12 @@ namespace EveConv.Embedder
         {
             var result = new V[embedding.Length];
             var mean = TensorPrimitives.Sum(embedding) / V.CreateChecked(embedding.Length);
-            var std = V.Zero;
-            for (int i = 0; i < embedding.Length; i++)
-            {
-                var diff = embedding[i] - mean;
-                std += diff * diff;
-            }
-            std = V.CreateChecked(Math.Sqrt(double.CreateChecked(std / V.CreateChecked(embedding.Length))));
-            for (int i = 0; i < embedding.Length; i++)
-            {
-                result[i] = (embedding[i] - mean) / std;
-            }
+            // x_i=(x_i-mean)/std; std=sqrt(sum((x_i-mean)^2)/n)
+            TensorPrimitives.Subtract(embedding, mean, result);
+            var sum = TensorPrimitives.SumOfSquares(result);
+            var std = V.CreateChecked(Math.Sqrt(double.CreateChecked(sum / V.CreateChecked(embedding.Length))));
+            TensorPrimitives.Subtract(embedding, mean, result);
+            TensorPrimitives.Divide(result, std, result);
             return result;
         }
 
