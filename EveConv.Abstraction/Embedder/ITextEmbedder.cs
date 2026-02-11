@@ -36,11 +36,11 @@ namespace EveConv.Abstraction.Embedder
         /// <summary>
         /// Asynchronously normalize(reduce) the specified embeddings.
         /// </summary>
-        /// <param name="embeddings">Generated embeddings.</param>
+        /// <param name="embeddings">Generated embeddings. <c>[batch_size, sequence_length, embedding_dimension]</c></param>
         /// <param name="context">Context parameters.</param>
         /// <param name="cancellationToken">A cancellation token.</param>
         /// <returns>A task that contains normalized embeddings.</returns>
-        /// <remarks>Reduce dimensions to <c>[inputs_length, embedding_dimension]</c></remarks>
+        /// <remarks>Reduce dimensions to <c>[batch_size, embedding_dimension]</c></remarks>
         Task<V[,]> NormalizeAsync(V[,,] embeddings, IDictionary<string, object>? context = null, CancellationToken cancellationToken = default);
     }
 }

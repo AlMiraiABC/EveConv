@@ -27,7 +27,7 @@ namespace EveConv.Abstraction.Embedder
         /// <param name="inputs">A set of input.</param>
         /// <param name="context">The additional context for embedding generation, can be <see langword="null"/>.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>A task that contains embedded results with shape <c>[batch_size, sequence_length]</c>.</returns>
+        /// <returns>A task that contains embedded results with shape <c>[batch_size, sequence_length, embedding_dimension]</c>.</returns>
         Task<V[,,]> BatchEmbeddingAsync(I[] inputs, IDictionary<string, object>? context = null, CancellationToken cancellationToken = default);
     }
 }
