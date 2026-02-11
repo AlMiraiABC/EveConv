@@ -14,16 +14,10 @@ namespace EveConv.Embedder.Tests
                 {
                     { 1f, 2f, 3f },
                     { 4f, 5f, 6f },
-                    { 7f, 8f, 9f }
-                },
-                {
-                    { 11f, 12f, 13f },
-                    { 14f, 15f, 16f },
-                    { 17f, 18f, 19f }
                 }
             };
             var actual = NormalizeImpl<float>.Normalize(data, NormalizeMode.Max);
-            var expected = new float[][] { [3f, 6f, 9f], [13f, 16f, 19f] };
+            var expected = new float[][] { [4f, 5f, 6f] };
             Check(expected, actual);
         }
 
@@ -35,16 +29,10 @@ namespace EveConv.Embedder.Tests
                 {
                     { 1f, 2f, 3f },
                     { 4f, 5f, 6f },
-                    { 7f, 8f, 9f }
-                },
-                {
-                    { 11f, 12f, 13f },
-                    { 14f, 15f, 16f },
-                    { 17f, 18f, 19f }
                 }
             };
             var actual = NormalizeImpl<float>.Normalize(data, NormalizeMode.Mean);
-            var expected = new float[][] { [2f, 5f, 8f], [12f, 15f, 18f] };
+            var expected = new float[][] { [2.5f, 3.5f, 4.5f] };
             Check(expected, actual);
         }
 
@@ -56,16 +44,10 @@ namespace EveConv.Embedder.Tests
                 {
                     { 1f, 2f, 3f },
                     { 4f, 5f, 6f },
-                    { 7f, 8f, 9f }
-                },
-                {
-                    { 11f, 12f, 13f },
-                    { 14f, 15f, 16f },
-                    { 17f, 18f, 19f }
                 }
             };
             var actual = NormalizeImpl<float>.Normalize(data, NormalizeMode.Sum);
-            var expected = new float[][] { [6f, 15f, 24f], [36f, 45f, 54f] };
+            var expected = new float[][] { [5f, 7f, 9f] };
             Check(expected, actual);
         }
 
@@ -77,16 +59,10 @@ namespace EveConv.Embedder.Tests
                 {
                     { 1f, 2f, 3f },
                     { 4f, 5f, 6f },
-                    { 7f, 8f, 9f }
-                },
-                {
-                    { 11f, 12f, 13f },
-                    { 14f, 15f, 16f },
-                    { 17f, 18f, 19f }
                 }
             };
             var actual = NormalizeImpl<float>.Normalize(data, NormalizeMode.MeanSquareRootTokensLength);
-            var expected = new float[][] { [3.4641018f, 8.6602545f, 13.856407f], [20.78461f, 25.980762f, 31.176914f] };
+            var expected = new float[][] { [3.5355339f, 4.9497475f, 6.3639610f] };
             Check(expected, actual);
         }
 
@@ -122,17 +98,11 @@ namespace EveConv.Embedder.Tests
                 {
                     { 1f, 2f, 3f },
                     { 4f, 5f, 6f },
-                    { 7f, 8f, 9f }
-                },
-                {
-                    { 11f, 12f, 13f },
-                    { 14f, 15f, 16f },
-                    { 17f, 18f, 19f }
                 }
             };
             var actual = NormalizeImpl<float>.Normalize(data, NormalizeMode.Mean | NormalizeMode.L1);
-            // X = 15f; X = 45f;
-            var expected = new float[][] { [0.1333333f, 0.33333333f, 0.5333333f], [0.2666666f, 0.33333333f, 0.4f] };
+            // X = 10.5f
+            var expected = new float[][] { [0.2380952f, 0.3333333f, 0.4285714f] };
             Check(expected, actual);
         }
 
@@ -144,17 +114,11 @@ namespace EveConv.Embedder.Tests
                 {
                     { 1f, 2f, 3f },
                     { 4f, 5f, 6f },
-                    { 7f, 8f, 9f }
-                },
-                {
-                    { 11f, 12f, 13f },
-                    { 14f, 15f, 16f },
-                    { 17f, 18f, 19f }
                 }
             };
             var actual = NormalizeImpl<float>.Normalize(data, NormalizeMode.Mean | NormalizeMode.L2);
-            // X = 9.643650760f; X = 26.324893162f;
-            var expected = new float[][] { [0.2073903f, 0.5184758f, 0.8295614f], [0.4558423f, 0.5698029f, 0.68376346f] };
+            // X = 6.2249498f;
+            var expected = new float[][] { [0.40160966f, 0.5622535f, 0.7228974f] };
             Check(expected, actual);
         }
 
@@ -166,16 +130,10 @@ namespace EveConv.Embedder.Tests
                 {
                     { 1f, 2f, 3f },
                     { 4f, 5f, 6f },
-                    { 7f, 8f, 9f }
-                },
-                {
-                    { 11f, 12f, 13f },
-                    { 14f, 15f, 16f },
-                    { 17f, 18f, 19f }
                 }
             };
             var actual = NormalizeImpl<float>.Normalize(data, NormalizeMode.Mean | NormalizeMode.MinMaxScalling01);
-            var expected = new float[][] { [0f, 0.5f, 1f], [0f, 0.5f, 1f] };
+            var expected = new float[][] { [0f, 0.5f, 1f]};
             Check(expected, actual);
         }
 
@@ -187,16 +145,10 @@ namespace EveConv.Embedder.Tests
                 {
                     { 1f, 2f, 3f },
                     { 4f, 5f, 6f },
-                    { 7f, 8f, 9f }
-                },
-                {
-                    { 11f, 12f, 13f },
-                    { 14f, 15f, 16f },
-                    { 17f, 18f, 19f }
                 }
             };
             var actual = NormalizeImpl<float>.Normalize(data, NormalizeMode.Mean | NormalizeMode.MinMaxScallingMean);
-            var expected = new float[][] { [-0.5f, 0f, 0.5f], [-0.5f, 0f, 0.5f] };
+            var expected = new float[][] { [-0.5f, 0f, 0.5f] };
             Check(expected, actual);
         }
 
@@ -208,17 +160,11 @@ namespace EveConv.Embedder.Tests
                 {
                     { 1f, 2f, 3f },
                     { 4f, 5f, 6f },
-                    { 7f, 8f, 9f }
-                },
-                {
-                    { 11f, 12f, 13f },
-                    { 14f, 15f, 16f },
-                    { 17f, 18f, 19f }
                 }
             };
             var actual = NormalizeImpl<float>.Normalize(data, NormalizeMode.Mean | NormalizeMode.ZScore);
-            // STD = 2.4494897f; STD = 2.4494897f;
-            var expected = new float[][] { [-1.22474487f, 0f, 1.22474487f], [-1.22474487f, 0f, 1.22474487f] };
+            // STD = 0.81649659f
+            var expected = new float[][] { [-1.22474485f, 0f, 1.22474485f]};
             Check(expected, actual);
         }
     }

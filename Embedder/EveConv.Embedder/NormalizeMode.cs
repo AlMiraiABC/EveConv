@@ -122,7 +122,7 @@ namespace EveConv.Embedder
             var result = new V[embedding.Lengths[1]];
             for (int i = 0; i < result.Length; i++)
             {
-                result[i] = Tensor.Max(embedding.Slice([new NRange(i..(i + 1)), new NRange(0..)]));
+                result[i] = Tensor.Max(embedding.Slice([new NRange(0..), new NRange(i..(i + 1))]));
             }
             return result;
         }
@@ -134,7 +134,7 @@ namespace EveConv.Embedder
                 throw new ArgumentException($"Embedding tensor rank must be 2, but got {embedding.Rank}");
             }
             var result = Sum(embedding);
-            var y = (double)embedding.Lengths[1];
+            var y = (double)embedding.Lengths[0];
             if (sqrt)
             {
                 if (typeof(V) == typeof(double))
@@ -159,7 +159,7 @@ namespace EveConv.Embedder
             var result = new V[embedding.Lengths[1]];
             for (int i = 0; i < result.Length; i++)
             {
-                result[i] = Tensor.Sum(embedding.Slice([new NRange(i..(i + 1)), new NRange(0..)]));
+                result[i] = Tensor.Sum(embedding.Slice([new NRange(0..), new NRange(i..(i + 1))]));
             }
             return result;
         }
