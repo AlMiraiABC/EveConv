@@ -42,6 +42,10 @@ namespace EveConv.Onnx
                 return [];
             }
             var length = arr.Length;
+            if(length == 0)
+            {
+                return [];
+            }
             var result = new T[length];
             Buffer.BlockCopy(arr, 0, result, 0, length * Unsafe.SizeOf<T>());
             return result;
