@@ -12,8 +12,8 @@ from util import write_tensor
 
 load_dotenv()
 
-INFILE = "output/baai-bge-m3-simple-inputs-info.data"
-OUTFILE = "output/baai-bge-m3-simple-outputs-info.data"
+INFILE = "output/qwen3-embedding-inputs-info.data"
+OUTFILE = "output/qwen3-embedding-outputs-info.data"
 MODEL_ID = "Qwen/Qwen3-Embedding-0.6B"
 
 local_model_dir = snapshot_download(
@@ -36,6 +36,7 @@ def last_token_pool(last_hidden_states: Tensor, attention_mask: Tensor) -> Tenso
 
 
 input_texts = [
+    "Hello world!",
     "中国首都是北京.",
     "Gravity is a force that attracts two bodies towards each other. It gives weight to physical objects and is responsible for the movement of planets around the sun.",
 ]
@@ -53,7 +54,7 @@ model: Qwen3Model = AutoModel.from_pretrained(
     # attn_implementation="flash_attention_2",
     dtype=torch.float16,
     local_files_only=True,
-).cuda()
+)#.cuda()
 
 max_length = 8192
 
