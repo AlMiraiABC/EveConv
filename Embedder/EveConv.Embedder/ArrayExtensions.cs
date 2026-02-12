@@ -1,9 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace EveConv.Embedder
 {
+    public enum PaddingSide
+    {
+        Left, Right
+    }
+
     public static class ArrayExtensions
     {
         /// <summary>
@@ -11,19 +18,39 @@ namespace EveConv.Embedder
         /// </summary>
         /// <typeparam name="V">Type of array item.</typeparam>
         /// <param name="value">The specified array.</param>
+        /// <param name="paddingSide">Padding side to fill the default value.</param>
         /// <returns>Matrix array.</returns>
-        public static V[,] ToMatrix<V>(this V[][] value)
+        public static V[,] ToMatrix<V>(this V[][] value, PaddingSide paddingSide = PaddingSide.Right, V? defaultValue = default)
         {
             var d0 = value.Length;
             var d1 = value.Max(i => i.Length);
             var matrix = new V[d0, d1];
-            for (var i = 0; i < value.Length; i++)
+            MemoryMarshal.CreateSpan(ref Unsafe.As<byte, V?>(ref MemoryMarshal.GetArrayDataReference(matrix)), matrix.Length)
+                .Fill(defaultValue);
+            switch (paddingSide)
             {
-                var v = value[i];
-                for (var j = 0; j < v.Length; j++)
-                {
-                    matrix[i, j] = v[j];
-                }
+                case PaddingSide.Right:
+                    for (var i = 0; i < value.Length; i++)
+                    {
+                        var v = value[i];
+                        for (var j = 0; j < v.Length; j++)
+                        {
+                            matrix[i, j] = v[j];
+                        }
+                    }
+                    break;
+                case PaddingSide.Left:
+                    for (var i = value.Length - 1; i >= 0; i--)
+                    {
+                        var v = value[i];
+                        for (var j = v.Length - 1; j >= 0; j--)
+                        {
+                            matrix[i, j] = v[j];
+                        }
+                    }
+                    break;
+                default:
+                    break;
             }
             return matrix;
         }
@@ -33,24 +60,48 @@ namespace EveConv.Embedder
         /// </summary>
         /// <typeparam name="V">Type of array item.</typeparam>
         /// <param name="value">The specified array.</param>
+        /// <param name="paddingSide">Padding side to fill the default value.</param>
         /// <returns>Matrix array.</returns>
-        public static V[,,] ToMatrix<V>(this V[][][] value)
+        public static V[,,] ToMatrix<V>(this V[][][] value, PaddingSide paddingSide = PaddingSide.Right, V? defaultValue = default)
         {
             var d0 = value.Length;
             var d1 = MaxLength(value);
             var d2 = value.Max(MaxLength);
             var matrix = new V[d0, d1, d2];
-            for (var i = 0; i < value.Length; i++)
+            MemoryMarshal.CreateSpan(ref Unsafe.As<byte, V?>(ref MemoryMarshal.GetArrayDataReference(matrix)), matrix.Length)
+                .Fill(defaultValue);
+            switch (paddingSide)
             {
-                var v = value[i];
-                for (var j = 0; j < v.Length; j++)
-                {
-                    var w = v[j];
-                    for (var k = 0; k < w.Length; k++)
+                case PaddingSide.Right:
+                    for (var i = 0; i < value.Length; i++)
                     {
-                        matrix[i, j, k] = w[k];
+                        var v = value[i];
+                        for (var j = 0; j < v.Length; j++)
+                        {
+                            var w = v[j];
+                            for (var k = 0; k < w.Length; k++)
+                            {
+                                matrix[i, j, k] = w[k];
+                            }
+                        }
                     }
-                }
+                    break;
+                case PaddingSide.Left:
+                    for (var i = value.Length - 1; i >= 0; i--)
+                    {
+                        var v = value[i];
+                        for (var j = v.Length - 1; j >= 0; j--)
+                        {
+                            var w = v[j];
+                            for (var k = w.Length - 1; k >= 0; k--)
+                            {
+                                matrix[i, j, k] = w[k];
+                            }
+                        }
+                    }
+                    break;
+                default:
+                    break;
             }
             return matrix;
 

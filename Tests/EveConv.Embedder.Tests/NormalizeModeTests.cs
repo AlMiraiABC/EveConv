@@ -67,6 +67,21 @@ namespace EveConv.Embedder.Tests
         }
 
         [Fact]
+        public void PadLeftLast_ShouldReturnPadLeftLast_Success()
+        {
+            var data = new float[,,]
+            {
+                {
+                    { 1f, 2f, 3f },
+                    { 4f, 5f, 6f },
+                }
+            };
+            var actual = NormalizeImpl<float>.Normalize(data, NormalizeMode.PadLeftLast);
+            var expected = new float[][] { [4f, 5f, 6f] };
+            Check(expected, actual);
+        }
+
+        [Fact]
         public void Empty_ShouldReturnEmpty_Success()
         {
             var data = new float[,,] { };
@@ -133,7 +148,7 @@ namespace EveConv.Embedder.Tests
                 }
             };
             var actual = NormalizeImpl<float>.Normalize(data, NormalizeMode.Mean | NormalizeMode.MinMaxScalling01);
-            var expected = new float[][] { [0f, 0.5f, 1f]};
+            var expected = new float[][] { [0f, 0.5f, 1f] };
             Check(expected, actual);
         }
 
@@ -164,7 +179,7 @@ namespace EveConv.Embedder.Tests
             };
             var actual = NormalizeImpl<float>.Normalize(data, NormalizeMode.Mean | NormalizeMode.ZScore);
             // STD = 0.81649659f
-            var expected = new float[][] { [-1.22474485f, 0f, 1.22474485f]};
+            var expected = new float[][] { [-1.22474485f, 0f, 1.22474485f] };
             Check(expected, actual);
         }
     }
