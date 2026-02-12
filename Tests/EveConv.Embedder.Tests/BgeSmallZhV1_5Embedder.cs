@@ -50,10 +50,5 @@ namespace EveConv.Embedder.Tests
             var typeIds = new long[dim0, dim1];
             return typeIds;
         }
-
-        public override Task<float[,]> NormalizeAsync(float[,,] embeddings, IDictionary<string, object>? context = null, CancellationToken cancellationToken = default)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
