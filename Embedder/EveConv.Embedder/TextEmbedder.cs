@@ -20,13 +20,8 @@ namespace EveConv.Embedder
 
         protected bool _disposed = false;
 
-        protected TextEmbedder(IModelInference modelInference, string modelPath, ITextTokenizer<long> tokenizer)
-            : this(modelInference, modelPath, tokenizer, NormalizeMode.Mean)
-        {
-        }
-
         protected TextEmbedder(IModelInference modelInference, string modelPath, ITextTokenizer<long> tokenizer,
-            NormalizeMode normalizeMode)
+            NormalizeMode normalizeMode = NormalizeMode.Mean)
         {
             ArgumentNullException.ThrowIfNull(modelInference);
             ArgumentException.ThrowIfNullOrEmpty(modelPath);

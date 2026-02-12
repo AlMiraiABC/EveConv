@@ -13,8 +13,8 @@ namespace EveConv.Embedder
     public abstract class OnnxTextEmbedder<V> : TextEmbedder<V>
                 where V : struct, INumber<V>
     {
-        protected OnnxTextEmbedder(IModelInference modelInference, string modelPath, ITextTokenizer<long> tokenizer)
-            : base(modelInference, modelPath, tokenizer)
+        protected OnnxTextEmbedder(IModelInference modelInference, string modelPath, ITextTokenizer<long> tokenizer, NormalizeMode normalizeMode = NormalizeMode.Mean)
+            : base(modelInference, modelPath, tokenizer, normalizeMode)
         {
         }
 

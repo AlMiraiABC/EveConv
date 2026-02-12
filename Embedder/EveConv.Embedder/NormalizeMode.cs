@@ -31,6 +31,15 @@ namespace EveConv.Embedder
         /// Calculates the sum across all token embeddings.
         /// </summary>
         Sum = 0x04,
+        /// <summary>
+        /// Get the last token embedding.
+        /// </summary>
+        /// <remarks>
+        ///     <para>Used for decoder-only model commonly, such as gtp, qwen.</para>
+        ///     <para>Only LEFT-PADDING is supported, such as qwen.</para>
+        ///     When RIGHT-PADDING, please remove the [PAD] embeddings by attention mask firstly.
+        /// </remarks>
+        PadLeftLast = 0x05,
 
         /// <summary>
         /// Scalling to <c>1</c> with Manhattan Distance.
@@ -60,7 +69,7 @@ namespace EveConv.Embedder
     }
 
 #pragma warning disable SYSLIB5001 // 类型仅用于评估，在将来的更新中可能会被更改或删除。取消此诊断以继续。
-    internal static class NormalizeImpl<V> where V : INumber<V>
+    public static class NormalizeImpl<V> where V : INumber<V>
     {
         /// <summary>
         /// 
@@ -92,6 +101,7 @@ namespace EveConv.Embedder
                     0x00 or NormalizeMode.Mean => Mean(reshape, false),
                     NormalizeMode.MeanSquareRootTokensLength => Mean(reshape, true),
                     NormalizeMode.Sum => Sum(reshape),
+                    NormalizeMode.PadLeftLast => PadLeftLast(reshape),
                     _ => throw new NotSupportedException($"Unsupported NormalizeMode: {mode}"),
                 };
                 if (hmode == 0)
@@ -113,9 +123,29 @@ namespace EveConv.Embedder
 
         #region lmode
 
-        private static V[] Max(ReadOnlyTensorSpan<V> embedding)
+        /// <see cref="NormalizeMode.PadLeftLast"/>
+        public static V[] PadLeftLast(ReadOnlyTensorSpan<V> embedding)
         {
-            if (embedding.Rank! > 2)
+            if (embedding.Rank != 2)
+            {
+                throw new ArgumentException($"Embedding tensor rank must be 2, but got {embedding.Rank}");
+            }
+            if (embedding.FlattenedLength == 0)
+            {
+                return [];
+            }
+            var result = new V[embedding.Lengths[1]];
+            var lastRow = embedding.Slice([new NRange((int)(embedding.Lengths[0] - 1)..), new NRange(0..)]);
+            for (int i = 0; i < result.Length; i++)
+            {
+                result[i] = lastRow[0,i];
+            }
+            return result;
+        }
+
+        public static V[] Max(ReadOnlyTensorSpan<V> embedding)
+        {
+            if (embedding.Rank != 2)
             {
                 throw new ArgumentException($"Embedding tensor rank must be 2, but got {embedding.Rank}");
             }
@@ -127,9 +157,9 @@ namespace EveConv.Embedder
             return result;
         }
 
-        private static V[] Mean(ReadOnlyTensorSpan<V> embedding, bool sqrt)
+        public static V[] Mean(ReadOnlyTensorSpan<V> embedding, bool sqrt)
         {
-            if (embedding.Rank! > 2)
+            if (embedding.Rank != 2)
             {
                 throw new ArgumentException($"Embedding tensor rank must be 2, but got {embedding.Rank}");
             }
@@ -150,9 +180,9 @@ namespace EveConv.Embedder
             return result;
         }
 
-        private static V[] Sum(ReadOnlyTensorSpan<V> embedding)
+        public static V[] Sum(ReadOnlyTensorSpan<V> embedding)
         {
-            if (embedding.Rank! > 2)
+            if (embedding.Rank != 2)
             {
                 throw new ArgumentException($"Embedding tensor rank must be 2, but got {embedding.Rank}");
             }
@@ -168,7 +198,7 @@ namespace EveConv.Embedder
 
         #region hmode
 
-        private static V[] L1(V[] embedding)
+        public static V[] L1(V[] embedding)
         {
             var result = new V[embedding.Length];
             var sum = TensorPrimitives.SumOfMagnitudes(embedding);
@@ -176,7 +206,7 @@ namespace EveConv.Embedder
             return result;
         }
 
-        private static V[] L2(V[] embedding)
+        public static V[] L2(V[] embedding)
         {
             var result = new V[embedding.Length];
             var sum = TensorPrimitives.SumOfSquares(embedding);
@@ -185,7 +215,7 @@ namespace EveConv.Embedder
             return result;
         }
 
-        private static V[] MinMaxScaling(V[] embedding, bool isMean)
+        public static V[] MinMaxScaling(V[] embedding, bool isMean)
         {
             var result = new V[embedding.Length];
             var max = TensorPrimitives.Max(embedding);
@@ -201,7 +231,7 @@ namespace EveConv.Embedder
             return result;
         }
 
-        private static V[] ZScore(V[] embedding)
+        public static V[] ZScore(V[] embedding)
         {
             var result = new V[embedding.Length];
             var mean = TensorPrimitives.Sum(embedding) / V.CreateChecked(embedding.Length);
