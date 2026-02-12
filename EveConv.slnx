@@ -8,7 +8,6 @@
   </Folder>
   <Folder Name="/Knowledge/">
     <Project Path="Knowledge/EveConv.DocDecoder/EveConv.DocDecoder.csproj" Id="483ae9aa-c906-4a94-a276-ece6351029d8" />
-    <Project Path="Knowledge/EveConv.Knowledge/EveConv.Knowledge.csproj" />
   </Folder>
   <Folder Name="/Memory/">
     <Project Path="Memory/EveConv.Memory/EveConv.Memory.csproj" />
@@ -51,5 +50,4 @@
     <Project Path="Tokenizer/EveConv.HuggingFaceFastTokenizer/EveConv.HuggingFaceFastTokenizer.csproj" Id="6e880fbc-d2ca-4311-97e7-39c90836e2b7" />
   </Folder>
   <Project Path="EveConv.Abstraction/EveConv.Abstraction.csproj" />
-  <Project Path="EveConv.Api/EveConv.Api.csproj" />
 </Solution>
