@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using EveConv.Cache.InMemory;
 using Microsoft.Extensions.Options;
@@ -77,6 +78,38 @@ namespace EveConv.Downloader
                 ArgumentOutOfRangeException.ThrowIfNegativeOrZero(Port.Value);
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(Port.Value, ushort.MaxValue);
             }
+        }
+
+        [return: NotNullIfNotNull(nameof(url))]
+        public static implicit operator HttpProxyConfiguration?(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return null;
+            }
+            if (!url.Contains("://"))
+            {
+                url = "http://" + url;
+            }
+            var uri = new Uri(url, UriKind.RelativeOrAbsolute);
+            var user = uri.UserInfo;
+            string? username = null, password = null;
+            if (!string.IsNullOrWhiteSpace(user))
+            {
+                var u = user.Split(':');
+                username = u[0];
+                if (u.Length > 1)
+                {
+                    password = u[1];
+                }
+            }
+            return new()
+            {
+                Host = uri.Host,
+                Port = uri.IsDefaultPort ? null : uri.Port,
+                Username = username,
+                Password = password,
+            };
         }
     }
 
