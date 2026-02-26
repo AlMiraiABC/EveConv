@@ -42,7 +42,7 @@ namespace EveConv.Onnx
                 return [];
             }
             var length = arr.Length;
-            if(length == 0)
+            if (length == 0)
             {
                 return [];
             }

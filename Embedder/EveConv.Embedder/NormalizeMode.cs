@@ -138,7 +138,7 @@ namespace EveConv.Embedder
             var lastRow = embedding.Slice([new NRange((int)(embedding.Lengths[0] - 1)..), new NRange(0..)]);
             for (int i = 0; i < result.Length; i++)
             {
-                result[i] = lastRow[0,i];
+                result[i] = lastRow[0, i];
             }
             return result;
         }
