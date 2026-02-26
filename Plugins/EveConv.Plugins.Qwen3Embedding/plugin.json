@@ -1,0 +1,84 @@
+{
+  "id": "eveconv.qwen3embedding",
+  "name": "Qwen3Embedding",
+  "version": "0.1.0",
+  "description": "Qwen3Embedding plugin for EveConv",
+  "author": "NMTsoft,EveConv",
+  "runtime": "lib",
+  "homepage": "https://github.com/AlMirai/EveConv",
+  "capibilities": [
+    "embedding"
+  ],
+  "engine": "EveConv>=0.1.0",
+  "configuration": [
+    {
+      "name": "model",
+      "type": "enum",
+      "label": "Model",
+      "description": "The embedding model to use",
+      "options": [
+        {
+          "value": "0.6b",
+          "label": "Qwen3-Embedding-0.6B"
+        }
+      ],
+      "default": "0.6b"
+    },
+    {
+      "name": "quantized",
+      "type": "enum",
+      "label": "Quantized",
+      "description": "The quantized version of the model to use",
+      "options": [
+        {
+          "value": "q4f16",
+          "label": "Q4F16"
+        }
+      ],
+      "default": "q4f16"
+    },
+    {
+      "name": "ortOptimizedSaveFolder",
+      "type": "string",
+      "label": "ORT Optimized Model Save Folder",
+      "description": "The folder where the ORT optimized model will be saved.",
+      "default": "optm"
+    },
+    {
+      "name": "ortOptimizedSaveExtension",
+      "type": "string",
+      "label": "ORT Optimized Model Save Extension",
+      "description": "The file extension for the ORT optimized model.",
+      "default": ".ort"
+    },
+    {
+      "name": "ortGraphOptimizationLevel",
+      "type": "enum",
+      "label": "ORT Graph Optimization Level",
+      "description": "The graph optimization level for ONNX Runtime.",
+      "options": [
+        {
+          "value": "ORT_DISABLE_ALL",
+          "label": "disabled"
+        },
+        {
+          "value": "ORT_ENABLE_BASIC",
+          "label": "basic"
+        },
+        {
+          "value": "ORT_ENABLE_EXTENDED",
+          "label": "extended"
+        },
+        {
+          "value": "ORT_ENABLE_LAYOUT",
+          "label": "layout"
+        },
+        {
+          "value": "ORT_ENABLE_ALL",
+          "label": "all"
+        }
+      ],
+      "default": "ORT_ENABLE_ALL"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>EveConv.Plugins.Qwen3Embedding</RootNamespace>
+    <TargetFramework>net10.0</TargetFramework>
+    <!--
+    This template uses native xUnit.net command line options when using 'dotnet run' and
+    VSTest by default when using 'dotnet test'. For more information on how to enable support
+    for Microsoft Testing Platform, please visit:
+      https://xunit.net/docs/getting-started/v3/microsoft-testing-platform
+    -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+		<PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+		<PackageReference Include="dotenv.net" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Plugins\EveConv.Plugins.Api\EveConv.Plugins.Api.csproj" />
+    <ProjectReference Include="..\..\..\Plugins\EveConv.Plugins.Qwen3Embedding\EveConv.Plugins.Qwen3Embedding.csproj" />
+    <ProjectReference Include="..\..\..\Reference\EveConv.MimeType\EveConv.MimeType.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="DataSource\embedding-1-output.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+		<None Include=".env" Condition="Exists('.env')">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+  </ItemGroup>
+
+</Project>

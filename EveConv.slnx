@@ -15,6 +15,10 @@
   <Folder Name="/ModelExecutor/">
     <Project Path="ModelExecutor/EveConv.Onnx/EveConv.Onnx.csproj" Id="f3053c5b-246a-4895-a7fc-1ee87c16ddab" />
   </Folder>
+  <Folder Name="/Plugins/">
+    <Project Path="Plugins/EveConv.Plugins.Api/EveConv.Plugins.Api.csproj" Id="7c66568a-f38e-4990-b007-de73370964f4" />
+    <Project Path="Plugins/EveConv.Plugins.Qwen3Embedding/EveConv.Plugins.Qwen3Embedding.csproj" Id="78b99336-8337-4878-826e-6bba6a2af2f3" />
+  </Folder>
   <Folder Name="/Reference/">
     <Project Path="Reference/EveConv.Downloader/EveConv.Downloader.csproj" Id="36ab8f2a-b7a5-46fd-a42f-a26609d04f10" />
     <Project Path="Reference/EveConv.GraphStorage/EveConv.GraphStorage.csproj" />
@@ -45,6 +49,9 @@
     <Project Path="Tests/EveConv.HuggingFaceFastTokenizer.Raw.Tests/EveConv.HuggingFaceFastTokenizer.Raw.Tests.csproj" Id="39b8ead9-f6a4-4163-a86e-880f899df010" />
     <Project Path="Tests/EveConv.Onnx.Tests/EveConv.Onnx.Tests.csproj" Id="20448772-1fc6-45a5-9634-8b6cfc263c54" />
     <Project Path="Tests/EveConv.S3Helper.Tests/EveConv.S3Helper.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Tests/Plugins/">
+    <Project Path="Tests/Plugins/EveConv.Plugins.Qwen3Embedding.Tests/EveConv.Plugins.Qwen3Embedding.Tests.csproj" Id="c5c722fb-a0e7-4e17-a159-bfea7f2363a4" />
   </Folder>
   <Folder Name="/Tokenizer/">
     <Project Path="Tokenizer/EveConv.HuggingFaceFastTokenizer/EveConv.HuggingFaceFastTokenizer.csproj" Id="6e880fbc-d2ca-4311-97e7-39c90836e2b7" />
