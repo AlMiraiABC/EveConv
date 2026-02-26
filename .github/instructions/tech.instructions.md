@@ -46,6 +46,9 @@ dotnet test
 
 # Clean build artifacts
 dotnet clean
+
+# Format code
+dotnet format
 ```
 
 ## Code Standards

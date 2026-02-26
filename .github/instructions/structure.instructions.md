@@ -9,29 +9,33 @@ The EveConv solution follows a clean architecture pattern with clear separation 
 
 ```sh
 EveConv/
+├── Connectors/                   # Microsoft.Extensions.AI implementations
 ├── EveConv.Abstraction/          # Core interfaces and contracts
-├── EveConv.Api/                  # Web API entry point
+├── Api/                          # Web API entry point
+├── Plugins/                      # Plugin implementations
+│   └── EveConv.Plugins.Api       # Plugin interface definitions.
 ├── Knowledge/                    # Knowledge management domain
 │   └── EveConv.DocDecder/        # Document processing service
 ├── ModelExecutor/                # Model execution implementations
 │   └── EveConv.Onnx/             # ONNX model executor service
 ├── Tokenizer/                    # Tokenizer implementations
 │   └── EveConv.HuggingFaceFastTokenizer/ # HuggingFace tokenizer service
-└── Reference/                    # Infrastructure implementations
-    ├── Cache/                    # Caching layer
-    │   ├── EveConv.Cache.InMemory/ # In-Memory cache used for development.
-    │   ├── EveConv.Cache.Redis/  # Redis cache service
-    ├── EveConv.GraphStorage/     # Graph database
-    ├── EveConv.RdbStorage/       # Relational database
-    ├── VectorStorage/            # Vector database
-    │   └── EveConv.VectorStorage.Qdrant/ # Qdrant vector database service
-    ├── FileStorage/              # File storage services
-    ├── EveConv.Downloader/       # File downloading services
-    ├── Helper/                   # Helper utilities
-    │   ├── EveConv.HuggingFaceFastTokenizer.Raw/ # HuggingFace tokenizer C-API wrapper
-    │   ├── hf-tokenizer-c/       # HuggingFace tokenizer C-API(Rust)
-    │   └── EveConv.S3Helper/     # S3 compatible storage helper
-├── Tests/                        # Unit tests for various components
+├── Reference/                    # Infrastructure implementations
+│   ├── Cache/                    # Caching layer
+│   │   ├── EveConv.Cache.InMemory/ # In-Memory cache used for development.
+│   │   └── EveConv.Cache.Redis/  # Redis cache service
+│   ├── EveConv.GraphStorage/     # Graph database
+│   ├── EveConv.MimeType/         # Mime type detector service
+│   ├── EveConv.RdbStorage/       # Relational database
+│   ├── FileStorage/              # File storage services
+│   │   ├── EveConv.FileStorage.Local/ # Get files from local disk
+│   │   └── EveConv.FileStorage.S3/ # Get files from S3 compatible storage
+│   ├── EveConv.Downloader/       # File downloading services
+│   ├── Helper/                   # Helper utilities
+│   │   ├── EveConv.HuggingFaceFastTokenizer.Raw/ # HuggingFace tokenizer C-API wrapper
+│   │   ├── hf-tokenizer-c/       # HuggingFace tokenizer C-API(Rust)
+│   │   └── EveConv.S3Helper/     # S3 compatible storage helper
+└── Tests/                        # Unit tests for various components
 ```
 
 ## Architecture Patterns
