@@ -24,12 +24,12 @@ namespace EveConv.Channel.Server
     /// </summary>
     /// <remarks>
     ///     <para>Based on ZeroMQ ROUTE+POLLING mode.</para>
-    ///     <para>Each request frames must contains {ID} {Empty} {Query(string)} {Payload(msgpack}.</para>
-    ///     <para>Each response frames must contains {ID} {Empty} {Payload(msgpack)} {Error(msgpack)}.</para>
+    ///     <para>Each request frames must contain {ID} {Empty} {RequestId} {Query(string)} {Payload(msgpack)}.</para>
+    ///     <para>Each response frames must contain {ID} {Empty} {RequestId} {Payload(msgpack)} {Error(msgpack)}.</para>
     /// </remarks>
     public class ChannelServer : IDisposable
     {
-        private const int FRAME_COUNT = 4;
+        private const int FRAME_COUNT = 5;
         private static readonly TimeSpan DEQUEUE_TIMEOUT = TimeSpan.Zero;
         private bool _disposed = false;
 
@@ -37,8 +37,8 @@ namespace EveConv.Channel.Server
         private readonly ILogger<ChannelServer> _logger;
 
         private readonly RouterSocket _router;
-        private readonly NetMQQueue<NetMQMessage> _inQueue;
-        private readonly NetMQQueue<NetMQMessage> _outQueue;
+        private readonly NetMQQueue<RequestInQueue> _inQueue;
+        private readonly NetMQQueue<ResponseOutQueue> _outQueue;
         private readonly NetMQPoller _poller;
 
         private readonly ConcurrentDictionary<string, ChannelHandler> _handlers = new(StringComparer.OrdinalIgnoreCase);
@@ -58,6 +58,8 @@ namespace EveConv.Channel.Server
             this._outQueue.ReceiveReady += OutQueueReceiveReadyHandler;
             this._poller.RunAsync(Guid.NewGuid().ToString(), true);
         }
+
+        public string BindAddress => this._router.Options.LastEndpoint ?? this._config.BindAddress;
 
         /// <summary>
         /// Add a handler with specified path to process request. If the path already exists, the handler will be replaced.
@@ -104,42 +106,35 @@ namespace EveConv.Channel.Server
         /// <summary>
         /// Event for <see cref="_inQueue.ReceiveReady"/>
         /// </summary>
-        private void InQueueReceiveReadyHandler(object? sender, NetMQQueueEventArgs<NetMQMessage> e)
+        private void InQueueReceiveReadyHandler(object? sender, NetMQQueueEventArgs<RequestInQueue> e)
         {
             while (e.Queue.TryDequeue(out var req, DEQUEUE_TIMEOUT))
             {
-                if (req is null || req.IsEmpty)
-                {
-                    continue;
-                }
-                var identity = req[0];
-                var query = _config.QueryEncoding.GetString(req[2].ToByteArray());
-                var payload = req.FrameCount > 3 ? req[3].ToByteArray() : null;
-                NetMQMessage response;
+                ResponseOutQueue response;
                 try
                 {
-                    var respPayload = DispatchHandler(query, payload).ToMsgPack();
-                    response = CreateMQMessage(identity, new NetMQFrame(respPayload), NetMQFrame.Empty);
+                    var respPayload = DispatchHandler(req.Query, req.Payload?.Buffer);
+                    response = new(req.Identity, req.RequestId, respPayload);
                 }
                 catch (HttpRequestException ex)
                 {
                     if (_logger.IsEnabled(LogLevel.Error))
                     {
                         _logger.LogError(ex, "Error occurred while processing request {query} from socket {addr}.",
-                            query, _config.BindAddress);
+                            req.Query, _config.BindAddress);
                     }
-                    var errPayload = ErrorHandler.Handle(ex).ToMsgPack();
-                    response = CreateMQMessage(identity, NetMQFrame.Empty, new NetMQFrame(errPayload));
+                    var err = ErrorHandler.Handle(ex);
+                    response = new(req.Identity, req.RequestId, null, err);
                 }
                 catch (Exception ex)
                 {
                     if (_logger.IsEnabled(LogLevel.Error))
                     {
                         _logger.LogError(ex, "Error occurred while processing request {query} from socket {addr}.",
-                            query, _config.BindAddress);
+                            req.Query, _config.BindAddress);
                     }
-                    var errPayload = ErrorHandler.Handle(ex, HttpStatusCode.InternalServerError).ToMsgPack();
-                    response = CreateMQMessage(identity, NetMQFrame.Empty, new NetMQFrame(errPayload));
+                    var err = ErrorHandler.Handle(ex, HttpStatusCode.InternalServerError);
+                    response = new(req.Identity, req.RequestId, null, err);
                 }
                 _outQueue.Enqueue(response);
             }
@@ -148,15 +143,12 @@ namespace EveConv.Channel.Server
         /// <summary>
         /// Event for <see cref="_outQueue.ReceiveReady"/>
         /// </summary>
-        private void OutQueueReceiveReadyHandler(object? sender, NetMQQueueEventArgs<NetMQMessage> e)
+        private void OutQueueReceiveReadyHandler(object? sender, NetMQQueueEventArgs<ResponseOutQueue> e)
         {
             while (e.Queue.TryDequeue(out var resp, DEQUEUE_TIMEOUT))
             {
-                if (resp is null || resp.IsEmpty)
-                {
-                    continue;
-                }
-                _router.SendMultipartMessage(resp);
+                _router.SendMultipartMessage(CreateResponseMessage(resp.Identity, resp.RequestId, resp.Payload,
+                    resp.Error));
             }
         }
 
@@ -165,6 +157,7 @@ namespace EveConv.Channel.Server
         /// </summary>
         private void RouterReceiveReadyHandler(object? sender, NetMQSocketEventArgs e)
         {
+            // <cid> <empty> <rid> <query> [payload]
             NetMQMessage? req = new();
             if (!e.Socket.TryReceiveMultipartMessage(ref req, FRAME_COUNT) || req is null || req.IsEmpty)
             {
@@ -174,19 +167,32 @@ namespace EveConv.Channel.Server
                 }
                 return;
             }
-            var id = req[0];
-            // <id> <empty> <query> [payload]
-            if (req.FrameCount is < 3 or > 4 || !req[1].IsEmpty || req[2].IsEmpty)
+            var cid = req[0];
+            if (req.FrameCount < 3)
+            {
+                if (_logger.IsEnabled(LogLevel.Warning))
+                {
+                    _logger.LogWarning("Invalid message received from socket {addr}. Missing request id.",
+                        _config.BindAddress);
+                }
+                e.Socket.SendMultipartMessage(
+                    CreateResponseMessage(cid, NetMQFrame.Empty, new(ErrorHandler.BadRequestMsgPack)));
+                return;
+            }
+            var rid = req[2];
+            if (req.FrameCount is < 4 || !req[1].IsEmpty || rid.IsEmpty)
             {
                 if (_logger.IsEnabled(LogLevel.Warning))
                 {
                     _logger.LogWarning("Invalid message received from socket {addr}.", _config.BindAddress);
                 }
                 e.Socket.SendMultipartMessage(
-                    CreateMQMessage(id, NetMQFrame.Empty, new(ErrorHandler.BadRequestMsgPack)));
+                    CreateResponseMessage(cid, rid, new(ErrorHandler.BadRequestMsgPack)));
                 return;
             }
-            _inQueue.Enqueue(req);
+            var query = _config.QueryEncoding.GetString(req[3].ToByteArray());
+            var payload = req.FrameCount > 4 ? req[4] : null;
+            _inQueue.Enqueue(new(cid, rid, query, payload));
         }
 
         /// <summary>
@@ -213,15 +219,29 @@ namespace EveConv.Channel.Server
         /// <summary>
         /// Create a zmq multipart message.
         /// </summary>
-        /// <remarks>{Identity} {Empty} {Payload...}</remarks>
-        private static NetMQMessage CreateMQMessage(NetMQFrame identity, NetMQFrame payload, NetMQFrame err)
+        /// <remarks>{Identity} {Empty} {RequestId} {Payload} {Error}</remarks>
+        private static NetMQMessage CreateResponseMessage(NetMQFrame identity, NetMQFrame requestId,
+            NetMQFrame? payload = null, NetMQFrame? err = null)
         {
             var msg = new NetMQMessage(FRAME_COUNT);
             msg.Append(identity);
             msg.AppendEmptyFrame();
-            msg.Append(payload);
-            msg.Append(err);
+            msg.Append(requestId);
+            msg.Append(payload ?? NetMQFrame.Empty);
+            msg.Append(err ?? NetMQFrame.Empty);
             return msg;
+        }
+
+        /// <summary>
+        /// Create a zmq multipart message.
+        /// </summary>
+        /// <remarks>{Identity} {Empty} {RequestId} {Payload} {Error}</remarks>
+        private static NetMQMessage CreateResponseMessage(NetMQFrame identity, NetMQFrame requestId,
+            object? payload = null, ErrorInfo? err = null)
+        {
+            return CreateResponseMessage(identity, requestId,
+                payload is null ? NetMQFrame.Empty : new(payload.ToMsgPack()),
+                err is null ? NetMQFrame.Empty : new(err.ToMsgPack()));
         }
 
         #region dispose
@@ -263,30 +283,34 @@ namespace EveConv.Channel.Server
 
         private void ClearInQueue()
         {
-            while (_inQueue.TryDequeue(out var msg, DEQUEUE_TIMEOUT))
+            while (_inQueue.TryDequeue(out var req, DEQUEUE_TIMEOUT))
             {
-                if (msg is null || msg.IsEmpty)
-                {
-                    continue;
-                }
-                var id = msg[0];
-                _router.SendMultipartMessage(CreateMQMessage(id, NetMQFrame.Empty,
+                _router.SendMultipartMessage(CreateResponseMessage(req.Identity, req.RequestId, NetMQFrame.Empty,
                     new(ErrorHandler.ServiceUnavailableMsgPack)));
             }
         }
 
         private void ClearOutQueue()
         {
-            while (_outQueue.TryDequeue(out var msg, DEQUEUE_TIMEOUT))
+            while (_outQueue.TryDequeue(out var resp, DEQUEUE_TIMEOUT))
             {
-                if (msg is null || msg.IsEmpty)
-                {
-                    continue;
-                }
-                _router.SendMultipartMessage(msg);
+                _router.SendMultipartMessage(CreateResponseMessage(resp.Identity, resp.RequestId, resp.Payload,
+                    resp.Error));
             }
         }
 
         #endregion
+
+        private record struct RequestInQueue(
+            NetMQFrame Identity,
+            NetMQFrame RequestId,
+            string Query,
+            NetMQFrame? Payload = null);
+
+        private record struct ResponseOutQueue(
+            NetMQFrame Identity,
+            NetMQFrame RequestId,
+            object? Payload = null,
+            ErrorInfo? Error = null);
     }
 }

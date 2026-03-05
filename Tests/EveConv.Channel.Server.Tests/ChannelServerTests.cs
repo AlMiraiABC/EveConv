@@ -10,7 +10,14 @@ namespace EveConv.Channel.Server.Tests
 {
     public class ChannelServerTests
     {
-        private readonly ChannelServer server = new(new());
+        private readonly ChannelServer server;
+        private readonly string address;
+
+        public ChannelServerTests()
+        {
+            server = new(new());
+            address = server.BindAddress;
+        }
 
         [Fact]
         public void RegisterHandler_Unexists_Success()
@@ -59,12 +66,14 @@ namespace EveConv.Channel.Server.Tests
         public void Handle_Ping_Success()
         {
             const string path = "ping";
-            using var req = new RequestSocket(new ChannelServerConfig().BindAddress);
-            req.SendFrame(path, false);
+            var rid = Guid.NewGuid().ToString();
+            using var req = new RequestSocket(address);
+            req.SendMoreFrame(rid).SendFrame(path);
             var resp = req.ReceiveMultipartMessage();
-            Assert.Equal(2, resp.FrameCount);
-            Assert.Equal("pong", Deserialize<string>(resp[0].Buffer)); // body
-            Assert.True(resp[1].IsEmpty); // error
+            Assert.Equal(3, resp.FrameCount);
+            Assert.Equal(rid, resp[0].ConvertToString(Encoding.UTF8));
+            Assert.Equal("pong", Deserialize<string>(resp[1].Buffer)); // body
+            Assert.True(resp[2].IsEmpty); // error
         }
 
         [Fact]
@@ -73,13 +82,14 @@ namespace EveConv.Channel.Server.Tests
             const string path = "/test/handler";
             server.RegisterHandler(path,
                 (p, b) => Deserialize<string>(b!.Value) + " World");
-            using var req = new RequestSocket(new ChannelServerConfig().BindAddress);
-            req.SendFrame(path, true);
-            req.SendFrame(Serialize("Hello"), false);
+            var rid = Guid.NewGuid().ToString();
+            using var req = new RequestSocket(address);
+            req.SendMoreFrame(rid).SendMoreFrame(path).SendFrame(Serialize("Hello"));
             var resp = req.ReceiveMultipartMessage();
-            Assert.Equal(2, resp.FrameCount);
-            Assert.Equal("Hello World", Deserialize<string>(resp[0].Buffer));
-            Assert.True(resp[1].IsEmpty);
+            Assert.Equal(3, resp.FrameCount);
+            Assert.Equal(rid, resp[0].ConvertToString(Encoding.UTF8));
+            Assert.Equal("Hello World", Deserialize<string>(resp[1].Buffer));
+            Assert.True(resp[2].IsEmpty);
         }
 
         [Fact]
@@ -87,12 +97,14 @@ namespace EveConv.Channel.Server.Tests
         {
             const string path = "/test/handler";
             server.RegisterHandler(path, (p, b) => throw new NotSupportedException(p));
-            using var req = new RequestSocket(new ChannelServerConfig().BindAddress);
-            req.SendFrame(path, false);
+            var rid = Guid.NewGuid().ToString();
+            using var req = new RequestSocket(address);
+            req.SendMoreFrame(rid).SendFrame(path);
             var resp = req.ReceiveMultipartMessage();
-            Assert.Equal(2, resp.FrameCount);
-            Assert.True(resp[0].IsEmpty);
-            var actual = Deserialize<ErrorInfo>(resp[1].Buffer);
+            Assert.Equal(3, resp.FrameCount);
+            Assert.Equal(rid, resp[0].ConvertToString(Encoding.UTF8));
+            Assert.True(resp[1].IsEmpty);
+            var actual = Deserialize<ErrorInfo>(resp[2].Buffer);
             Assert.NotNull(actual);
             Assert.Equal((int)HttpStatusCode.InternalServerError, actual.ErrorCode);
             Assert.Equal(path, actual.Message);
@@ -108,12 +120,14 @@ namespace EveConv.Channel.Server.Tests
                 var queryPart = query.Contains('?') ? query[(query.IndexOf('?') + 1)..] : "";
                 return queryPart;
             });
-            using var req = new RequestSocket(new ChannelServerConfig().BindAddress);
-            req.SendFrame($"{path}?{param}", false);
+            var rid = Guid.NewGuid().ToString();
+            using var req = new RequestSocket(address);
+            req.SendMoreFrame(rid).SendFrame($"{path}?{param}");
             var resp = req.ReceiveMultipartMessage();
-            Assert.Equal(2, resp.FrameCount);
-            Assert.Equal(param, Deserialize<string>(resp[0].Buffer)); // body contains the query parameters
-            Assert.True(resp[1].IsEmpty); // no error
+            Assert.Equal(3, resp.FrameCount);
+            Assert.Equal(rid, resp[0].ConvertToString(Encoding.UTF8));
+            Assert.Equal(param, Deserialize<string>(resp[1].Buffer)); // body contains the query parameters
+            Assert.True(resp[2].IsEmpty); // no error
         }
 
         private static readonly MessagePack.MessagePackSerializerOptions MSGPACK_SER_OPTIONS =

@@ -10,7 +10,7 @@ namespace EveConv.Channel.Server
         /// Accept the connection address.
         /// </summary>
         /// <remarks>IPC is not supported(NetMQ).</remarks>
-        public string BindAddress { get; set; } = "tcp://localhost:35875";
+        public string BindAddress { get; set; } = "tcp://localhost:0";
         /// <summary>
         /// Size of request queue. Default to <c>0</c> for unlimited.
         /// </summary>
