@@ -1,0 +1,176 @@
+using System.Net;
+using System.Text;
+using NetMQ;
+using NetMQ.Sockets;
+
+namespace EveConv.Channel.Client.Tests;
+
+public class ChannelClientTests
+{
+    [Fact]
+    public async Task SendRequestAsync_WithResponse_Success()
+    {
+        var server = new ResponseSocket("tcp://localhost:0");
+        var address = server.Options.LastEndpoint ?? throw new NullReferenceException("Cannot get endpoint");
+        var cancellationTokenSource = new CancellationTokenSource();
+        var resp = string.Empty;
+        try
+        {
+            _ = RunServer(server, "World", null, cancellationToken: cancellationTokenSource.Token);
+            using var client = new ChannelClient(new() { BindAddress = address });
+            resp = await client.SendRequestAsync<string, string>("/test", "Hello",
+                cancellationToken: cancellationTokenSource.Token);
+        }
+        finally
+        {
+            await cancellationTokenSource.CancelAsync();
+            server.Dispose();
+        }
+        Assert.NotNull(resp);
+        Assert.Equal("World", resp);
+    }
+
+    [Fact]
+    public async Task SendRequestAsync_NoResponse_Success()
+    {
+        var server = new ResponseSocket("tcp://localhost:0");
+        var address = server.Options.LastEndpoint ?? throw new NullReferenceException("Cannot get endpoint");
+        var cancellationTokenSource = new CancellationTokenSource();
+        var resp = string.Empty;
+        try
+        {
+            _ = RunServer(server, null, null, cancellationToken: cancellationTokenSource.Token);
+            using var client = new ChannelClient(new() { BindAddress = address });
+            resp = await client.SendRequestAsync<string, string>("/test", "Hello",
+                cancellationToken: cancellationTokenSource.Token);
+        }
+        finally
+        {
+            await cancellationTokenSource.CancelAsync();
+            server.Dispose();
+        }
+        Assert.True(resp is null);
+    }
+
+    [Fact]
+    public async Task SendRequestAsync_ResponseThrow_Success()
+    {
+        var server = new ResponseSocket("tcp://localhost:0");
+        var address = server.Options.LastEndpoint ?? throw new NullReferenceException("Cannot get endpoint");
+        var cancellationTokenSource = new CancellationTokenSource();
+        try
+        {
+            _ = RunServer(server, "World", null, cancellationToken: cancellationTokenSource.Token);
+            using var client = new ChannelClient(new() { BindAddress = address });
+            await Assert.ThrowsAsync<MessagePack.MessagePackSerializationException>(() =>
+                client.SendRequestAsync<string, int>("/test", "Hello",
+                    cancellationToken: cancellationTokenSource.Token));
+        }
+        finally
+        {
+            await cancellationTokenSource.CancelAsync();
+            server.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task SendRequestAsync_WithError_Success()
+    {
+        var server = new ResponseSocket("tcp://localhost:0");
+        var address = server.Options.LastEndpoint ?? throw new NullReferenceException("Cannot get endpoint");
+        var cancellationTokenSource = new CancellationTokenSource();
+        try
+        {
+            _ = RunServer(server, null, new ErrorInfo("Err", 500), cancellationToken: cancellationTokenSource.Token);
+            using var client = new ChannelClient(new() { BindAddress = address });
+            await Assert.ThrowsAnyAsync<HttpRequestException>(() => client.SendRequestAsync<string, string>("/test",
+                    "Hello",
+                    cancellationToken: cancellationTokenSource.Token),
+                (ex) =>
+                {
+                    if (ex.Message != "Err")
+                    {
+                        return "Message: " + ex.Message;
+                    }
+                    if (ex.StatusCode != HttpStatusCode.InternalServerError)
+                    {
+                        return "StatusCode: " + ex.StatusCode;
+                    }
+                    return null;
+                });
+        }
+        finally
+        {
+            await cancellationTokenSource.CancelAsync();
+            server.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task SendRequestAsync_ErrorThrow_Success()
+    {
+        var server = new ResponseSocket("tcp://localhost:0");
+        var address = server.Options.LastEndpoint ?? throw new NullReferenceException("Cannot get endpoint");
+        var cancellationTokenSource = new CancellationTokenSource();
+        try
+        {
+            _ = RunServer(server, null, 123, cancellationToken: cancellationTokenSource.Token);
+            using var client = new ChannelClient(new() { BindAddress = address });
+            await Assert.ThrowsAnyAsync<MessagePack.MessagePackSerializationException>(() =>
+                    client.SendRequestAsync<string, string>("/test",
+                        "Hello",
+                        cancellationToken: cancellationTokenSource.Token),
+                (ex) =>
+                {
+                    if (!ex.Message.Contains(nameof(ErrorInfo)))
+                    {
+                        return "Message: " + ex.Message;
+                    }
+                    return null;
+                });
+        }
+        finally
+        {
+            await cancellationTokenSource.CancelAsync();
+            server.Dispose();
+        }
+    }
+
+    private static Task RunServer(ResponseSocket server,
+        object? result = null,
+        object? err = null,
+        string query = "/test",
+        string? payload = "Hello",
+        CancellationToken cancellationToken = default)
+    {
+        return Task.Run(() =>
+        {
+            var msg = server.ReceiveMultipartMessage(5);
+            Assert.Equal(3, msg.FrameCount);
+            var reqId = msg[0];
+            Assert.Equal(query, msg[1].ConvertToString(Encoding.UTF8));
+            if (payload is null)
+            {
+                if (!msg[2].IsEmpty)
+                {
+                    result = null;
+                    err = new ErrorInfo($"Payload should be null, bug got length {msg[2].BufferSize}.", 500);
+                }
+            }
+            else
+            {
+                var actual = msg[2].Buffer.FromMsgPack<string>();
+                if (payload != actual)
+                {
+                    result = null;
+                    err = new ErrorInfo($"Payload should be {payload}, but got {actual}.", 500);
+                }
+            }
+            var send = new NetMQMessage();
+            send.Append(reqId);
+            send.Append(result is null ? NetMQFrame.Empty : new NetMQFrame("World".ToMsgPack()));
+            send.Append(err is null ? NetMQFrame.Empty : new NetMQFrame(err.ToMsgPack()));
+            server.SendMultipartMessage(send);
+        }, cancellationToken);
+    }
+}
