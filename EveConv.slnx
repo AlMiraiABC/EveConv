@@ -30,6 +30,7 @@
     <Project Path="Reference/Cache/EveConv.Cache.Redis/EveConv.Cache.Redis.csproj" />
   </Folder>
   <Folder Name="/Reference/Channel/">
+    <Project Path="Reference/Channel/EveConv.Channel.Client/EveConv.Channel.Client.csproj" />
     <Project Path="Reference/Channel/EveConv.Channel.Server/EveConv.Channel.Server.csproj" Id="1f2cba2a-d9af-4f82-baa9-efd3462da77a" />
   </Folder>
   <Folder Name="/Reference/FileStorage/">
