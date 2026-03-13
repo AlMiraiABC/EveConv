@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
+using EveConv.Channel.Common;
 using EveConv.Channel.Server;
 using NetMQ;
 using NetMQ.Sockets;

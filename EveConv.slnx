@@ -31,6 +31,7 @@
   </Folder>
   <Folder Name="/Reference/Channel/">
     <Project Path="Reference/Channel/EveConv.Channel.Client/EveConv.Channel.Client.csproj" />
+    <Project Path="Reference/Channel/EveConv.Channel.Common/EveConv.Channel.Common.csproj" />
     <Project Path="Reference/Channel/EveConv.Channel.Server/EveConv.Channel.Server.csproj" Id="1f2cba2a-d9af-4f82-baa9-efd3462da77a" />
   </Folder>
   <Folder Name="/Reference/FileStorage/">
@@ -46,6 +47,7 @@
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="Tests/EveConv.Abstraction.Tests/EveConv.Abstraction.Tests.csproj" Id="903074b3-1695-40f9-b49b-a110333d83b0" />
+    <Project Path="Tests/EveConv.Channel.Client.Tests/EveConv.Channel.Client.Tests.csproj" />
     <Project Path="Tests/EveConv.Channel.Server.Tests/EveConv.Channel.Server.Tests.csproj" Id="9f108615-e9f9-4153-b106-f3fa8e540e08" />
     <Project Path="Tests/EveConv.Downloader.Tests/EveConv.Downloader.Tests.csproj" Id="4182d8da-1dd4-4112-8e48-b03a1a87a4fc" />
     <Project Path="Tests/EveConv.Embedder.Tests/EveConv.Embedder.Tests.csproj" Id="78966aec-2b65-4ed1-b1f2-8ceb56925e5f" />

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
+using EveConv.Channel.Common;
 using NetMQ;
 
 namespace EveConv.Channel.Server
@@ -45,24 +46,5 @@ namespace EveConv.Channel.Server
         public static readonly byte[] ServiceUnavailableMsgPack = ServiceUnavailable.ToMsgPack();
 
         #endregion
-    }
-
-
-    public record ErrorInfo
-    {
-        public ErrorInfo(string message = "", HttpStatusCode statusCode = HttpStatusCode.OK)
-        {
-            Message = message;
-            ErrorCode = (int)statusCode;
-        }
-
-        public ErrorInfo(string message = "", int errorCode = 0)
-        {
-            Message = message;
-            ErrorCode = errorCode;
-        }
-
-        public string Message { get; }
-        public int ErrorCode { get; }
     }
 }

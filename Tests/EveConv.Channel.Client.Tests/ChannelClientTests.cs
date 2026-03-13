@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using EveConv.Channel.Common;
 using NetMQ;
 using NetMQ.Sockets;
 

@@ -11,5 +11,9 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="MessagePack" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EveConv.Channel.Common\EveConv.Channel.Common.csproj" />
+  </ItemGroup>
   
 </Project>
