@@ -34,7 +34,7 @@ public record StreamableFileContent : IDisposable
     public Func<Task<Stream>> GetStreamAsync { get; }
 
     /// <summary>
-    /// Inistializes a new empty instance of <see cref="StreamableFileContent"/>.
+    /// Initializes a new empty instance of <see cref="StreamableFileContent"/>.
     /// </summary>
     public StreamableFileContent()
     {
@@ -54,7 +54,7 @@ public record StreamableFileContent : IDisposable
         long fileSize,
         Func<Task<Stream>> asyncStreamDelegate,
         string? fileType = "application/octet-stream",
-        DateTimeOffset? lastWriteTimeUtc = default)
+        DateTimeOffset? lastWriteTimeUtc = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fileName);
         ArgumentNullException.ThrowIfNull(asyncStreamDelegate);
@@ -62,7 +62,7 @@ public record StreamableFileContent : IDisposable
         this.FileName = fileName;
         this.FileSize = fileSize;
         this.FileType = fileType ?? "application/octet-stream";
-        this.LastWrite = lastWriteTimeUtc.HasValue ? lastWriteTimeUtc.Value : DateTimeOffset.UtcNow;
+        this.LastWrite = lastWriteTimeUtc ?? DateTimeOffset.UtcNow;
         this.GetStreamAsync = async () =>
         {
             this._stream = await asyncStreamDelegate().ConfigureAwait(false);
