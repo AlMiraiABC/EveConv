@@ -92,7 +92,19 @@ public class ChannelClient : IDisposable
             object? response;
             try
             {
-                response = payload.IsEmpty ? null : payload.Buffer.FromMsgPack(callback.ResponseType);
+                if (payload.IsEmpty)
+                {
+                    response = null;
+                }
+                else if (callback.ResponseType == typeof(NetMQFrame))
+                {
+                    response = payload;
+                }
+                else
+                {
+                    response = payload.Buffer.FromMsgPack(callback.ResponseType);
+                    ;
+                }
             }
             catch (Exception ex)
             {
@@ -182,13 +194,17 @@ public class ChannelClient : IDisposable
                 msg.AppendEmptyFrame();
                 msg.Append(rid);
                 msg.Append(req.Item1.Query);
-                if (req.Item1.Payload is null)
+                switch (req.Item1.Payload)
                 {
-                    msg.AppendEmptyFrame();
-                }
-                else
-                {
-                    msg.Append(req.Item1.Payload.ToMsgPack());
+                    case null:
+                        msg.AppendEmptyFrame();
+                        break;
+                    case NetMQFrame p:
+                        msg.Append(p);
+                        break;
+                    default:
+                        msg.Append(req.Item1.Payload.ToMsgPack());
+                        break;
                 }
                 _sending[rid] = req.Item2;
                 _dealer.SendMultipartMessage(msg);
