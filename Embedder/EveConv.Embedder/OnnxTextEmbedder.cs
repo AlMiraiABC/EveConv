@@ -47,14 +47,6 @@ namespace EveConv.Embedder
             {
                 return new V[0, 0, 0];
             }
-            var matrixTokens = new long[inputs.Length, tokens.Max(i => i.Length)];
-            for (int i = 0; i < inputs.Length; i++)
-            {
-                for (int j = 0; j < tokens[i].Length; j++)
-                {
-                    matrixTokens[i, j] = tokens[i][j];
-                }
-            }
             var paddedTokens = PaddingTokens(tokens);
             var session = await GetOnnxInferenceSessionAsync(token: cancellationToken).ConfigureAwait(false);
             return await GenerateEmbeddingAsync(paddedTokens, session, context, cancellationToken);
