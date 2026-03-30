@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace EveConv.Channel.Server
 {
     /// <summary>
-    /// Handler to process request.
+    /// Handler to process request for REQ-RESP mode.
     /// </summary>
     /// <param name="query">Query include path and parameters.</param>
     /// <param name="payload">Request payload body.</param>
@@ -255,7 +255,7 @@ namespace EveConv.Channel.Server
             }
             if (this._poller.IsRunning)
             {
-                this._poller.Stop();
+                this._poller.StopAsync();
             }
             if (!this._poller.IsDisposed)
             {
