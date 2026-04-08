@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Connectors\EveConv.Connectors.Onnx\EveConv.Connectors.Onnx.csproj" />
     <ProjectReference Include="..\..\Embedder\EveConv.Embedder\EveConv.Embedder.csproj" />
+    <ProjectReference Include="..\..\Reference\EveConv.HuggingFace\EveConv.HuggingFace.csproj" />
     <ProjectReference Include="..\..\Reference\EveConv.MimeType\EveConv.MimeType.csproj" />
     <ProjectReference Include="..\..\Tokenizer\EveConv.HuggingFaceFastTokenizer\EveConv.HuggingFaceFastTokenizer.csproj" />
     <ProjectReference Include="..\EveConv.Plugins.Api\EveConv.Plugins.Api.csproj" />

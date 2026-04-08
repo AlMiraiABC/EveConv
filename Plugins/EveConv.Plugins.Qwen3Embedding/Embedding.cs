@@ -4,6 +4,7 @@ using System.Text;
 using EveConv.Abstraction;
 using EveConv.Connectors.Onnx;
 using EveConv.Downloader;
+using EveConv.HuggingFace;
 using EveConv.HuggingFaceFastTokenizer;
 using EveConv.MimeType;
 using EveConv.Onnx;
@@ -34,7 +35,8 @@ namespace EveConv.Plugins.Qwen3Embedding
             return embeddings[0];
         }
 
-        public async Task<Embedding<float>> GetEmbeddingAsync(string input, CancellationToken cancellationToken = default)
+        public async Task<Embedding<float>> GetEmbeddingAsync(string input,
+            CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             ArgumentException.ThrowIfNullOrEmpty(input);
@@ -53,7 +55,8 @@ namespace EveConv.Plugins.Qwen3Embedding
             return generator.GenerateAsync(input).GetAwaiter().GetResult();
         }
 
-        public async Task<GeneratedEmbeddings<Embedding<float>>> GetEmbeddingsAsync(IEnumerable<string> input, CancellationToken cancellationToken = default)
+        public async Task<GeneratedEmbeddings<Embedding<float>>> GetEmbeddingsAsync(IEnumerable<string> input,
+            CancellationToken cancellationToken = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             var generator = await GetGenerator(cancellationToken);
@@ -117,61 +120,36 @@ namespace EveConv.Plugins.Qwen3Embedding
 
         private async Task DownloadModelFile(CancellationToken cancellationToken = default)
         {
-            var repoName = $"onnx-community/Qwen3-Embedding-{_config.Model}-ONNX";
-            var resourcePath = Path.Combine(Context.InstallPath, RES_FOLDER);
-            if (!Directory.Exists(resourcePath))
+            const string org = "onnx-community";
+            var repo = $"Qwen3-Embedding-{_config.Model}-ONNX";
+            var saveFolder = Path.Combine(Context.InstallPath, RES_FOLDER);
+            if (!Directory.Exists(saveFolder))
             {
-                Directory.CreateDirectory(resourcePath);
+                Directory.CreateDirectory(saveFolder);
             }
-            var modelSavePath = Path.Combine(resourcePath, _config.ModelFileName);
-            Dictionary<string, string> headers = [];
-            var hf_token = this._config.HFToken;
-            if (!string.IsNullOrWhiteSpace(hf_token))
+            var downloader = new HFDownloader(new HuggingFace.Config()
             {
-                headers.Add("Authorization", $"Bearer {hf_token}");
-            }
-            if (this._config.HFExtraHeaders is not null)
-            {
-                foreach (var (k, v) in this._config.HFExtraHeaders)
-                {
-                    headers.TryAdd(k, v);
-                }
-            }
-            var downloader = new HttpDownloader(new HttpConfiguration()
-            {
-                RequestHeaders = headers,
-                HttpProxy = this._config.HFProxy,
-            }, _loggerFactory);
-            var url = string.Format(this._config.HfDownloadUrl, repoName, $"onnx/model_{_config.Quantized}.onnx");
-            await Download(url, modelSavePath, cancellationToken);
-            var tokenizerSavePath = Path.Combine(resourcePath, _config.TokenizerJsonFileName);
-            url = string.Format(this._config.HfDownloadUrl, repoName, "tokenizer.json");
-            await Download(url, tokenizerSavePath, cancellationToken);
-
-            async Task Download(string url, string savePath, CancellationToken cancellationToken)
-            {
-                if (File.Exists(savePath))
-                {
-                    return;
-                }
-                try
-                {
-                    var response = await downloader.DownloadAsync(url, cancellationToken);
-                    using var stream = await response.GetStreamAsync();
-                    using var fileStream = new FileStream(savePath, FileMode.Create, FileAccess.Write);
-                    await stream.CopyToAsync(fileStream, cancellationToken);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to download file from url `{Url}` to path `{Path}`. Deleting partial file.", url, savePath);
-                    if (File.Exists(savePath))
+                AuthorizationToken = this._config.HFToken,
+                Endpoint = this._config.HFEndpoint,
+                Proxy = this._config.HFProxy,
+                ExtraHeaders = this._config.HFExtraHeaders,
+            });
+            var modelSavePath = Path.Combine(saveFolder, _config.ModelFileName);
+            var fp = $"onnx/model_{_config.Quantized}.onnx";
+            await downloader.DownloadFileAsync(org, repo, fp, modelSavePath, true,
+                progressEmit: _logger.IsEnabled(LogLevel.Debug)
+                    ? (_, e) =>
                     {
-                        File.Delete(savePath);
+                        _logger.LogDebug("Downloading {org}/{repo}/{file} ... {percentage}({downloaded}/{total})",
+                            e.Argument.Organization, e.Argument.Repository, e.Argument.FilePath, e.Percentage,
+                            e.DownloadedSize, e.TotalSize);
                     }
-                    throw;
-                }
-            }
+                    : null,
+                cancellationToken: cancellationToken);
+            var tokenizerSavePath = Path.Combine(saveFolder, _config.TokenizerJsonFileName);
+            fp = "tokenizer.json";
+            await downloader.DownloadFileAsync(org, repo, fp, tokenizerSavePath, true,
+                cancellationToken: cancellationToken);
         }
-
     }
 }
