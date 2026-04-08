@@ -1,44 +1,41 @@
-
 using System.Numerics.Tensors;
 using Amazon.Runtime.Internal.Transform;
 using EveConv.Plugins.Api;
 
+[assembly: CaptureConsole]
+
 namespace EveConv.Plugins.Qwen3Embedding
 {
-    public class EmbeddingTests : IAsyncLifetime
+    public class EmbeddingTests : IDisposable
     {
         private const string RES_FOLDER = "Resources";
 
-        public async ValueTask InitializeAsync()
+        public EmbeddingTests()
         {
-            //if (Directory.Exists(RES_FOLDER))
-            //{
-            //    try
-            //    {
-            //        Directory.Delete(RES_FOLDER, true);
-            //    }
-            //    catch
-            //    {
-            //        // do nothing
-            //    }
-            //}
-            dotenv.net.DotEnv.Load(new(true));
+            // ClearDownload();
+            dotenv.net.DotEnv.Load();
         }
 
-        public async ValueTask DisposeAsync()
+        public void Dispose()
         {
-            if (Directory.Exists(RES_FOLDER))
-            {
-                try
-                {
-                    Directory.Delete(RES_FOLDER, true);
-                }
-                catch
-                {
-                    // do nothing
-                }
-            }
+            // ClearDownload();
             GC.SuppressFinalize(this);
+        }
+
+        private static void ClearDownload()
+        {
+            if (!Directory.Exists(RES_FOLDER))
+            {
+                return;
+            }
+            try
+            {
+                Directory.Delete(RES_FOLDER, true);
+            }
+            catch
+            {
+                // do nothing
+            }
         }
 
         private static float[] ReadDataSource(string filename)
@@ -50,11 +47,11 @@ namespace EveConv.Plugins.Qwen3Embedding
         [Fact]
         public async Task GetEmbeddingAsync()
         {
-            var input = "Hello world!";
+            const string input = "Hello world!";
             var config = new PluginConfig()
             {
-                {"HFToken", Environment.GetEnvironmentVariable("HF_TOKEN")},
-                {"HFEndpoint", Environment.GetEnvironmentVariable("HF_ENDPOINT") }
+                { "HFToken", Environment.GetEnvironmentVariable("HF_TOKEN") },
+                { "HFEndpoint", Environment.GetEnvironmentVariable("HF_ENDPOINT") }
             };
             var context = new PluginContext("./", new(), config);
             using var plugin = new Plugin(context, null!, null);
