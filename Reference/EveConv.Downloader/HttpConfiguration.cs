@@ -10,7 +10,7 @@ namespace EveConv.Downloader
     public class HttpConfiguration : HttpHostedConfiguration, IOptions<HttpConfiguration>
     {
         /// <summary>
-        /// Host binded configurations to override default settings.
+        /// Host bound configurations to override default settings.
         /// </summary>
         public IDictionary<string, HttpHostedConfiguration> Hosts { get; init; } = new Dictionary<string, HttpHostedConfiguration>(StringComparer.OrdinalIgnoreCase);
         /// <summary>
@@ -48,14 +48,14 @@ namespace EveConv.Downloader
 
     public class HttpProxyConfiguration
     {
-        public const int DEFALT_PORT = 80;
+        public const int DEFAULT_PORT = 80;
 
         /// <summary>
         /// Domain or IP address without port of proxy.
         /// </summary>
         public string Host { get; init; } = string.Empty;
         /// <summary>
-        /// Port number of proxy. Default is <see cref="DEFALT_PORT"/>.
+        /// Port number of proxy. Default is <see cref="DEFAULT_PORT"/>.
         /// </summary>
         public int? Port { get; init; }
         /// <summary>

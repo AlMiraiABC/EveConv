@@ -34,7 +34,9 @@ namespace EveConv.Downloader
         /// <summary>
         /// Create a new instance of <see cref="HttpDownloader"/> with specified client factory.
         /// </summary>
+        /// <param name="options">Options to create HTTP downloader.</param>
         /// <param name="clientFactory">Factory to create http client with specified hosted configuration.</param>
+        /// <param name="loggerFactory">Factory to create logger.</param>
         public HttpDownloader(
             IOptions<HttpConfiguration> options,
             Func<HttpHostedConfiguration, HttpClient> clientFactory,
@@ -42,6 +44,7 @@ namespace EveConv.Downloader
         {
             ArgumentNullException.ThrowIfNull(options);
             ArgumentNullException.ThrowIfNull(clientFactory);
+            // options.Value.Valid(); // not valid, ignore null host config.
             this._logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<HttpDownloader>();
             if (options.Value.Hosts is not null)
             {
@@ -126,7 +129,7 @@ namespace EveConv.Downloader
                 }
                 if (_logger.IsEnabled(LogLevel.Warning))
                 {
-                    _logger.LogWarning("Excepted {cachetype} but got {actual} of cache key {key}. Delete and recreate it.", typeof(HttpClient), httpClient?.GetType(), uri.Host);
+                    _logger.LogWarning("Excepted {cachetype} but got {actual} of cache key {key}. Delete and recreate it.", typeof(HttpClient), httpClient.GetType(), uri.Host);
                 }
                 await this._urlCache.DeleteAsync(uri.Host, token);
             }
@@ -160,7 +163,7 @@ namespace EveConv.Downloader
                 {
                     Scheme = Uri.UriSchemeHttp,
                     Host = config.HttpProxy.Host,
-                    Port = config.HttpProxy.Port ?? HttpProxyConfiguration.DEFALT_PORT,
+                    Port = config.HttpProxy.Port ?? HttpProxyConfiguration.DEFAULT_PORT,
                 }.Uri;
                 var proxy = new WebProxy(uri)
                 {
