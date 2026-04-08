@@ -77,10 +77,14 @@ public class HFDownloader
     /// <param name="urlPath">Download url without endpoint. Not the web view url.</param>
     /// <param name="saveTo">Local file path to save.</param>
     /// <param name="forceDownload">Determine whether force download(override) if <paramref name="saveTo"/> has been exists.</param>
+    /// <param name="bufferSize">Size of buffer in bytes. Defaults to 80KB.</param>
+    /// <param name="progressEmit">Optional progress event.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A Task.</returns>
     public async Task DownloadFileAsync(string urlPath, string saveTo,
         bool forceDownload = false,
+        int bufferSize = 81920,
+        EventHandler<ProgressArgs<string>>? progressEmit = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(urlPath);
@@ -103,8 +107,23 @@ public class HFDownloader
         {
             var response = await _downloader.DownloadAsync(url, cancellationToken);
             await using var stream = await response.GetStreamAsync();
+            var totalSize = StreamLength(stream);
             await using var fileStream = new FileStream(saveTo, FileMode.Create, FileAccess.Write);
-            await stream.CopyToAsync(fileStream, cancellationToken);
+            int readSize, totalReadSize = 0;
+            var buffer = new Memory<byte>(new byte[bufferSize]);
+            var prevEmit = DateTime.Now;
+            var emitInterval = TimeSpan.FromSeconds(1);
+            while ((readSize = await stream.ReadAsync(buffer, cancellationToken)) > 0)
+            {
+                await fileStream.WriteAsync(buffer[..readSize], cancellationToken);
+                totalReadSize += readSize;
+                if (DateTime.Now - prevEmit <= emitInterval)
+                {
+                    continue;
+                }
+                progressEmit?.Invoke(this, new(totalReadSize, totalSize) { Argument = url });
+                prevEmit = DateTime.Now;
+            }
         }
         catch (Exception ex)
         {
@@ -117,6 +136,19 @@ public class HFDownloader
             }
             throw;
         }
+        return;
+
+        static long? StreamLength(Stream stream)
+        {
+            try
+            {
+                return stream.Length;
+            }
+            catch
+            {
+                return null;
+            }
+        }
     }
 
     /// <summary>
@@ -127,10 +159,13 @@ public class HFDownloader
     /// <param name="filePath">Relative path of file based on repository.</param>
     /// <param name="saveTo">Local file path to save.</param>
     /// <param name="forceDownload">Determine whether force download(override) if <paramref name="saveTo"/> has been exists.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="bufferSize">Size of buffer in bytes. Defaults to 80KB.</param>
+    /// <param name="progressEmit">Optional progress event.</param>    /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A Task.</returns>
     public async Task DownloadFileAsync(string organization, string repository, string filePath, string saveTo,
         bool forceDownload = false,
+        int bufferSize = 81920,
+        EventHandler<ProgressArgs<(string Organization, string Repository, string FilePath)>>? progressEmit = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(organization);
@@ -146,6 +181,29 @@ public class HFDownloader
             File.Delete(saveTo);
         }
         var urlPath = $"/{organization}/{repository}/resolve/main/{filePath}";
-        await DownloadFileAsync(urlPath, saveTo, forceDownload, cancellationToken);
+        await DownloadFileAsync(urlPath, saveTo, forceDownload, bufferSize,
+            progressEmit is null
+                ? null
+                : (s, e) =>
+                    progressEmit(s,
+                        new(e.DownloadedSize, e.TotalSize)
+                        {
+                            Argument = (organization, repository, filePath)
+                        }),
+            cancellationToken);
+    }
+}
+
+public readonly struct ProgressArgs<Ex>
+{
+    public long? TotalSize { get; }
+    public long? DownloadedSize { get; }
+    public double? Percentage => DownloadedSize / TotalSize;
+    public Ex? Argument { get; init; }
+
+    public ProgressArgs(long? downloadedSize, long? totalSize)
+    {
+        this.DownloadedSize = downloadedSize;
+        this.TotalSize = totalSize;
     }
 }
