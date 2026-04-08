@@ -1,4 +1,5 @@
-﻿using EveConv.Abstraction.Diagnostic;
+﻿using System.Text;
+using EveConv.Abstraction.Diagnostic;
 using EveConv.Abstraction.Tokenizer;
 using EveConv.HuggingFaceFastTokenizer.Raw;
 using Microsoft.Extensions.Logging;
@@ -19,29 +20,39 @@ namespace EveConv.HuggingFaceFastTokenizer
             options.Value.Valid();
             this._logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<HFFastTokenizer>();
             this._config = options.Value;
-            _tokenizer = HFTokenizer.FromFile(this._config.TokenizerJsonPath);
+            _tokenizer = HFTokenizer.FromFile(Path.GetFullPath(this._config.TokenizerJsonPath));
         }
 
-        public async Task<long[]> TokenizeAsync(string input, IDictionary<string, object>? context = null, CancellationToken cancellationToken = default)
+        public Task<long[]> TokenizeAsync(string input,
+            IDictionary<string, object>? context = null,
+            CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(input))
+            try
             {
-                return [];
+                if (string.IsNullOrWhiteSpace(input))
+                {
+                    return Task.FromResult<long[]>([]);
+                }
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("Tokenizing input [1] [{len}]", input.Length);
+                }
+                var opt = new TokenizeOptions(context);
+                var result = Array.ConvertAll(_tokenizer.Encode(input, opt.AddSpecialTokens), Convert.ToInt64);
+                if (_logger.IsEnabled(LogLevel.Trace))
+                {
+                    _logger.LogTrace("Tokenized result: [1] [{len}]", result.Length);
+                }
+                return Task.FromResult(result);
             }
-            if (_logger.IsEnabled(LogLevel.Debug))
+            catch (Exception exception)
             {
-                _logger.LogDebug("Tokenizing input [1] [{len}]", input.Length);
+                return Task.FromException<long[]>(exception);
             }
-            var opt = new TokenizeOptions(context);
-            var result = Array.ConvertAll(_tokenizer.Encode(input, opt.AddSpecialTokens), Convert.ToInt64);
-            if (_logger.IsEnabled(LogLevel.Trace))
-            {
-                _logger.LogTrace("Tokenized result: [1] [{len}]", result.Length);
-            }
-            return result;
         }
 
-        public async Task<long[][]> TokenizeBatchAsync(string[] inputs, IDictionary<string, object>? context = null, CancellationToken cancellationToken = default)
+        public async Task<long[][]> TokenizeBatchAsync(string[] inputs, IDictionary<string, object>? context = null,
+            CancellationToken cancellationToken = default)
         {
             if (inputs is null || inputs.Length == 0)
             {
@@ -49,7 +60,8 @@ namespace EveConv.HuggingFaceFastTokenizer
             }
             if (_logger.IsEnabled(LogLevel.Debug))
             {
-                _logger.LogDebug("Tokenizing batch inputs [{count}] [{lens}]", inputs.Length, string.Join(',', inputs.Select(i => i?.Length ?? 0)));
+                _logger.LogDebug("Tokenizing batch inputs [{count}] [{lens}]", inputs.Length,
+                    string.Join(',', inputs.Select(i => i.Length)));
             }
             var opt = new TokenizeOptions(context);
             var embeddings = _tokenizer.BatchEncode(inputs, opt.AddSpecialTokens);
@@ -60,11 +72,11 @@ namespace EveConv.HuggingFaceFastTokenizer
             }
             if (_logger.IsEnabled(LogLevel.Trace))
             {
-                _logger.LogTrace("Tokenized batch results: [{count}] [{lens}]", results.Length, string.Join(',', results.Select(r => r.Length)));
+                _logger.LogTrace("Tokenized batch results: [{count}] [{lens}]", results.Length,
+                    string.Join(',', results.Select(r => r.Length)));
             }
             return results;
         }
-
     }
 
     internal class TokenizeOptions
