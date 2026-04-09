@@ -41,6 +41,7 @@ public class ChannelClient : IDisposable
         }
         _requestQueue.ReceiveReady += RequestQueueReceiveReady;
         _dealer = new(config.BindAddress);
+        _dealer.UpdateOptions(_config);
         _dealer.Options.Identity = ClientId;
         _dealer.ReceiveReady += DealerReceiveReady;
         _poller = [_dealer, _requestQueue];
@@ -103,7 +104,6 @@ public class ChannelClient : IDisposable
                 else
                 {
                     response = payload.Buffer.FromMsgPack(callback.ResponseType);
-                    ;
                 }
             }
             catch (Exception ex)
