@@ -253,16 +253,14 @@ public class ChannelClient : IDisposable
         var sucSig = false;
         object? result = null;
         var errSig = false;
+        var timedOut = true;
         Exception? error = null;
         _requestQueue.Enqueue((new(query, request),
             new(typeof(Resp), OnSuccess, OnError)));
-        if (timeout.HasValue)
+        timedOut = !(timeout.HasValue ? ev.WaitOne(timeout.Value) : ev.WaitOne());
+        if (timedOut)
         {
-            ev.WaitOne(timeout.Value);
-        }
-        else
-        {
-            ev.WaitOne();
+            throw new TimeoutException($"Request '{query}' timed out");
         }
         if (sucSig)
         {
