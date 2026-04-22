@@ -24,31 +24,31 @@ namespace EveConv.Channel.Server.Tests
         public void RegisterHandler_Unexists_Success()
         {
             const string path = "/test/handler";
-            server.RegisterHandler(path, handler);
+            server.RegisterHandler<string, string>(path, handler);
             Assert.Contains(path, server.Handlers());
             return;
 
-            object? handler(string p, ReadOnlyMemory<byte>? b) => "TEST";
+            string? handler(string p, string? b) => "TEST";
         }
 
         [Fact]
         public void RegisterHandler_Override_Success()
         {
             const string path = "/test/handler";
-            server.RegisterHandler(path, handler1);
-            server.RegisterHandler(path, handler2);
-            Assert.Equal(server.Handlers()[path], handler2);
+            server.RegisterHandler<string, string>(path, handler1);
+            server.RegisterHandler<string, int?>(path, handler2);
+            Assert.Equal(typeof(int?), server.Handlers()[path].RespType);
             return;
 
-            object? handler1(string p, ReadOnlyMemory<byte>? b) => "TEST1";
-            object? handler2(string p, ReadOnlyMemory<byte>? b) => "TEST2";
+            string? handler1(string p, string? b) => "TEST1";
+            int? handler2(string p, string? b) => 1;
         }
 
         [Fact]
         public void UnregisterHandler_Exists_Success()
         {
             const string path = "/test/handler";
-            server.RegisterHandler(path, (p, b) => "TEST");
+            server.RegisterHandler(path, (_, _) => "TEST");
             var r = server.UnregisterHandler(path);
             Assert.True(r);
             Assert.DoesNotContain(path, server.Handlers());
@@ -68,12 +68,12 @@ namespace EveConv.Channel.Server.Tests
         {
             const string path = "ping";
             var rid = Guid.NewGuid().ToString();
-            using var req = new RequestSocket(address);
-            req.SendMoreFrame(rid).SendFrame(path);
-            var resp = req.ReceiveMultipartMessage();
+            using var client = new DealerSocket(address);
+            client.SendMoreFrame(rid).SendFrame(path);
+            var resp = client.ReceiveMultipartMessage(4);
             Assert.Equal(3, resp.FrameCount);
             Assert.Equal(rid, resp[0].ConvertToString(Encoding.UTF8));
-            Assert.Equal("pong", Deserialize<string>(resp[1].Buffer)); // body
+            Assert.Equal("pong", resp[1].Buffer.FromMsgPack<string>()); // body
             Assert.True(resp[2].IsEmpty); // error
         }
 
@@ -81,15 +81,15 @@ namespace EveConv.Channel.Server.Tests
         public void Handle_Path_Success()
         {
             const string path = "/test/handler";
-            server.RegisterHandler(path,
-                (p, b) => Deserialize<string>(b!.Value) + " World");
+            server.RegisterHandler<string, string>(path,
+                (p, b) => b + " World");
             var rid = Guid.NewGuid().ToString();
-            using var req = new RequestSocket(address);
-            req.SendMoreFrame(rid).SendMoreFrame(path).SendFrame(Serialize("Hello"));
-            var resp = req.ReceiveMultipartMessage();
+            using var client = new DealerSocket(address);
+            client.SendMoreFrame(rid).SendMoreFrame(path).SendFrame("Hello".ToMsgPack());
+            var resp = client.ReceiveMultipartMessage(3);
             Assert.Equal(3, resp.FrameCount);
             Assert.Equal(rid, resp[0].ConvertToString(Encoding.UTF8));
-            Assert.Equal("Hello World", Deserialize<string>(resp[1].Buffer));
+            Assert.Equal("Hello World", resp[1].Buffer.FromMsgPack<string>());
             Assert.True(resp[2].IsEmpty);
         }
 
@@ -97,15 +97,15 @@ namespace EveConv.Channel.Server.Tests
         public void Handle_Throw_Failed()
         {
             const string path = "/test/handler";
-            server.RegisterHandler(path, (p, b) => throw new NotSupportedException(p));
+            server.RegisterHandler(path, (p, _) => throw new NotSupportedException(p));
             var rid = Guid.NewGuid().ToString();
-            using var req = new RequestSocket(address);
-            req.SendMoreFrame(rid).SendFrame(path);
-            var resp = req.ReceiveMultipartMessage();
+            using var client = new DealerSocket(address);
+            client.SendMoreFrame(rid).SendFrame(path);
+            var resp = client.ReceiveMultipartMessage(3);
             Assert.Equal(3, resp.FrameCount);
             Assert.Equal(rid, resp[0].ConvertToString(Encoding.UTF8));
             Assert.True(resp[1].IsEmpty);
-            var actual = Deserialize<ErrorInfo>(resp[2].Buffer);
+            var actual = resp[2].Buffer.FromMsgPack<ErrorInfo>();
             Assert.NotNull(actual);
             Assert.Equal((int)HttpStatusCode.InternalServerError, actual.ErrorCode);
             Assert.Equal(path, actual.Message);
@@ -116,33 +116,19 @@ namespace EveConv.Channel.Server.Tests
         {
             const string path = "/test/query";
             const string param = "name=test&value=123";
-            server.RegisterHandler(path, (query, b) =>
+            server.RegisterHandler(path, (query, _) =>
             {
                 var queryPart = query.Contains('?') ? query[(query.IndexOf('?') + 1)..] : "";
                 return queryPart;
             });
             var rid = Guid.NewGuid().ToString();
-            using var req = new RequestSocket(address);
-            req.SendMoreFrame(rid).SendFrame($"{path}?{param}");
-            var resp = req.ReceiveMultipartMessage();
+            using var client = new DealerSocket(address);
+            client.SendMoreFrame(rid).SendFrame($"{path}?{param}");
+            var resp = client.ReceiveMultipartMessage(3);
             Assert.Equal(3, resp.FrameCount);
             Assert.Equal(rid, resp[0].ConvertToString(Encoding.UTF8));
-            Assert.Equal(param, Deserialize<string>(resp[1].Buffer)); // body contains the query parameters
+            Assert.Equal(param, resp[1].Buffer.FromMsgPack<string>()); // body contains the query parameters
             Assert.True(resp[2].IsEmpty); // no error
-        }
-
-        private static readonly MessagePack.MessagePackSerializerOptions MSGPACK_SER_OPTIONS =
-            MessagePack.Resolvers.ContractlessStandardResolver.Options.WithCompression(MessagePack
-                .MessagePackCompression.Lz4BlockArray);
-
-        private static byte[] Serialize(object? obj)
-        {
-            return MessagePack.MessagePackSerializer.Serialize(obj, MSGPACK_SER_OPTIONS);
-        }
-
-        private static T? Deserialize<T>(ReadOnlyMemory<byte> bytes)
-        {
-            return MessagePack.MessagePackSerializer.Deserialize<T?>(bytes, MSGPACK_SER_OPTIONS);
         }
     }
 }

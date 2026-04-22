@@ -18,7 +18,7 @@ namespace EveConv.Channel.Server
     /// <param name="query">Query include path and parameters.</param>
     /// <param name="payload">Request payload body.</param>
     /// <returns>Response payload body.</returns>
-    public delegate object? ChannelHandler(string query, ReadOnlyMemory<byte>? payload);
+    public delegate object? ChannelHandler(string query, object? payload);
 
     /// <summary>
     /// Channel server side to process requests.
@@ -30,8 +30,9 @@ namespace EveConv.Channel.Server
     /// </remarks>
     public class ChannelServer : IDisposable
     {
-        private const int FRAME_COUNT = 5;
+        private const int FRAME_COUNT = 4;
         private static readonly TimeSpan DEQUEUE_TIMEOUT = TimeSpan.Zero;
+        private static readonly TimeSpan POLLER_START_TIMEOUT = TimeSpan.FromSeconds(5);
         private bool _disposed = false;
 
         private readonly ChannelServerConfig _config;
@@ -42,7 +43,8 @@ namespace EveConv.Channel.Server
         private readonly NetMQQueue<ResponseOutQueue> _outQueue;
         private readonly NetMQPoller _poller;
 
-        private readonly ConcurrentDictionary<string, ChannelHandler> _handlers = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, (ChannelHandler Handler, Type? PayloadType, Type? RespType)>
+            _handlers = new(StringComparer.OrdinalIgnoreCase);
 
         public ChannelServer(ChannelServerConfig config, ILogger<ChannelServer>? logger = null)
         {
@@ -58,6 +60,7 @@ namespace EveConv.Channel.Server
             this._inQueue.ReceiveReady += InQueueReceiveReadyHandler;
             this._outQueue.ReceiveReady += OutQueueReceiveReadyHandler;
             this._poller.RunAsync(Guid.NewGuid().ToString(), true);
+            _poller.WaitForStart(POLLER_START_TIMEOUT);
         }
 
         public string BindAddress => this._router.Options.LastEndpoint ?? this._config.BindAddress;
@@ -68,11 +71,20 @@ namespace EveConv.Channel.Server
         /// <param name="path">Path of query without parameters.</param>
         /// <param name="handler">Handler callback to process request.</param>
         /// <returns><see langword="true"/> if added successfully. Otherwise, <see langword="false"/>.</returns>
-        public bool RegisterHandler(string path, ChannelHandler handler)
+        public bool RegisterHandler<Payload, Resp>(string path, Func<string, Payload?, Resp?> handler)
         {
             ArgumentNullException.ThrowIfNull(path);
             ArgumentNullException.ThrowIfNull(handler);
-            _handlers[path] = handler;
+            _handlers[path] = ((p, payload) => handler(p, (Payload?)payload), typeof(Payload), typeof(Resp));
+            return true;
+        }
+
+        public bool RegisterHandler(string path, ChannelHandler handler, Type? payloadType = null,
+            Type? respType = null)
+        {
+            ArgumentNullException.ThrowIfNull(path);
+            ArgumentNullException.ThrowIfNull(handler);
+            _handlers[path] = (handler, payloadType, respType);
             return true;
         }
 
@@ -99,7 +111,7 @@ namespace EveConv.Channel.Server
         /// Get a snapshot of all registered handlers.
         /// </summary>
         /// <returns>A dictionary of path and handler pairs.</returns>
-        public IDictionary<string, ChannelHandler> Handlers()
+        public IDictionary<string, (ChannelHandler Handler, Type? PayloadType, Type? RespType)> Handlers()
         {
             return _handlers.ToImmutableDictionary();
         }
@@ -114,7 +126,7 @@ namespace EveConv.Channel.Server
                 ResponseOutQueue response;
                 try
                 {
-                    var respPayload = DispatchHandler(req.Query, req.Payload?.Buffer);
+                    var respPayload = DispatchHandler(req.Query, req.Payload);
                     response = new(req.Identity, req.RequestId, respPayload);
                 }
                 catch (HttpRequestException ex)
@@ -158,7 +170,8 @@ namespace EveConv.Channel.Server
         /// </summary>
         private void RouterReceiveReadyHandler(object? sender, NetMQSocketEventArgs e)
         {
-            // <cid> <empty> <rid> <query> [payload]
+            // router remove empty frame automatically
+            // <cid> <rid> <query> [payload]
             NetMQMessage? req = new();
             if (!e.Socket.TryReceiveMultipartMessage(ref req, FRAME_COUNT) || req is null || req.IsEmpty)
             {
@@ -169,7 +182,7 @@ namespace EveConv.Channel.Server
                 return;
             }
             var cid = req[0];
-            if (req.FrameCount < 3)
+            if (req.FrameCount < 2)
             {
                 if (_logger.IsEnabled(LogLevel.Warning))
                 {
@@ -180,8 +193,8 @@ namespace EveConv.Channel.Server
                     CreateResponseMessage(cid, NetMQFrame.Empty, new(ErrorHandler.BadRequestMsgPack)));
                 return;
             }
-            var rid = req[2];
-            if (req.FrameCount is < 4 || !req[1].IsEmpty || rid.IsEmpty)
+            var rid = req[1];
+            if (req.FrameCount is < 3)
             {
                 if (_logger.IsEnabled(LogLevel.Warning))
                 {
@@ -191,8 +204,8 @@ namespace EveConv.Channel.Server
                     CreateResponseMessage(cid, rid, new(ErrorHandler.BadRequestMsgPack)));
                 return;
             }
-            var query = _config.QueryEncoding.GetString(req[3].ToByteArray());
-            var payload = req.FrameCount > 4 ? req[4] : null;
+            var query = _config.QueryEncoding.GetString(req[2].ToByteArray());
+            var payload = req.FrameCount > 3 ? req[3] : null;
             _inQueue.Enqueue(new(cid, rid, query, payload));
         }
 
@@ -203,18 +216,27 @@ namespace EveConv.Channel.Server
         /// <param name="payload">The request payload body in msgpack format.</param>
         /// <returns>The response payload body.</returns>
         /// <exception cref="KeyNotFoundException">Path not matched. Register it firstly.</exception>
-        private object? DispatchHandler(string query, ReadOnlyMemory<byte>? payload)
+        private object? DispatchHandler(string query, NetMQFrame? payload)
         {
             var path = query.GetPath();
             if (ReservedPath.TryHandle(path, payload, out var resp))
             {
                 return resp;
             }
-            if (_handlers.TryGetValue(path, out var handler))
+            if (!_handlers.TryGetValue(path, out var handler))
             {
-                return handler(query, payload);
+                throw new HttpRequestException("Path not found: " + path, null, HttpStatusCode.NotFound);
             }
-            throw new HttpRequestException("Path not found: " + path, null, HttpStatusCode.NotFound);
+            object? p;
+            if (handler.PayloadType is null || handler.PayloadType == typeof(NetMQFrame))
+            {
+                p = payload;
+            }
+            else
+            {
+                p = payload?.Buffer.FromMsgPack(handler.PayloadType);
+            }
+            return handler.Handler(query, p);
         }
 
         /// <summary>
@@ -226,7 +248,6 @@ namespace EveConv.Channel.Server
         {
             var msg = new NetMQMessage(FRAME_COUNT);
             msg.Append(identity);
-            msg.AppendEmptyFrame();
             msg.Append(requestId);
             msg.Append(payload ?? NetMQFrame.Empty);
             msg.Append(err ?? NetMQFrame.Empty);
@@ -241,7 +262,12 @@ namespace EveConv.Channel.Server
             object? payload = null, ErrorInfo? err = null)
         {
             return CreateResponseMessage(identity, requestId,
-                payload is null ? NetMQFrame.Empty : new(payload.ToMsgPack()),
+                payload switch
+                {
+                    null => NetMQFrame.Empty,
+                    NetMQFrame pf => pf,
+                    _ => new(payload.ToMsgPack())
+                },
                 err is null ? NetMQFrame.Empty : new(err.ToMsgPack()));
         }
 

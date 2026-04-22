@@ -12,9 +12,9 @@ namespace EveConv.Channel.Server
             {"ping", Ping },
         };
 
-        private static object Ping(string _, ReadOnlyMemory<byte>? __) => "pong";
+        private static object Ping(string _, object? __) => "pong";
 
-        public static bool TryHandle(string path, ReadOnlyMemory<byte>? payload, out object? response)
+        public static bool TryHandle(string path, object? payload, out object? response)
         {
             if (!RESERVED_HANDLER.TryGetValue(path, out var h))
             {

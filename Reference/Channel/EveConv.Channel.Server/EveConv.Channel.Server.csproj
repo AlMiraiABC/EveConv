@@ -7,9 +7,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="NetMQ" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
-		<PackageReference Include="MessagePack" />
 	</ItemGroup>
 
 	<ItemGroup>
