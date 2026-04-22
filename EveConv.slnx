@@ -3,6 +3,9 @@
     <Project Path="Connectors/EveConv.Connectors.Onnx/EveConv.Connectors.Onnx.csproj" Id="a305a2ec-46b2-4b86-85fb-aff35459545d" />
     <Project Path="Connectors/EveConv.Connectors/EveConv.Connectors.csproj" Id="e63ddcb8-4179-4140-8295-c89f74d5c25c" />
   </Folder>
+  <Folder Name="/Core/">
+    <Project Path="Core/EveConv.Core.Channel/EveConv.Core.Channel.csproj" Id="1c59e20b-e549-400c-b79c-5bf3a510dc56" />
+  </Folder>
   <Folder Name="/Embedder/">
     <Project Path="Embedder/EveConv.Embedder/EveConv.Embedder.csproj" Id="946d3ddf-f951-454a-a33a-63d47fe042f9" />
   </Folder>
@@ -50,6 +53,7 @@
     <Project Path="Tests/EveConv.Abstraction.Tests/EveConv.Abstraction.Tests.csproj" Id="903074b3-1695-40f9-b49b-a110333d83b0" />
     <Project Path="Tests/EveConv.Channel.Client.Tests/EveConv.Channel.Client.Tests.csproj" />
     <Project Path="Tests/EveConv.Channel.Server.Tests/EveConv.Channel.Server.Tests.csproj" Id="9f108615-e9f9-4153-b106-f3fa8e540e08" />
+    <Project Path="Tests/EveConv.Core.Channel.Tests/EveConv.Core.Channel.Tests.csproj" />
     <Project Path="Tests/EveConv.Downloader.Tests/EveConv.Downloader.Tests.csproj" Id="4182d8da-1dd4-4112-8e48-b03a1a87a4fc" />
     <Project Path="Tests/EveConv.Embedder.Tests/EveConv.Embedder.Tests.csproj" Id="78966aec-2b65-4ed1-b1f2-8ceb56925e5f" />
     <Project Path="Tests/EveConv.FileStorage.Local.Tests/EveConv.FileStorage.Local.Tests.csproj" Id="3f8e86d1-4c64-4320-b152-60ba0aa26503" />
