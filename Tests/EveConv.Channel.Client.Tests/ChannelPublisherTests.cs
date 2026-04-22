@@ -23,7 +23,7 @@ public class ChannelPublisherTests : IDisposable
     public void Publish_WithPayload_Success()
     {
         using var publisher = new ChannelPublisher(new()
-            { BindAddress = ">" + (_xsub.Options.LastEndpoint ?? string.Empty) });
+        { BindAddress = ">" + (_xsub.Options.LastEndpoint ?? string.Empty) });
         using var subscriber = new SubscriberSocket(">" + (_xpub.Options.LastEndpoint ?? string.Empty));
         subscriber.Subscribe("test:eve", Encoding.UTF8);
         Thread.Sleep(500);

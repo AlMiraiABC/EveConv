@@ -23,7 +23,7 @@ public class ChannelSubscriberTests : IDisposable
     public void Subscribe_WithPayload_Success()
     {
         using var subscriber = new ChannelSubscriber(new()
-            { BindAddress = ">" + (_xpub.Options.LastEndpoint ?? string.Empty) });
+        { BindAddress = ">" + (_xpub.Options.LastEndpoint ?? string.Empty) });
         using var publisher = new PublisherSocket(">" + (_xsub.Options.LastEndpoint ?? string.Empty));
         var received = new AutoResetEvent(false);
         subscriber.Subscribe<string>("Test", "Event", (i) =>
@@ -43,7 +43,7 @@ public class ChannelSubscriberTests : IDisposable
     public void Unsubscribe_Success()
     {
         using var subscriber = new ChannelSubscriber(new()
-            { BindAddress = ">" + (_xpub.Options.LastEndpoint ?? string.Empty) });
+        { BindAddress = ">" + (_xpub.Options.LastEndpoint ?? string.Empty) });
         using var publisher = new PublisherSocket(">" + (_xsub.Options.LastEndpoint ?? string.Empty));
         var received = new AutoResetEvent(false);
         subscriber.Subscribe<string>("Test", "Event", (i) =>

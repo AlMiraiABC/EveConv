@@ -22,7 +22,7 @@ namespace EveConv.Channel.Common
                 return FromMsgPack(type, data);
             }
         }
-        
+
         extension(byte[]? data)
         {
             public T? FromMsgPack<T>()
@@ -35,7 +35,7 @@ namespace EveConv.Channel.Common
                 return FromMsgPack(type, data);
             }
         }
-        
+
 
         private static object? FromMsgPack(Type type, ReadOnlyMemory<byte>? data)
         {

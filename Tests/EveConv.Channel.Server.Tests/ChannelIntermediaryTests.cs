@@ -33,7 +33,7 @@ public class ChannelIntermediaryTests : IDisposable
         Assert.Equal("Test/Event", act[0].ConvertToString(Encoding.UTF8));
         Assert.Equal("Hello World", act[1].Buffer.FromMsgPack<string>());
     }
-    
+
     [Fact]
     public void Start_Subscribe_Unmatch()
     {
