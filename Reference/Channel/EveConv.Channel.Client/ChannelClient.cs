@@ -17,7 +17,7 @@ public class ChannelClient : IDisposable
 
     private bool _disposed = false;
 
-    private const int FRAME_COUNT = 4;
+    private const int FRAME_COUNT = 3;
     private static readonly TimeSpan DEQUEUE_TIMEOUT = TimeSpan.Zero;
 
     private readonly byte[] ClientId = Guid.NewGuid().ToByteArray();
@@ -63,8 +63,8 @@ public class ChannelClient : IDisposable
                 }
                 return;
             }
-            // var cid = resp[0];
-            if (resp.FrameCount < 2)
+            // <rid> <resp> <err>
+            if (resp.FrameCount < 1)
             {
                 if (_logger.IsEnabled(LogLevel.Warning))
                 {
@@ -73,7 +73,7 @@ public class ChannelClient : IDisposable
                 }
                 return;
             }
-            var rid = resp[1].ConvertToString();
+            var rid = resp[0].ConvertToString();
             if (!_sending.TryGetValue(rid, out var callback))
             {
                 if (_logger.IsEnabled(LogLevel.Warning))
@@ -82,7 +82,7 @@ public class ChannelClient : IDisposable
                 }
                 return;
             }
-            if (resp.FrameCount < 3)
+            if (resp.FrameCount < 2)
             {
                 InvokeOnSuccess(rid, null, callback);
                 return;
@@ -90,7 +90,7 @@ public class ChannelClient : IDisposable
 
             #region response
 
-            var payload = resp[2];
+            var payload = resp[1];
             object? response;
             try
             {
@@ -125,7 +125,7 @@ public class ChannelClient : IDisposable
             ErrorInfo? err;
             try
             {
-                err = resp[3].IsEmpty ? null : resp[3].Buffer.FromMsgPack<ErrorInfo>();
+                err = resp[2].IsEmpty ? null : resp[2].Buffer.FromMsgPack<ErrorInfo>();
             }
             catch (Exception ex)
             {
@@ -185,7 +185,7 @@ public class ChannelClient : IDisposable
 
     private void RequestQueueReceiveReady(object? sender, NetMQQueueEventArgs<(Request, ResponseCallback)> e)
     {
-        while (_requestQueue.TryDequeue(out var req, DEQUEUE_TIMEOUT))
+        while (e.Queue.TryDequeue(out var req, DEQUEUE_TIMEOUT))
         {
             var rid = Guid.NewGuid().ToString("N");
             try

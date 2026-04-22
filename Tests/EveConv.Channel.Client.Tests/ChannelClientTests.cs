@@ -175,7 +175,6 @@ public class ChannelClientTests
             // <cid> <empty> <rid> <result> <err>
             var send = new NetMQMessage();
             send.Append(identity);
-            send.AppendEmptyFrame();
             send.Append(reqId);
             send.Append(result is null ? NetMQFrame.Empty : new NetMQFrame(result.ToMsgPack()));
             send.Append(err is null ? NetMQFrame.Empty : new NetMQFrame(err.ToMsgPack()));
