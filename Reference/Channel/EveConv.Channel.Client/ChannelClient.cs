@@ -16,7 +16,7 @@ public class ChannelClient : IDisposable
 
     private bool _disposed = false;
 
-    private const int FRAME_COUNT = 5;
+    private const int FRAME_COUNT = 4;
     private static readonly TimeSpan DEQUEUE_TIMEOUT = TimeSpan.Zero;
 
     private readonly byte[] ClientId = Guid.NewGuid().ToByteArray();
@@ -50,7 +50,6 @@ public class ChannelClient : IDisposable
 
     private void DealerReceiveReady(object? sender, NetMQSocketEventArgs e)
     {
-        // <cid> <empty> <rid> <payload> [err]
         NetMQMessage? resp = new();
         while (e.Socket.TryReceiveMultipartMessage(DEQUEUE_TIMEOUT, ref resp, FRAME_COUNT))
         {
@@ -63,7 +62,7 @@ public class ChannelClient : IDisposable
                 return;
             }
             // var cid = resp[0];
-            if (resp.FrameCount < 3)
+            if (resp.FrameCount < 2)
             {
                 if (_logger.IsEnabled(LogLevel.Warning))
                 {
@@ -72,7 +71,7 @@ public class ChannelClient : IDisposable
                 }
                 return;
             }
-            var rid = resp[2].ConvertToString();
+            var rid = resp[1].ConvertToString();
             if (!_sending.TryGetValue(rid, out var callback))
             {
                 if (_logger.IsEnabled(LogLevel.Warning))
@@ -81,7 +80,7 @@ public class ChannelClient : IDisposable
                 }
                 return;
             }
-            if (resp.FrameCount < 4)
+            if (resp.FrameCount < 3)
             {
                 InvokeOnSuccess(rid, null, callback);
                 return;
@@ -89,7 +88,7 @@ public class ChannelClient : IDisposable
 
             #region response
 
-            var payload = resp[3];
+            var payload = resp[2];
             object? response;
             try
             {
@@ -124,7 +123,7 @@ public class ChannelClient : IDisposable
             ErrorInfo? err;
             try
             {
-                err = resp[4].IsEmpty ? null : resp[4].Buffer.FromMsgPack<ErrorInfo>();
+                err = resp[3].IsEmpty ? null : resp[3].Buffer.FromMsgPack<ErrorInfo>();
             }
             catch (Exception ex)
             {
@@ -190,8 +189,6 @@ public class ChannelClient : IDisposable
             try
             {
                 var msg = new NetMQMessage();
-                msg.Append(ClientId);
-                msg.AppendEmptyFrame();
                 msg.Append(rid);
                 msg.Append(req.Item1.Query);
                 switch (req.Item1.Payload)
@@ -253,11 +250,10 @@ public class ChannelClient : IDisposable
         var sucSig = false;
         object? result = null;
         var errSig = false;
-        var timedOut = true;
         Exception? error = null;
         _requestQueue.Enqueue((new(query, request),
             new(typeof(Resp), OnSuccess, OnError)));
-        timedOut = !(timeout.HasValue ? ev.WaitOne(timeout.Value) : ev.WaitOne());
+        var timedOut = !(timeout.HasValue ? ev.WaitOne(timeout.Value) : ev.WaitOne());
         if (timedOut)
         {
             throw new TimeoutException($"Request '{query}' timed out");
