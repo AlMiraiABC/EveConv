@@ -14,6 +14,7 @@ public class ChannelSubscriber : IDisposable
     private bool _disposed = false;
 
     private const int FRAME_COUNT = 2; // topic message
+    private static readonly TimeSpan POLLER_START_TIMEOUT = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan DEQUEUE_TIMEOUT = TimeSpan.Zero;
     private static readonly Encoding STR_ENCODING = Encoding.UTF8;
 
@@ -38,6 +39,7 @@ public class ChannelSubscriber : IDisposable
         this._opQueue.ReceiveReady += OpQueueReceiveReadyHandle;
         this._poller = [_subscriberSocket, _opQueue];
         this._poller.RunAsync();
+        this._poller.WaitForStart(POLLER_START_TIMEOUT);
     }
 
     /// <summary>

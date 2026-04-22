@@ -11,6 +11,7 @@ namespace EveConv.Channel.Client;
 
 public class ChannelClient : IDisposable
 {
+    private static readonly TimeSpan POLLER_START_TIMEOUT = TimeSpan.FromSeconds(5);
     private readonly ChannelClientConfig _config;
     private readonly ILogger<ChannelClient> _logger;
 
@@ -46,6 +47,7 @@ public class ChannelClient : IDisposable
         _dealer.ReceiveReady += DealerReceiveReady;
         _poller = [_dealer, _requestQueue];
         _poller.RunAsync();
+        _poller.WaitForStart(POLLER_START_TIMEOUT);
     }
 
     private void DealerReceiveReady(object? sender, NetMQSocketEventArgs e)
