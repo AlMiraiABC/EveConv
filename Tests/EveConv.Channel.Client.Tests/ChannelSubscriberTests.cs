@@ -9,27 +9,26 @@ public class ChannelSubscriberTests : IDisposable
 {
     private readonly XPublisherSocket _xpub;
     private readonly XSubscriberSocket _xsub;
-    private readonly Proxy _proxy;
+    private readonly TestIntermediary _intermediary;
 
     public ChannelSubscriberTests()
     {
-        _xpub = new XPublisherSocket("@tcp://127.0.0.1:0");
-        _xsub = new XSubscriberSocket("@tcp://127.0.0.1:0");
-        _proxy = new Proxy(_xsub, _xpub);
-        Task.Run(_proxy.Start);
+        _xpub = new("@tcp://127.0.0.1:0");
+        _xsub = new("@tcp://127.0.0.1:0");
+        _intermediary = new(_xsub, _xpub);
     }
 
     [Fact]
     public void Subscribe_WithPayload_Success()
     {
         using var subscriber = new ChannelSubscriber(new()
-        { BindAddress = ">" + (_xpub.Options.LastEndpoint ?? string.Empty) });
+            { BindAddress = ">" + (_xpub.Options.LastEndpoint ?? string.Empty) });
         using var publisher = new PublisherSocket(">" + (_xsub.Options.LastEndpoint ?? string.Empty));
         var received = new AutoResetEvent(false);
+        string? receivedPayload = null;
         subscriber.Subscribe<string>("Test", "Event", (i) =>
         {
-            Assert.NotNull(i);
-            Assert.Equal("HELLO", i.Payload);
+            receivedPayload = i?.Payload;
             received.Set();
         });
         Thread.Sleep(500);
@@ -37,16 +36,17 @@ public class ChannelSubscriberTests : IDisposable
             .SendFrame("HELLO".ToMsgPack());
         var res = received.WaitOne(500);
         Assert.True(res);
+        Assert.Equal("HELLO",  receivedPayload);
     }
 
     [Fact]
     public void Unsubscribe_Success()
     {
         using var subscriber = new ChannelSubscriber(new()
-        { BindAddress = ">" + (_xpub.Options.LastEndpoint ?? string.Empty) });
+            { BindAddress = ">" + (_xpub.Options.LastEndpoint ?? string.Empty) });
         using var publisher = new PublisherSocket(">" + (_xsub.Options.LastEndpoint ?? string.Empty));
         var received = new AutoResetEvent(false);
-        subscriber.Subscribe<string>("Test", "Event", (i) =>
+        subscriber.Subscribe<string>("Test", "Event", (_) =>
         {
             Assert.Fail("Shouldn't receive.");
             received.Set();
@@ -61,7 +61,7 @@ public class ChannelSubscriberTests : IDisposable
 
     public void Dispose()
     {
-        _proxy.Stop();
+        _intermediary.Dispose();
         _xpub.Dispose();
         _xsub.Dispose();
         GC.SuppressFinalize(this);

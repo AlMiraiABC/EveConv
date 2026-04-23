@@ -29,16 +29,24 @@ public class ChannelPubSubTests : IDisposable
             BindAddress = ">" + (_xpub.Options.LastEndpoint ?? string.Empty),
         });
         AutoResetEvent received = new(false);
+        string? receivedPayload = null;
         subscriber.Subscribe<string>("test", "event", (i) =>
         {
-            ArgumentNullException.ThrowIfNull(i);
-            Assert.Equal("HELLO", i.Payload);
+            receivedPayload = i?.Payload;
             received.Set();
         });
-        Thread.Sleep(500);
-        publisher.Publish("test", "event", "HELLO");
-        var res = received.WaitOne(500);
-        Assert.True(res);
+        for (var _ = 0; _ < 10; _++)
+        {
+            Thread.Sleep(200);
+            publisher.Publish("test", "event", "HELLO");
+            var res = received.WaitOne(200);
+            if (res)
+            {
+                Assert.Equal("HELLO", receivedPayload);
+                return;
+            }
+        }
+        Assert.Fail("Failed to receive message after 10 attempts.");
     }
 
     public void Dispose()
