@@ -1,5 +1,16 @@
 {
     "rust-analyzer.linkedProjects": [
         "Reference/Helper/hf-tokenizer-c/Cargo.toml"
+    ],
+    "todo-tree.filtering.excludeGlobs": [
+        "**/node_modules/*/**",
+        "**/*/*.md"
+    ],
+    "todo-tree.general.tags": [
+        "BUG",
+        "HACK",
+        "FIXME",
+        "TODO",
+        "XXX"
     ]
 }
