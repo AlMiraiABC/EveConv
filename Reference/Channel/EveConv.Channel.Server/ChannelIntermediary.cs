@@ -1,4 +1,5 @@
-﻿using EveConv.Channel.Server.obj;
+﻿using EveConv.Channel.Common;
+using EveConv.Channel.Server.obj;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NetMQ;
@@ -12,6 +13,8 @@ namespace EveConv.Channel.Server;
 public class ChannelIntermediary : IDisposable
 {
     private bool _disposed = false;
+    
+    private static readonly TimeSpan POLLER_START_TIMEOUT = TimeSpan.FromSeconds(5);
 
     private readonly ILogger<ChannelIntermediary> _logger;
     private readonly ChannelIntermediaryConfig _config;
@@ -38,9 +41,19 @@ public class ChannelIntermediary : IDisposable
     public void Start()
     {
         ObjectDisposedException.ThrowIf(this._disposed, this);
-        if (!this._poller.IsRunning)
+        if (_poller.IsRunning)
         {
-            this._poller.RunAsync();
+            return;
+        }
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("Starting intermediary between {pub} {sub}", this.PublisherAddress, this.SubscriberAddress);
+        }
+        this._poller.RunAsync();
+        this._poller.WaitForStart(POLLER_START_TIMEOUT);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("Intermediary started between {pub} {sub}", this.PublisherAddress, this.SubscriberAddress);
         }
     }
 
@@ -69,7 +82,6 @@ public class ChannelIntermediary : IDisposable
             if (control != null)
             {
                 copy.Copy(ref msg);
-
                 control.Send(ref copy, more);
             }
             to.Send(ref msg, more);
