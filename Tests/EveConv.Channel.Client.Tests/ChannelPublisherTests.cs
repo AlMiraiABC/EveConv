@@ -9,21 +9,20 @@ public class ChannelPublisherTests : IDisposable
 {
     private readonly XPublisherSocket _xpub;
     private readonly XSubscriberSocket _xsub;
-    private readonly Proxy _proxy;
+    private readonly TestIntermediary _intermediary;
 
     public ChannelPublisherTests()
     {
-        _xpub = new XPublisherSocket("@tcp://127.0.0.1:0");
-        _xsub = new XSubscriberSocket("@tcp://127.0.0.1:0");
-        _proxy = new Proxy(_xsub, _xpub);
-        Task.Run(_proxy.Start);
+        _xpub = new("@tcp://127.0.0.1:0");
+        _xsub = new("@tcp://127.0.0.1:0");
+        _intermediary = new(_xsub, _xpub);
     }
 
     [Fact]
     public void Publish_WithPayload_Success()
     {
         using var publisher = new ChannelPublisher(new()
-        { BindAddress = ">" + (_xsub.Options.LastEndpoint ?? string.Empty) });
+            { BindAddress = ">" + (_xsub.Options.LastEndpoint ?? string.Empty) });
         using var subscriber = new SubscriberSocket(">" + (_xpub.Options.LastEndpoint ?? string.Empty));
         subscriber.Subscribe("test:eve", Encoding.UTF8);
         Thread.Sleep(500);
@@ -40,7 +39,7 @@ public class ChannelPublisherTests : IDisposable
 
     public void Dispose()
     {
-        _proxy.Stop();
+        _intermediary.Dispose();
         _xpub.Dispose();
         _xsub.Dispose();
         GC.SuppressFinalize(this);
