@@ -272,16 +272,16 @@ public class ChannelClient : IDisposable
 
         void OnSuccess(object? req)
         {
-            ev.Set();
             sucSig = true;
             result = req;
+            ev.Set();
         }
 
         void OnError(Exception ex)
         {
-            ev.Set();
             errSig = true;
             error = ex;
+            ev.Set();
         }
     }
 
