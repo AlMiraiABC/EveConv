@@ -1,0 +1,6 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props', '$(MSBuildThisFileDirectory)../'))" Condition="$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props', '$(MSBuildThisFileDirectory)../')) != ''" />
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.ML.Probabilistic.Compiler" Version="0.4.2504.701" />
+  </ItemGroup>
+</Project>

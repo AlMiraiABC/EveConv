@@ -29,6 +29,10 @@
     <Project Path="Reference/EveConv.MimeType/EveConv.MimeType.csproj" Id="d78cd075-ad41-4e31-857a-e44ca81c97b0" />
     <Project Path="Reference/EveConv.RdbStorage/EveConv.RdbStorage.csproj" />
   </Folder>
+  <Folder Name="/Reference/Algorithm/">
+    <File Path="Reference/Algorithm/Directory.Packages.props" />
+    <Project Path="Reference/Algorithm/EveConv.ML.Net.Extensions/EveConv.ML.Net.Extensions.csproj" />
+  </Folder>
   <Folder Name="/Reference/Cache/">
     <Project Path="Reference/Cache/EveConv.Cache.InMemory/EveConv.Cache.InMemory.csproj" />
     <Project Path="Reference/Cache/EveConv.Cache.Redis/EveConv.Cache.Redis.csproj" />
@@ -60,6 +64,7 @@
     <Project Path="Tests/EveConv.FileStorage.S3.Tests/EveConv.FileStorage.S3.Tests.csproj" Id="8f599cd8-1ca1-40c5-b573-e6316adfb27d" />
     <Project Path="Tests/EveConv.HuggingFace.Tests/EveConv.HuggingFace.Tests.csproj" />
     <Project Path="Tests/EveConv.HuggingFaceFastTokenizer.Raw.Tests/EveConv.HuggingFaceFastTokenizer.Raw.Tests.csproj" Id="39b8ead9-f6a4-4163-a86e-880f899df010" />
+    <Project Path="Tests/EveConv.ML.Net.Extensions.Tests/EveConv.ML.Net.Extensions.Tests.csproj" />
     <Project Path="Tests/EveConv.Onnx.Tests/EveConv.Onnx.Tests.csproj" Id="20448772-1fc6-45a5-9634-8b6cfc263c54" />
     <Project Path="Tests/EveConv.S3Helper.Tests/EveConv.S3Helper.Tests.csproj" />
   </Folder>
