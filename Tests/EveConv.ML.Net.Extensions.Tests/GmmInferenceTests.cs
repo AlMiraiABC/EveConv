@@ -4,38 +4,49 @@ namespace EveConv.ML.Net.Extensions.Tests;
 public class GmmInferenceTests
 {
     [Fact]
-    public void GmmInference_Demo()
+    public void FitByBic_WellSeparatedBlobs_SelectsThreeComponents()
     {
-        // 1) demo data: 3 blobs in 2D
         var data = BuildSyntheticData();
 
-        // 2) fit by BIC
         var (best, all) = GmmInference.FitByBic(
             x: data,
             kMin: 1,
             kMax: 6,
-            useDiagonalCovariance: false, // true for faster/robuster in high-D
+            useDiagonalCovariance: false,
             seed: 42,
             maxIterations: 150);
 
-        // 3) print BIC table
-        Console.WriteLine("K\tLogEvidenceApprox\tBIC");
+        Console.WriteLine("K\tLogLikelihood\tBIC");
         foreach (var r in all.OrderBy(t => t.K))
-            Console.WriteLine($"{r.K}\t{r.LogEvidenceApprox:F4}\t\t{r.BIC:F4}");
+            Console.WriteLine($"{r.K}\t{r.LogLikelihood:F4}\t\t{r.BIC:F4}");
 
         Console.WriteLine($"\nBest K = {best.K}, BIC = {best.BIC:F4}");
 
-        // 4) predict
-        int[] labels = GmmInference.Predict(best, data);
+        var labels = GmmInference.Predict(best, data);
         Console.WriteLine("First 20 labels: " + string.Join(", ", labels.Take(20)));
 
-        // 5) soft probabilities
-        var proba = GmmInference.PredictProba(best, data.Take(5).ToArray());
-        Console.WriteLine("\nFirst 5 samples posterior probs:");
-        for (int i = 0; i < proba.Length; i++)
+        var proba = GmmInference.PredictProba(best, new[]
+        {
+            data[0],
+            data[130],
+            data[260]
+        });
+
+        Console.WriteLine("\nRepresentative posterior probs:");
+        for (var i = 0; i < proba.Length; i++)
         {
             Console.WriteLine($"{i}: [{string.Join(", ", proba[i].Select(p => p.ToString("F4")))}]");
         }
+
+        Assert.Equal(3, best.K);
+
+        var bicByK = all.ToDictionary(x => x.K, x => x.BIC);
+        Assert.True(bicByK[3] < bicByK[2]);
+        Assert.True(bicByK[3] < bicByK[4]);
+
+        var assignments = proba.Select(ArgMax).ToArray();
+        Assert.Equal(3, assignments.Distinct().Count());
+        Assert.All(proba, row => Assert.InRange(row.Max(), 0.80, 1.0));
     }
 
     private static double[][] BuildSyntheticData()
@@ -44,15 +55,15 @@ public class GmmInferenceTests
         var list = new List<double[]>();
 
         // cluster A around (0,0)
-        for (int i = 0; i < 120; i++)
+        for (var i = 0; i < 120; i++)
             list.Add(new[] { NextGaussian(rnd, 0.0, 0.6), NextGaussian(rnd, 0.0, 0.5) });
 
         // cluster B around (5,5)
-        for (int i = 0; i < 110; i++)
+        for (var i = 0; i < 110; i++)
             list.Add(new[] { NextGaussian(rnd, 5.0, 0.7), NextGaussian(rnd, 5.0, 0.7) });
 
         // cluster C around (9,1)
-        for (int i = 0; i < 100; i++)
+        for (var i = 0; i < 100; i++)
             list.Add(new[] { NextGaussian(rnd, 9.0, 0.5), NextGaussian(rnd, 1.0, 0.4) });
 
         return list.ToArray();
@@ -61,9 +72,23 @@ public class GmmInferenceTests
     // Box-Muller
     private static double NextGaussian(Random rnd, double mean, double std)
     {
-        double u1 = 1.0 - rnd.NextDouble();
-        double u2 = 1.0 - rnd.NextDouble();
-        double z = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2);
+        var u1 = 1.0 - rnd.NextDouble();
+        var u2 = 1.0 - rnd.NextDouble();
+        var z = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2);
         return mean + std * z;
+    }
+
+    private static int ArgMax(IReadOnlyList<double> values)
+    {
+        var best = 0;
+        for (var i = 1; i < values.Count; i++)
+        {
+            if (values[i] > values[best])
+            {
+                best = i;
+            }
+        }
+
+        return best;
     }
 }

@@ -18,7 +18,8 @@ public class GmmInference
 
         public bool UseDiagonalCovariance { get; init; }
 
-        public double LogEvidenceApprox { get; init; } // Infer.NET evidence proxy
+        public double LogLikelihood { get; init; }
+        public double LogEvidenceApprox => LogLikelihood; // compatibility alias
         public double BIC { get; init; }
 
         // Posteriors
@@ -95,6 +96,12 @@ public class GmmInference
         var xVar = Variable.Array<Vector>(nRange).Named("x");
         xVar.ObservedValue = xObs;
 
+        // Randomly initialize latent assignments so VMP does not stay in a symmetric solution.
+        Rand.Restart(seed);
+        var zInit = Variable.Array<Discrete>(nRange).Named("zInit");
+        zInit.ObservedValue = Util.ArrayInit(n, _ => Discrete.PointMass(Rand.Int(k), k));
+        z[nRange].InitialiseTo(zInit[nRange]);
+
         using (Variable.ForEach(nRange))
         {
             using (Variable.Switch(z[nRange]))
@@ -111,22 +118,11 @@ public class GmmInference
             Compiler = { RecommendedQuality = QualityBand.Experimental }
         };
 
-        // Evidence trick
-        var evidence = Variable.Bernoulli(0.5).Named("evidence");
-        var block = Variable.If(evidence);
-        // Model already defined globally; block used as proxy
-        block.CloseBlock();
-
         // Infer posteriors
         var piPost = engine.Infer<Dirichlet>(pi);
         var muPost = engine.Infer<DistributionArray<VectorGaussian, Vector>>(mu);
         var precPost = engine.Infer<DistributionArray<Wishart, PositiveDefiniteMatrix>>(prec);
         var zPost = engine.Infer<Discrete[]>(z);
-
-        // Log evidence proxy
-        // NOTE: In variational settings this is an approximation;
-        // for BIC comparison keep same modeling setup across K.
-        var logEvidenceApprox = engine.Infer<Bernoulli>(evidence).LogOdds;
 
         // Point estimates
         var wMean = piPost.GetMean().ToArray();
@@ -145,8 +141,14 @@ public class GmmInference
             }
         }
 
+        var logLikelihood = ComputeObservedDataLogLikelihood(
+            xObs,
+            wMean,
+            mMean,
+            pMean,
+            useDiagonalCovariance);
         var paramCount = ParameterCount(k, d, useDiagonalCovariance);
-        var bic = -2.0 * logEvidenceApprox + paramCount * Math.Log(n);
+        var bic = -2.0 * logLikelihood + paramCount * Math.Log(n);
 
         return new FitResult
         {
@@ -154,7 +156,7 @@ public class GmmInference
             N = n,
             D = d,
             UseDiagonalCovariance = useDiagonalCovariance,
-            LogEvidenceApprox = logEvidenceApprox,
+            LogLikelihood = logLikelihood,
             BIC = bic,
             PiPosterior = piPost,
             MuPosterior = muPost,
@@ -346,11 +348,7 @@ public class GmmInference
             var tmp = precision * diff;
             var quad = diff.Inner(tmp);
 
-            // log|P| from Cholesky
-            var chol = precision.CholeskyInPlace(out _);
-            var logDetPrec = 0.0;
-            for (var i = 0; i < d; i++)
-                logDetPrec += 2.0 * Math.Log(Math.Max(chol[i, i], 1e-15));
+            var logDetPrec = precision.LogDeterminant();
 
             return 0.5 * logDetPrec - 0.5 * d * Math.Log(2.0 * Math.PI) - 0.5 * quad;
         }
@@ -361,6 +359,31 @@ public class GmmInference
         var m = a.Max();
         var s = a.Sum(t => Math.Exp(t - m));
         return m + Math.Log(s);
+    }
+
+    private static double ComputeObservedDataLogLikelihood(
+        IReadOnlyList<Vector> x,
+        IReadOnlyList<double> weights,
+        IReadOnlyList<Vector> means,
+        IReadOnlyList<PositiveDefiniteMatrix> precisions,
+        bool diagonalOnly)
+    {
+        var total = 0.0;
+        var k = weights.Count;
+        var logTerms = new double[k];
+
+        foreach (var xi in x)
+        {
+            for (var c = 0; c < k; c++)
+            {
+                logTerms[c] = Math.Log(Math.Max(weights[c], 1e-15))
+                              + LogGaussianFromPrecision(xi, means[c], precisions[c], diagonalOnly);
+            }
+
+            total += LogSumExp(logTerms);
+        }
+
+        return total;
     }
 
     #endregion
