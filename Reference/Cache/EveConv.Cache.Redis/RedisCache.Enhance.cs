@@ -35,7 +35,7 @@ public partial class RedisCache : IEnhanceCache<object>
             }
 
             // Use SCAN with pattern for safe key enumeration
-            await foreach (var key in server.KeysAsync(pattern: redisPattern, pageSize: DefaultScanPageSize))
+            await foreach (var key in server.KeysAsync(pattern: redisPattern, pageSize: DefaultScanPageSize).WithCancellation(token))
             {
                 keys.Add(key.ToString());
             }
@@ -163,6 +163,7 @@ public partial class RedisCache : IEnhanceCache<object>
     /// </summary>
     /// <param name="key">The key to check.</param>
     /// <param name="pattern">The pattern to match against.</param>
+    /// <param name="token">A cancellation token.</param>
     /// <returns>True if the key matches the pattern; otherwise, false.</returns>
     /// <remarks>
     /// This method provides local pattern matching without querying Redis.

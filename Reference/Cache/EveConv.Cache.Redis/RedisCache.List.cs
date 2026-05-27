@@ -189,7 +189,7 @@ namespace EveConv.Cache.Redis
                 var length = await Database.ListLeftPushAsync(key, serializedValues);
 
                 // Set TTL if specified
-                if (ttl.HasValue && ttl.Value.TotalMilliseconds > 0)
+                if (ttl is { TotalMilliseconds: > 0 })
                 {
                     await Database.KeyExpireAsync(key, ttl.Value);
                 }
@@ -310,7 +310,7 @@ namespace EveConv.Cache.Redis
                 var length = await Database.ListRightPushAsync(key, serializedValues);
 
                 // Set TTL if specified
-                if (ttl.HasValue && ttl.Value.TotalMilliseconds > 0)
+                if (ttl is { TotalMilliseconds: > 0 })
                 {
                     await Database.KeyExpireAsync(key, ttl.Value);
                 }

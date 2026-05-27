@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using EveConv.Abstraction.Cache;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
@@ -9,11 +10,12 @@ namespace EveConv.Cache.Redis;
 /// </summary>
 public partial class RedisCache : IBatchCache<object>
 {
-    private const int DefaultBatchSize = 100;
+    // private const int DefaultBatchSize = 100;
     private const int MaxBatchSize = 1000;
 
     /// <inheritdoc />
-    public async Task BatchSetAsync(IDictionary<string, object> items, TimeSpan? ttl = null, CancellationToken token = default)
+    public async Task BatchSetAsync(IDictionary<string, object> items, TimeSpan? ttl = null,
+        CancellationToken token = default)
     {
         ThrowIfDisposed();
         ValidateBatchItems(items);
@@ -53,12 +55,13 @@ public partial class RedisCache : IBatchCache<object>
     }
 
     /// <inheritdoc />
-    public async Task<IDictionary<string, object?>> BatchGetAsync(IEnumerable<string> keys, CancellationToken token = default)
+    public async Task<IDictionary<string, object?>> BatchGetAsync(IEnumerable<string> keys,
+        CancellationToken token = default)
     {
         ThrowIfDisposed();
-        ValidateBatchKeys(keys);
-
+        ArgumentNullException.ThrowIfNull(keys);
         var keyList = keys.ToList();
+        ValidateBatchKeys(keyList);
         if (keyList.Count == 0)
         {
             if (_logger.IsEnabled(LogLevel.Debug))
@@ -106,16 +109,12 @@ public partial class RedisCache : IBatchCache<object>
     private async Task ProcessBatchSetChunk(IDictionary<string, object> items, TimeSpan? ttl)
     {
         var batch = Database.CreateBatch();
-        var tasks = new List<Task>();
-
-        foreach (var item in items)
+        var tasks = items.Select(i =>
         {
-            var serializedValue = SerializeValue(item.Value);
+            var serializedValue = SerializeValue(i.Value);
             var expiry = ttl?.TotalMilliseconds > 0 ? ttl : null;
-
-            var task = batch.StringSetAsync(item.Key, serializedValue, expiry);
-            tasks.Add(task);
-        }
+            return batch.StringSetAsync(i.Key, serializedValue, expiry);
+        }).ToList();
 
         // Execute the batch
         batch.Execute();
@@ -125,17 +124,18 @@ public partial class RedisCache : IBatchCache<object>
 
         // Check for any failures
         var failedCount = 0;
-        for (int i = 0; i < tasks.Count; i++)
+        for (var i = 0; i < tasks.Count; i++)
         {
-            var task = (Task<bool>)tasks[i];
-            if (!task.Result)
+            var task = tasks[i];
+            if (task.Result)
             {
-                failedCount++;
-                var key = items.ElementAt(i).Key;
-                if (_logger.IsEnabled(LogLevel.Warning))
-                {
-                    _logger.LogWarning("Failed to set cache value for key in batch: {Key}", key);
-                }
+                continue;
+            }
+            failedCount++;
+            var key = items.ElementAt(i).Key;
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning("Failed to set cache value for key in batch: {Key}", key);
             }
         }
 
@@ -152,13 +152,7 @@ public partial class RedisCache : IBatchCache<object>
     private async Task<Dictionary<string, object?>> ProcessBatchGetChunk(List<string> keys)
     {
         var batch = Database.CreateBatch();
-        var tasks = new List<Task<RedisValue>>();
-
-        foreach (var key in keys)
-        {
-            var task = batch.StringGetAsync(key);
-            tasks.Add(task);
-        }
+        var tasks = keys.Select(key => batch.StringGetAsync(key)).ToList();
 
         // Execute the batch
         batch.Execute();
@@ -168,7 +162,7 @@ public partial class RedisCache : IBatchCache<object>
 
         // Process results
         var result = new Dictionary<string, object?>();
-        for (int i = 0; i < keys.Count; i++)
+        for (var i = 0; i < keys.Count; i++)
         {
             var key = keys[i];
             var redisValue = tasks[i].Result;
@@ -221,8 +215,6 @@ public partial class RedisCache : IBatchCache<object>
     /// <exception cref="ArgumentException">Thrown when keys contains invalid values.</exception>
     private static void ValidateBatchKeys(IEnumerable<string> keys)
     {
-        ArgumentNullException.ThrowIfNull(keys);
-
         foreach (var key in keys)
         {
             ValidateKey(key);
@@ -234,7 +226,7 @@ public partial class RedisCache : IBatchCache<object>
     /// </summary>
     /// <param name="items">The items to chunk.</param>
     /// <param name="chunkSize">The maximum size of each chunk.</param>
-    /// <returns>An enumerable of chunked dictionaries.</returns>
+    /// <returns>An enumerator of chunked dictionaries.</returns>
     private static IEnumerable<IDictionary<string, object>> ChunkItems(IDictionary<string, object> items, int chunkSize)
     {
         var itemList = items.ToList();
@@ -252,7 +244,7 @@ public partial class RedisCache : IBatchCache<object>
     /// </summary>
     /// <param name="keys">The keys to chunk.</param>
     /// <param name="chunkSize">The maximum size of each chunk.</param>
-    /// <returns>An enumerable of chunked key lists.</returns>
+    /// <returns>An enumerator of chunked key lists.</returns>
     private static IEnumerable<List<string>> ChunkKeys(List<string> keys, int chunkSize)
     {
         for (int i = 0; i < keys.Count; i += chunkSize)

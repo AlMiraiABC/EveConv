@@ -93,7 +93,7 @@ public partial class RedisCache : IBasicCache<object>
             var server = Connection.GetServer(Connection.GetEndPoints().First());
 
             // Use SCAN to safely iterate through all keys
-            await foreach (var key in server.KeysAsync(pattern: "*"))
+            await foreach (var key in server.KeysAsync(pattern: "*").WithCancellation(token))
             {
                 keys.Add(key.ToString());
             }
