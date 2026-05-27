@@ -18,10 +18,11 @@ namespace EveConv.Abstraction.Cache
         /// <param name="key">The unique identifier for the cached list. Cannot be null or empty.</param>
         /// <param name="value">The value to push to the list.</param>
         /// <param name="ttl">Optional time-to-live for the list. If null, the list will not expire automatically.</param>
+        /// <param name="token">A cancellation token.</param>
         /// <returns>A task containing the length of the list after the push operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
-        virtual Task<int> ListLeftPushAsync(string key, TValue value, TimeSpan? ttl = null, CancellationToken token = default)
+        Task<int> ListLeftPushAsync(string key, TValue value, TimeSpan? ttl = null, CancellationToken token = default)
         {
             return ListLeftPushAsync(key, [value], ttl, token);
         }
@@ -32,6 +33,7 @@ namespace EveConv.Abstraction.Cache
         /// <param name="key">The unique identifier for the cached list. Cannot be null or empty.</param>
         /// <param name="values">The values to push to the list.</param>
         /// <param name="ttl">Optional time-to-live for the list. If null, the list will not expire automatically.</param>
+        /// <param name="token">A cancellation token.</param>
         /// <returns>A task containing the length of the list after the push operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key or values is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
@@ -43,6 +45,7 @@ namespace EveConv.Abstraction.Cache
         /// <param name="key">The unique identifier for the cached list. Cannot be null or empty.</param>
         /// <param name="value">The value to push to the list.</param>
         /// <param name="ttl">Optional time-to-live for the list. If null, the list will not expire automatically.</param>
+        /// <param name="token">A cancellation token.</param>
         /// <returns>A task containing the length of the list after the push operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
@@ -57,6 +60,7 @@ namespace EveConv.Abstraction.Cache
         /// <param name="key">The unique identifier for the cached list. Cannot be null or empty.</param>
         /// <param name="values">The values to push to the list.</param>
         /// <param name="ttl">Optional time-to-live for the list. If null, the list will not expire automatically.</param>
+        /// <param name="token">A cancellation token.</param>
         /// <returns>A task containing the length of the list after the push operation.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key or values is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
@@ -70,6 +74,7 @@ namespace EveConv.Abstraction.Cache
         /// Removes and returns the first element from the left (head) of the list stored at the specified key.
         /// </summary>
         /// <param name="key">The unique identifier for the cached list. Cannot be null or empty.</param>
+        /// <param name="token">A cancellation token.</param>
         /// <returns>A task containing the popped value if the list exists and is not empty, or null if the key does not exist or the list is empty.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
@@ -88,6 +93,7 @@ namespace EveConv.Abstraction.Cache
         /// </summary>
         /// <param name="key">The unique identifier for the cached list. Cannot be null or empty.</param>
         /// <param name="count">The number of elements to pop from the list.</param>
+        /// <param name="token">A cancellation token.</param>
         /// <returns>A task containing a list of popped values. The list may contain fewer elements if the list has fewer items than requested.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters, or count is less than 1.</exception>
@@ -97,6 +103,7 @@ namespace EveConv.Abstraction.Cache
         /// Removes and returns the last element from the right (tail) of the list stored at the specified key.
         /// </summary>
         /// <param name="key">The unique identifier for the cached list. Cannot be null or empty.</param>
+        /// <param name="token">A cancellation token.</param>
         /// <returns>A task containing the popped value if the list exists and is not empty, or null if the key does not exist or the list is empty.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
@@ -115,6 +122,7 @@ namespace EveConv.Abstraction.Cache
         /// </summary>
         /// <param name="key">The unique identifier for the cached list. Cannot be null or empty.</param>
         /// <param name="count">The number of elements to pop from the list.</param>
+        /// <param name="token">A cancellation token.</param>
         /// <returns>A task containing a list of popped values. The list may contain fewer elements if the list has fewer items than requested.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters, or count is less than 1.</exception>
@@ -129,6 +137,7 @@ namespace EveConv.Abstraction.Cache
         /// </summary>
         /// <param name="key">The unique identifier for the cached list. Cannot be null or empty.</param>
         /// <param name="index">The zero-based index of the element to retrieve. Negative indices count from the end (-1 is the last element).</param>
+        /// <param name="token">A cancellation token.</param>
         /// <returns>A task containing the value at the specified index, or null if the key does not exist or the index is out of range.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
@@ -140,6 +149,7 @@ namespace EveConv.Abstraction.Cache
         /// <param name="key">The unique identifier for the cached list. Cannot be null or empty.</param>
         /// <param name="start">The starting index (inclusive). Negative indices count from the end.</param>
         /// <param name="stop">The ending index (inclusive). Negative indices count from the end.</param>
+        /// <param name="token">A cancellation token.</param>
         /// <returns>A task containing a list of values in the specified range. Returns an empty list if the key does not exist.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
@@ -153,6 +163,7 @@ namespace EveConv.Abstraction.Cache
         /// Gets the length of the list stored at the specified key.
         /// </summary>
         /// <param name="key">The unique identifier for the cached list. Cannot be null or empty.</param>
+        /// <param name="token">A cancellation token.</param>
         /// <returns>A task containing the length of the list, or 0 if the key does not exist.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
@@ -171,6 +182,7 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task representing the asynchronous operation. Returns true if successful, false if the key doesn't exist or index is out of range.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
+        /// <param name="token">A cancellation token.</param>
         Task<bool> ListSetByIndexAsync(string key, int index, TValue value, CancellationToken token = default);
 
         /// <summary>
@@ -184,8 +196,9 @@ namespace EveConv.Abstraction.Cache
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
         /// <remarks>
         /// Elements outside the specified range will be removed.
-        /// ListTrimAsync("mylist", 0, 2) keeps only the first three elements.
+        /// <c>ListTrimAsync("mylist", 0, 2)</c> keeps only the first three elements.
         /// </remarks>
+        /// <param name="token">A cancellation token.</param>
         Task ListTrimAsync(string key, int start, int stop, CancellationToken token = default);
 
         /// <summary>
@@ -197,6 +210,7 @@ namespace EveConv.Abstraction.Cache
         /// <returns>A task containing the number of elements removed.</returns>
         /// <exception cref="ArgumentNullException">Thrown when key is null.</exception>
         /// <exception cref="ArgumentException">Thrown when key is empty or contains invalid characters.</exception>
+        /// <param name="token">A cancellation token.</param>
         Task<int> ListRemoveAsync(string key, TValue value, int count = 0, CancellationToken token = default);
 
         #endregion

@@ -16,7 +16,7 @@ namespace EveConv.Abstraction.Cache
         /// <param name="pattern">The search pattern string supporting wildcard characters. Cannot be null.</param>
         /// <param name="size">The maximum number of keys to return. Must be positive.</param>
         /// <param name="token">A cancellation token.</param>
-        /// <returns>A task containing an enumerable of keys that match the specified pattern.</returns>
+        /// <returns>A task containing an enumerator of keys that match the specified pattern.</returns>
         /// <exception cref="ArgumentNullException">Thrown when pattern is null.</exception>
         /// <exception cref="ArgumentException">Thrown when pattern contains invalid syntax.</exception>
         /// <remarks>

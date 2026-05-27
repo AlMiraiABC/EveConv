@@ -28,7 +28,7 @@ namespace EveConv.Abstraction.Cache
         /// <summary>
         /// Retrieves multiple values from the cache by their keys in a single operation.
         /// </summary>
-        /// <param name="keys">An enumerable of keys to retrieve. Keys cannot be null or empty.</param>
+        /// <param name="keys">An enumerator of keys to retrieve. Keys cannot be null or empty.</param>
         /// <param name="token">A cancellation token.</param>
         /// <returns>A task containing a dictionary with the requested keys and their corresponding values. Missing or expired keys will have null values.</returns>
         /// <exception cref="ArgumentNullException">Thrown when keys enumerable is null or contains null keys.</exception>

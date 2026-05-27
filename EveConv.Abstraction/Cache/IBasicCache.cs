@@ -36,7 +36,7 @@ namespace EveConv.Abstraction.Cache
         /// Retrieves all available cache keys.
         /// </summary>
         /// <param name="token">A cancellation token.</param>
-        /// <returns>A task containing an enumerable of all cache keys currently stored.</returns>
+        /// <returns>A task containing an enumerator of all cache keys currently stored.</returns>
         Task<IEnumerable<string>> ListKeysAsync(CancellationToken token = default);
 
         /// <summary>
