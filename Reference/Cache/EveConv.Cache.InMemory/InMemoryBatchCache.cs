@@ -13,16 +13,9 @@ namespace EveConv.Cache.InMemory;
 /// </summary>
 public partial class InMemoryCache : IBatchCache<object>
 {
-    /// <summary>
-    /// Stores multiple key-value pairs in the cache with optional time-to-live applied to all items.
-    /// </summary>
-    /// <param name="items">A dictionary containing the key-value pairs to store. Keys cannot be null or empty.</param>
-    /// <param name="ttl">Optional time-to-live for all cached items. If null, uses DefaultTtl from configuration.</param>
-    /// <returns>A task representing the asynchronous batch set operation.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when items dictionary is null or contains null keys.</exception>
-    /// <exception cref="ArgumentException">Thrown when items dictionary contains empty keys.</exception>
-    /// <exception cref="ObjectDisposedException">Thrown when the cache has been disposed.</exception>
-    public Task BatchSetAsync(IDictionary<string, object> items, TimeSpan? ttl = null, CancellationToken token = default)
+
+    public Task BatchSetAsync(IDictionary<string, object> items, TimeSpan? ttl = null,
+        CancellationToken token = default)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(items);
@@ -49,14 +42,6 @@ public partial class InMemoryCache : IBatchCache<object>
         return Task.CompletedTask;
     }
 
-    /// <summary>
-    /// Retrieves multiple values from the cache by their keys in a single operation.
-    /// </summary>
-    /// <param name="keys">An enumerable of keys to retrieve. Keys cannot be null or empty.</param>
-    /// <returns>A task containing a dictionary with the requested keys and their corresponding values. Missing or expired keys will have null values.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when keys enumerable is null or contains null keys.</exception>
-    /// <exception cref="ArgumentException">Thrown when keys enumerable contains empty keys.</exception>
-    /// <exception cref="ObjectDisposedException">Thrown when the cache has been disposed.</exception>
     public Task<IDictionary<string, object?>> BatchGetAsync(IEnumerable<string> keys, CancellationToken token = default)
     {
         ThrowIfDisposed();

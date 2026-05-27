@@ -13,7 +13,7 @@ namespace EveConv.Cache.InMemory;
 /// </summary>
 public partial class InMemoryCache : IEnhanceCache<object>
 {
-    public async Task<IEnumerable<string>> GetKeysByPatternAsync(string pattern, int size, CancellationToken token = default)
+    public Task<IEnumerable<string>> GetKeysByPatternAsync(string pattern, int size, CancellationToken token = default)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(pattern);
@@ -39,7 +39,7 @@ public partial class InMemoryCache : IEnhanceCache<object>
                     pattern, matchingKeys.Count, size);
             }
 
-            return matchingKeys;
+            return Task.FromResult(matchingKeys.AsEnumerable());
         }
         catch (ArgumentException ex)
         {

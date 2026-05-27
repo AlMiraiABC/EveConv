@@ -23,7 +23,6 @@ public partial class InMemoryCache : IDisposable
     /// <summary>
     /// Initializes a new instance of the <see cref="InMemoryCache"/> class.
     /// </summary>
-    /// <param name="memoryCache">The underlying memory cache instance.</param>
     /// <param name="configuration">The cache configuration options.</param>
     /// <param name="loggerFactory">Optional logger factory for diagnostic logging.</param>
     /// <exception cref="ArgumentNullException">Thrown when memoryCache or configuration is null.</exception>
@@ -103,15 +102,16 @@ public partial class InMemoryCache : IDisposable
     /// Releases the unmanaged resources and optionally releases the managed resources.
     /// </summary>
     /// <param name="disposing">true to release both managed and unmanaged resources; false to release only unmanaged resources.</param>
-    protected virtual void Dispose(bool disposing)
+    protected void Dispose(bool disposing)
     {
-        if (!_disposed && disposing)
+        if (_disposed || !disposing)
         {
-            _disposed = true;
-            if (_logger.IsEnabled(LogLevel.Information))
-            {
-                _logger.LogInformation($"{nameof(InMemoryCache)} disposed");
-            }
+            return;
+        };
+        _disposed = true;
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation($"{nameof(InMemoryCache)} disposed");
         }
     }
 }

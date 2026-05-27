@@ -17,23 +17,23 @@ namespace EveConv.Cache.InMemory
         /// </summary>
         private LinkedList<object> GetOrCreateList(string key)
         {
-            if (_memoryCache.TryGetValue(key, out var cached))
+            if (!_memoryCache.TryGetValue(key, out var cached))
             {
-                if (cached is not LinkedList<object> list)
-                {
-                    throw new CacheOperationException($"Value is not list of key {key}", "Get", key);
-                }
-                if (list.Count == 0)
-                {
-                    if (_logger.IsEnabled(LogLevel.Debug))
-                    {
-                        _logger.LogDebug("Remove empty list value of key {key}", key);
-                    }
-                    _memoryCache.Remove(key);
-                    return new();
-                }
+                return new();
+            }
+            if (cached is not LinkedList<object> list)
+            {
+                throw new CacheOperationException($"Value is not list of key {key}", "Get", key);
+            }
+            if (list.Count != 0)
+            {
                 return list;
             }
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Remove empty list value of key {key}", key);
+            }
+            _memoryCache.Remove(key);
             return new();
         }
 
@@ -45,12 +45,10 @@ namespace EveConv.Cache.InMemory
             if (list.Count == 0)
             {
                 _memoryCache.Remove(key);
+                return;
             }
-            else
-            {
-                var options = CreateCacheEntryOptions(ttl);
-                _memoryCache.Set(key, list, options);
-            }
+            var options = CreateCacheEntryOptions(ttl);
+            _memoryCache.Set(key, list, options);
         }
 
         /// <summary>
@@ -91,7 +89,8 @@ namespace EveConv.Cache.InMemory
             return Task.FromResult(list.Count);
         }
 
-        public Task<IList<object>> ListRangeAsync(string key, int start = 0, int stop = -1, CancellationToken token = default)
+        public Task<IList<object>> ListRangeAsync(string key, int start = 0, int stop = -1,
+            CancellationToken token = default)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -116,9 +115,9 @@ namespace EveConv.Cache.InMemory
             }
 
             var result = list
-              .Skip(normalizedStart)
-                   .Take(normalizedStop - normalizedStart + 1)
-                     .ToList();
+                .Skip(normalizedStart)
+                .Take(normalizedStop - normalizedStart + 1)
+                .ToList();
 
             return Task.FromResult<IList<object>>(result);
         }
@@ -148,7 +147,8 @@ namespace EveConv.Cache.InMemory
             return Task.FromResult<IList<object>>(result);
         }
 
-        public Task<int> ListLeftPushAsync(string key, IEnumerable<object> values, TimeSpan? ttl = null, CancellationToken token = default)
+        public Task<int> ListLeftPushAsync(string key, IEnumerable<object> values, TimeSpan? ttl = null,
+            CancellationToken token = default)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -256,7 +256,8 @@ namespace EveConv.Cache.InMemory
             return Task.FromResult<IList<object>>(result);
         }
 
-        public Task<int> ListRightPushAsync(string key, IEnumerable<object> values, TimeSpan? ttl = null, CancellationToken token = default)
+        public Task<int> ListRightPushAsync(string key, IEnumerable<object> values, TimeSpan? ttl = null,
+            CancellationToken token = default)
         {
             ThrowIfDisposed();
             ValidateKey(key);

@@ -11,8 +11,7 @@ namespace EveConv.Cache.InMemory
 {
     public partial class InMemoryCache : IBasicCache<object>
     {
-
-        public async Task SetAsync(string key, object value, TimeSpan? ttl = null, CancellationToken token = default)
+        public Task SetAsync(string key, object value, TimeSpan? ttl = null, CancellationToken token = default)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -26,10 +25,10 @@ namespace EveConv.Cache.InMemory
             {
                 _logger.LogDebug("Set cache item with key: {Key}, TTL: {TTL}", key, effectiveTtl);
             }
-            return;
+            return Task.CompletedTask;
         }
 
-        public async Task<object?> GetAsync(string key, CancellationToken token = default)
+        public Task<object?> GetAsync(string key, CancellationToken token = default)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -40,10 +39,10 @@ namespace EveConv.Cache.InMemory
             {
                 _logger.LogDebug("Get cache item with key: {Key}, Found: {Found}", key, result != null);
             }
-            return result;
+            return Task.FromResult(result);
         }
 
-        public async Task<IEnumerable<string>> ListKeysAsync(CancellationToken token = default)
+        public Task<IEnumerable<string>> ListKeysAsync(CancellationToken token = default)
         {
             ThrowIfDisposed();
 
@@ -52,10 +51,10 @@ namespace EveConv.Cache.InMemory
             {
                 _logger.LogDebug("Listed {Count} cache keys", keys.Count);
             }
-            return keys;
+            return Task.FromResult(keys.AsEnumerable());
         }
 
-        public async Task<bool> DeleteAsync(string key, CancellationToken token = default)
+        public Task<bool> DeleteAsync(string key, CancellationToken token = default)
         {
             ThrowIfDisposed();
             ValidateKey(key);
@@ -65,13 +64,13 @@ namespace EveConv.Cache.InMemory
             {
                 _logger.LogDebug("Delete cache item with key: {Key}", key);
             }
-            return true;
+            return Task.FromResult(true);
         }
 
-        public async Task<long> CountAsync(CancellationToken token = default)
+        public Task<long> CountAsync(CancellationToken token = default)
         {
             ThrowIfDisposed();
-            return _memoryCache.Count;
+            return Task.FromResult((long)_memoryCache.Count);
         }
     }
 }
