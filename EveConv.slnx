@@ -32,6 +32,7 @@
   <Folder Name="/Reference/Cache/">
     <Project Path="Reference/Cache/EveConv.Cache.InMemory/EveConv.Cache.InMemory.csproj" />
     <Project Path="Reference/Cache/EveConv.Cache.Redis/EveConv.Cache.Redis.csproj" />
+    <Project Path="Reference/Cache/EveConv.Cache.RocksDb/EveConv.Cache.RocksDb.csproj" />
   </Folder>
   <Folder Name="/Reference/Channel/">
     <Project Path="Reference/Channel/EveConv.Channel.Client/EveConv.Channel.Client.csproj" />
