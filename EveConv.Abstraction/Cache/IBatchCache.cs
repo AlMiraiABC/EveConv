@@ -38,5 +38,16 @@ namespace EveConv.Abstraction.Cache
         /// Keys that are not found or have expired will be included in the result with null values.
         /// </remarks>
         Task<IDictionary<string, TValue?>> BatchGetAsync(IEnumerable<string> keys, CancellationToken token = default);
+
+        /// <summary>
+        /// Removes multiple items from the cache based on their keys in a single operation.
+        /// <para />
+        /// Skipping non-existent, expired, empty or null keys.
+        /// </summary>
+        /// <param name="keys">An enumerator of keys to remove. Keys cannot be null or empty.</param>
+        /// <param name="token">A cancellation token.</param>
+        /// <returns>A task containing the count of deleted keys.</returns>
+        /// <exception cref="ArgumentException">Thrown when keys enumerable contains invalid characters.</exception>
+        Task<long> BatchRemoveAsync(IEnumerable<string> keys, CancellationToken token = default);
     }
 }

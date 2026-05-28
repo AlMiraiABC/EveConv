@@ -103,6 +103,21 @@ public partial class RedisCache : IBatchCache<object>
         }
     }
 
+    public async Task<long> BatchRemoveAsync(IEnumerable<string> keys, CancellationToken token = default)
+    {
+        ThrowIfDisposed();
+        if (keys is null)
+        {
+            return 0;
+        }
+        var ks = keys.Where(k => !string.IsNullOrWhiteSpace(k)).Select(k => (RedisKey)k).ToArray();
+        if (ks.Length == 0)
+        {
+            return 0;
+        }
+        return await Database.KeyDeleteAsync(ks);
+    }
+
     /// <summary>
     /// Processes a chunk of items for batch set operation using Redis pipeline.
     /// </summary>

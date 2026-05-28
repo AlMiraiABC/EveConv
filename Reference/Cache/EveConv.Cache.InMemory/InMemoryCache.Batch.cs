@@ -71,4 +71,32 @@ public partial class InMemoryCache : IBatchCache<object>
 
         return Task.FromResult<IDictionary<string, object?>>(result);
     }
+
+    public Task<long> BatchRemoveAsync(IEnumerable<string> keys, CancellationToken token = default)
+    {
+        ThrowIfDisposed();
+        if (keys is null)
+        {
+            return Task.FromResult(0L);
+        }
+        var keyList = keys.ToList();
+        if (keyList.Count == 0)
+        {
+            return Task.FromResult(0L);
+        }
+        var c = 0L;
+
+        foreach (var k in keyList.OfType<string>())
+        {
+            _memoryCache.Remove(k);
+            c++;
+        }
+
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Batch delete {Count} cache items.", c);
+        }
+
+        return Task.FromResult(c);
+    }
 }
