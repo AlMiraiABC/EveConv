@@ -1,8 +1,8 @@
 <Project>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props', '$(MSBuildThisFileDirectory)../'))"
-          Condition="$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props', '$(MSBuildThisFileDirectory)../')) != ''" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props', '$(MSBuildThisFileDirectory)../'))" Condition="$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props', '$(MSBuildThisFileDirectory)../')) != ''" />
   <ItemGroup>
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="$(MSEXVersion)" />
     <PackageVersion Include="AWSSDK.S3" Version="4.0.13.1" />
+    <PackageVersion Include="SqlSugarCore" Version="5.1.4.214" />
   </ItemGroup>
 </Project>

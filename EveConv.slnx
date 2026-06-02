@@ -62,6 +62,7 @@
     <Project Path="Tests/EveConv.HuggingFace.Tests/EveConv.HuggingFace.Tests.csproj" />
     <Project Path="Tests/EveConv.HuggingFaceFastTokenizer.Raw.Tests/EveConv.HuggingFaceFastTokenizer.Raw.Tests.csproj" Id="39b8ead9-f6a4-4163-a86e-880f899df010" />
     <Project Path="Tests/EveConv.Onnx.Tests/EveConv.Onnx.Tests.csproj" Id="20448772-1fc6-45a5-9634-8b6cfc263c54" />
+    <Project Path="Tests/EveConv.RdbStorage.Tests/EveConv.RdbStorage.Tests.csproj" />
     <Project Path="Tests/EveConv.S3Helper.Tests/EveConv.S3Helper.Tests.csproj" />
   </Folder>
   <Folder Name="/Tests/Plugins/">
