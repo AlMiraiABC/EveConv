@@ -25,8 +25,10 @@ public static class DependencyInjectExtensions
 
         // Register interface implementations that delegate to the same RedisCache instance
         services.AddSingleton<IBasicCache<object>>(provider => provider.GetRequiredService<RedisCache>());
+        services.AddSingleton<IListCache<object>>(provider => provider.GetRequiredService<RedisCache>());
         services.AddSingleton<IBatchCache<object>>(provider => provider.GetRequiredService<RedisCache>());
         services.AddSingleton<IEnhanceCache<object>>(provider => provider.GetRequiredService<RedisCache>());
+        services.AddSingleton<ICache>(provider => provider.GetRequiredService<RedisCache>());
 
         return services;
     }

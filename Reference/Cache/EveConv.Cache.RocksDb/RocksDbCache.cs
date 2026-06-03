@@ -1,3 +1,4 @@
+using EveConv.Abstraction.Cache;
 using EveConv.Abstraction.Diagnostic;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -10,7 +11,7 @@ namespace EveConv.Cache.RocksDb;
 /// RocksDB-based cache implementation providing persistent key-value storage
 /// with support for basic, batch, enhanced, and list cache operations.
 /// </summary>
-public partial class RocksDbCache : IDisposable
+public partial class RocksDbCache : IDisposable, ICache
 {
     private readonly RocksDbNative _db;
     private readonly RocksDbConfiguration _configuration;

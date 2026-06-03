@@ -26,6 +26,7 @@ public static class DependencyInjectExtensions
         services.AddSingleton(typeof(IBatchCache<object>), provider => provider.GetRequiredService<RocksDbCache>());
         services.AddSingleton(typeof(IEnhanceCache<object>), provider => provider.GetRequiredService<RocksDbCache>());
         services.AddSingleton(typeof(IListCache<object>), provider => provider.GetRequiredService<RocksDbCache>());
+        services.AddSingleton(typeof(ICache), provider => provider.GetRequiredService<RocksDbCache>());
 
         return services;
     }

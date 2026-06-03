@@ -24,8 +24,10 @@ public static class DependencyInjectExtensions
 
         // Register cache interfaces
         services.AddSingleton(typeof(IBasicCache<object>), provider => provider.GetRequiredService<InMemoryCache>());
+        services.AddSingleton(typeof(IListCache<object>), provider => provider.GetRequiredService<InMemoryCache>());
         services.AddSingleton(typeof(IBatchCache<object>), provider => provider.GetRequiredService<InMemoryCache>());
         services.AddSingleton(typeof(IEnhanceCache<object>), provider => provider.GetRequiredService<InMemoryCache>());
+        services.AddSingleton(typeof(ICache), provider => provider.GetRequiredService<InMemoryCache>());
         return services;
     }
 

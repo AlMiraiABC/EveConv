@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using EveConv.Abstraction.Cache;
 using EveConv.Abstraction.Diagnostic;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -13,7 +14,7 @@ namespace EveConv.Cache.InMemory;
 /// <summary>
 /// In-memory cache implementation using Microsoft.Extensions.Caching.Memory as the underlying storage.
 /// </summary>
-public partial class InMemoryCache : IDisposable
+public partial class InMemoryCache : IDisposable, ICache
 {
     private readonly MemoryCache _memoryCache;
     private readonly InMemoryConfiguration _configuration;

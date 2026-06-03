@@ -1,3 +1,4 @@
+using EveConv.Abstraction.Cache;
 using EveConv.Abstraction.Diagnostic;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -8,7 +9,7 @@ namespace EveConv.Cache.Redis;
 /// <summary>
 /// Redis implementation of cache interfaces providing connection management and basic cache operations.
 /// </summary>
-public partial class RedisCache : IDisposable
+public partial class RedisCache : IDisposable, ICache
 {
     private readonly RedisConfiguration _configuration;
     private readonly ILogger<RedisCache> _logger;
