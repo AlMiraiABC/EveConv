@@ -61,6 +61,7 @@
     <Project Path="Tests/EveConv.FileStorage.S3.Tests/EveConv.FileStorage.S3.Tests.csproj" Id="8f599cd8-1ca1-40c5-b573-e6316adfb27d" />
     <Project Path="Tests/EveConv.HuggingFace.Tests/EveConv.HuggingFace.Tests.csproj" />
     <Project Path="Tests/EveConv.HuggingFaceFastTokenizer.Raw.Tests/EveConv.HuggingFaceFastTokenizer.Raw.Tests.csproj" Id="39b8ead9-f6a4-4163-a86e-880f899df010" />
+    <Project Path="Tests/EveConv.Memory.Tests/EveConv.Memory.Tests.csproj" />
     <Project Path="Tests/EveConv.Onnx.Tests/EveConv.Onnx.Tests.csproj" Id="20448772-1fc6-45a5-9634-8b6cfc263c54" />
     <Project Path="Tests/EveConv.RdbStorage.Tests/EveConv.RdbStorage.Tests.csproj" />
     <Project Path="Tests/EveConv.S3Helper.Tests/EveConv.S3Helper.Tests.csproj" />

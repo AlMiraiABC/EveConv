@@ -24,6 +24,7 @@
     <PackageVersion Include="Microsoft.Extensions.Http" Version="$(MSEXVersion)" />
     <!-- AI -->
     <PackageVersion Include="Microsoft.Extensions.AI.Abstractions" Version="$(MSEXVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.AI" Version="$(MSEXVersion)" />
     <PackageVersion Include="Microsoft.Extensions.VectorData.Abstractions" Version="9.7.0" />
     <!-- Utils -->
     <PackageVersion Include="dotenv.net" Version="4.0.0" />
