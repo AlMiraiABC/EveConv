@@ -44,3 +44,16 @@ public interface ILongMemory
     /// <param name="ct">A cancellation token.</param>
     Task ForgetAsync(string ownerKey, string entryId, CancellationToken ct = default);
 }
+
+/// <summary>
+/// Provides the owner key for long-term memory partitioning.
+/// Implement this interface for multi-user systems where the owner key is resolved per request.
+/// </summary>
+public interface ILongMemoryOwnerKeyProvider
+{
+    /// <summary>
+    /// Resolves the owner key for the current context.
+    /// </summary>
+    /// <returns>The opaque partition key string.</returns>
+    string GetOwnerKey();
+}

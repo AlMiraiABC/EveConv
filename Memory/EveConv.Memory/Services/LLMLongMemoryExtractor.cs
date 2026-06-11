@@ -2,6 +2,7 @@
 using System.Text.Json;
 using EveConv.Abstraction.Diagnostic;
 using EveConv.Abstraction.Memory;
+using EveConv.Memory.Options;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -16,12 +17,12 @@ namespace EveConv.Memory.Services;
 public sealed class LLMLongMemoryExtractor
 {
     private readonly IChatClient _extractionClient;
-    private readonly MemoryConfiguration _config;
+    private readonly MemoryOptions _config;
     private readonly ILogger _logger;
 
     public LLMLongMemoryExtractor(
         [FromKeyedServices("extraction")] IChatClient extractionClient,
-        IOptions<MemoryConfiguration> config,
+        IOptions<MemoryOptions> config,
         ILoggerFactory? loggerFactory = null)
     {
         _extractionClient = extractionClient;

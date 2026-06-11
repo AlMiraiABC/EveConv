@@ -1,10 +1,11 @@
-﻿using EveConv.Abstraction.Diagnostic;
+﻿using System.Runtime.CompilerServices;
+using EveConv.Abstraction.Diagnostic;
 using EveConv.Abstraction.Memory;
 using EveConv.Memory.Models;
+using EveConv.Memory.Options;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Runtime.CompilerServices;
 
 namespace EveConv.Memory.Middleware;
 

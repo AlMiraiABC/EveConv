@@ -1,10 +1,12 @@
-﻿namespace EveConv.Abstraction.Memory;
+﻿using Microsoft.Extensions.Options;
+
+namespace EveConv.Memory.Options;
 
 /// <summary>
 /// Configuration for the EveConv memory system.
 /// Bound from the <c>"Memory"</c> section of appsettings.json.
 /// </summary>
-public class MemoryConfiguration
+public class MemoryOptions : IOptions<MemoryOptions>
 {
     /// <summary>
     /// Number of most recent messages to keep in recent memory cache.
@@ -58,12 +60,14 @@ public class MemoryConfiguration
     /// Minimum importance score (0.0 to 1.0) for extracted long-memory entries to be retained.
     /// </summary>
     public float ImportanceThreshold { get; set; } = 0.5f;
+
+    public MemoryOptions Value => this;
 }
 
 /// <summary>
 /// Options for long memory owner key resolution.
 /// Single-user clients configure <c>"default"</c>; multi-user systems provide a custom
-/// <see cref="ILongMemoryOwnerKeyProvider"/>.
+/// <see cref="EveConv.Abstraction.Memory.ILongMemoryOwnerKeyProvider"/>.
 /// </summary>
 public class LongMemoryOptions
 {
@@ -71,17 +75,4 @@ public class LongMemoryOptions
     /// Opaque partition key for long-term memory. Defaults to <c>"default"</c> for single-user scenarios.
     /// </summary>
     public string OwnerKey { get; set; } = "default";
-}
-
-/// <summary>
-/// Provides the owner key for long-term memory partitioning.
-/// Implement this interface for multi-user systems where the owner key is resolved per request.
-/// </summary>
-public interface ILongMemoryOwnerKeyProvider
-{
-    /// <summary>
-    /// Resolves the owner key for the current context.
-    /// </summary>
-    /// <returns>The opaque partition key string.</returns>
-    string GetOwnerKey();
 }

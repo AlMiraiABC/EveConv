@@ -1,6 +1,6 @@
 ﻿using EveConv.Abstraction.Diagnostic;
 using EveConv.Abstraction.Memory;
-using EveConv.Memory.Models;
+using EveConv.Memory.Options;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -18,7 +18,7 @@ public sealed class MemoryService : IMemoryService
     private readonly ILongMemory _longMemory;
     private readonly EveConvChatReducer _chatReducer;
     private readonly ITokenCounter _tokenCounter;
-    private readonly MemoryConfiguration _config;
+    private readonly MemoryOptions _config;
     private readonly LongMemoryOptions _longMemoryOptions;
     private readonly ILogger _logger;
 
@@ -28,7 +28,7 @@ public sealed class MemoryService : IMemoryService
         ILongMemory longMemory,
         EveConvChatReducer chatReducer,
         ITokenCounter tokenCounter,
-        IOptions<MemoryConfiguration> config,
+        IOptions<MemoryOptions> config,
         IOptions<LongMemoryOptions> longMemoryOptions,
         ILoggerFactory? loggerFactory = null)
     {

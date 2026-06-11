@@ -22,7 +22,7 @@ public sealed class ChatContext
     /// <summary>
     /// Long-term memory context messages, one per category (preference, habit, event, fact).
     /// Each is a <see cref="ChatRole.System"/> message with "(category) content" format.
-    /// Empty if no long memories exist. Total tokens kept within <see cref="MemoryConfiguration.LongMemoryMaxTokens"/>.
+    /// Empty if no long memories exist.
     /// </summary>
     public IReadOnlyList<ChatMessage> LongMemoryMessages { get; init; } = [];
 

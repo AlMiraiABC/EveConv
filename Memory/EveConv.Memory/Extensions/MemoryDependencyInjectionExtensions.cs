@@ -1,7 +1,9 @@
-﻿using EveConv.Abstraction.Cache;
+﻿using System.Text.Json;
+using EveConv.Abstraction.Cache;
 using EveConv.Abstraction.Memory;
 using EveConv.Memory.Managers;
 using EveConv.Memory.Models;
+using EveConv.Memory.Options;
 using EveConv.Memory.Services;
 using EveConv.Memory.Stores;
 using Microsoft.Extensions.AI;
@@ -32,7 +34,7 @@ public static class MemoryDependencyInjectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<MemoryConfiguration>(
+        services.Configure<MemoryOptions>(
             configuration.GetSection("Memory"));
         services.Configure<LongMemoryOptions>(
             configuration.GetSection("Memory:LongMemory"));
@@ -67,7 +69,7 @@ public static class MemoryDependencyInjectionExtensions
     /// so it round-trips correctly through <see cref="ChatMessage"/> serialization.
     /// </summary>
     /// <param name="options">The <see cref="System.Text.Json.JsonSerializerOptions"/> to configure.</param>
-    public static void AddMemoryJsonSerialization(this System.Text.Json.JsonSerializerOptions options)
+    public static void AddMemoryJsonSerialization(this JsonSerializerOptions options)
     {
         AIJsonUtilities.AddAIContentType(
             options, typeof(MemoryMetadataContent), "eveconv_memory_metadata");

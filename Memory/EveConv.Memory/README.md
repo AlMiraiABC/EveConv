@@ -27,7 +27,7 @@ EveConv.Memory/
 | `SqlSugarCore`            | ORM for RDB persistence                                       |
 | `EveConv.Abstraction`     | Cache interfaces, `ICache`, `IBasicCache<T>`, `IListCache<T>` |
 
-> `EveConv.Memory` depends **only** on `EveConv.Abstraction` + NuGet packages. No references to `Reference/` projects. Infrastructure (cache, DB) is wired via DI.
+> `EveConv.Memory` depends **only** on `EveConv.Abstraction` + NuGet packages. Infrastructure (cache, DB) is wired via DI.
 
 ## Configuration
 

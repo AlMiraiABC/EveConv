@@ -1,6 +1,7 @@
 ﻿using EveConv.Abstraction.Memory;
 using EveConv.Memory.Models;
 using EveConv.Memory.Services;
+using EveConv.Memory.Stores;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -75,8 +76,7 @@ public class MemoryMetadataContentSerializationTests
     {
         // Configure JSON serialization with AIJsonUtilities
         var jsonOptions = new System.Text.Json.JsonSerializerOptions();
-        AIJsonUtilities.AddAIContentType(
-            jsonOptions, typeof(MemoryMetadataContent), "eveconv_memory_metadata");
+        jsonOptions.AddAIContentType<MemoryMetadataContent>("eveconv_memory_metadata");
 
         // Create a ChatMessage with metadata
         var message = new ChatMessage(ChatRole.User, "Test message");
@@ -95,9 +95,9 @@ public class MemoryMetadataContentSerializationTests
         Assert.NotNull(restored);
 
         // Verify metadata survived
-        var restoredMeta = restored!.Contents.OfType<MemoryMetadataContent>().FirstOrDefault();
+        var restoredMeta = restored.Contents.OfType<MemoryMetadataContent>().FirstOrDefault();
         Assert.NotNull(restoredMeta);
-        Assert.Equal("msg-001", restoredMeta!.MessageId);
+        Assert.Equal("msg-001", restoredMeta.MessageId);
         Assert.Equal("session-abc", restoredMeta.SessionId);
     }
 
@@ -112,7 +112,7 @@ public class MemoryMetadataContentSerializationTests
             SessionId = "session-abc"
         });
 
-        Assert.Throws<System.NotSupportedException>(() =>
+        Assert.Throws<NotSupportedException>(() =>
         {
             System.Text.Json.JsonSerializer.Serialize(message);
         });
@@ -127,7 +127,7 @@ public class InMemorySessionMemoryStoreTests
     [Fact]
     public async Task SaveAndGetMessages_RoundTrip_PreservesData()
     {
-        var store = new EveConv.Memory.Stores.InMemorySessionMemoryStore();
+        var store = new InMemorySessionMemoryStore();
         var message = new ChatMessage(ChatRole.User, "Hello");
         message.Contents.Add(new MemoryMetadataContent
         {
@@ -135,9 +135,9 @@ public class InMemorySessionMemoryStoreTests
             SessionId = "session-1"
         });
 
-        await store.SaveMessagesAsync("session-1", [message]);
+        await store.SaveMessagesAsync("session-1", [message], TestContext.Current.CancellationToken);
 
-        var retrieved = await store.GetMessagesAsync("session-1");
+        var retrieved = await store.GetMessagesAsync("session-1", TestContext.Current.CancellationToken);
         Assert.Single(retrieved);
         Assert.Equal(ChatRole.User, retrieved[0].Role);
     }
@@ -145,15 +145,15 @@ public class InMemorySessionMemoryStoreTests
     [Fact]
     public async Task GetSession_NonExistent_ReturnsNull()
     {
-        var store = new EveConv.Memory.Stores.InMemorySessionMemoryStore();
-        var result = await store.GetSessionAsync("nonexistent");
+        var store = new InMemorySessionMemoryStore();
+        var result = await store.GetSessionAsync("nonexistent", TestContext.Current.CancellationToken);
         Assert.Null(result);
     }
 
     [Fact]
     public async Task SaveAndGetSession_RoundTrip_PreservesData()
     {
-        var store = new EveConv.Memory.Stores.InMemorySessionMemoryStore();
+        var store = new InMemorySessionMemoryStore();
         var session = new ChatSession
         {
             SessionId = "session-1",
@@ -162,18 +162,18 @@ public class InMemorySessionMemoryStoreTests
             TotalMessageCount = 5
         };
 
-        await store.SaveSessionAsync(session);
-        var retrieved = await store.GetSessionAsync("session-1");
+        await store.SaveSessionAsync(session, TestContext.Current.CancellationToken);
+        var retrieved = await store.GetSessionAsync("session-1", TestContext.Current.CancellationToken);
 
         Assert.NotNull(retrieved);
-        Assert.Equal("session-1", retrieved!.SessionId);
+        Assert.Equal("session-1", retrieved.SessionId);
         Assert.Equal(5, retrieved.TotalMessageCount);
     }
 
     [Fact]
     public async Task SaveAndGetCompactions_RoundTrip_PreservesData()
     {
-        var store = new EveConv.Memory.Stores.InMemorySessionMemoryStore();
+        var store = new InMemorySessionMemoryStore();
         var compaction = new SessionCompaction
         {
             Id = "comp-1",
@@ -186,8 +186,8 @@ public class InMemorySessionMemoryStoreTests
             CreatedAt = DateTimeOffset.UtcNow
         };
 
-        await store.SaveCompactionAsync(compaction);
-        var retrieved = await store.GetCompactionsAsync("session-1");
+        await store.SaveCompactionAsync(compaction, TestContext.Current.CancellationToken);
+        var retrieved = await store.GetCompactionsAsync("session-1", TestContext.Current.CancellationToken);
 
         Assert.Single(retrieved);
         Assert.Equal("Summary of messages", retrieved[0].CompactedSummary);

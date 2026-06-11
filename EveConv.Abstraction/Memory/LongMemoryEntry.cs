@@ -32,7 +32,7 @@ public sealed class LongMemoryEntry
     public IReadOnlyList<string> SourceSessionIds { get; init; } = [];
 
     /// <summary>
-    /// Importance score (0.0 to 1.0). Entries below <see cref="MemoryConfiguration.ImportanceThreshold"/> may be pruned.
+    /// Importance score (0.0 to 1.0).
     /// </summary>
     public float Importance { get; set; }
 

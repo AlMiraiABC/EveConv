@@ -1,5 +1,6 @@
 ﻿using EveConv.Abstraction.Memory;
 using EveConv.Memory.Middleware;
+using EveConv.Memory.Options;
 using EveConv.Memory.Services;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;

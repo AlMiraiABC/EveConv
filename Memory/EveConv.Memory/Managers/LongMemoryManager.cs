@@ -2,6 +2,7 @@
 using EveConv.Abstraction.Diagnostic;
 using EveConv.Abstraction.Memory;
 using EveConv.Memory.Models;
+using EveConv.Memory.Options;
 using EveConv.Memory.Services;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -18,18 +19,18 @@ public sealed class LongMemoryManager : ILongMemory
     private readonly LLMLongMemoryExtractor _extractor;
     private readonly ISessionMemoryStore _sessionStore;
     private readonly ITokenCounter _tokenCounter;
-    private readonly MemoryConfiguration _config;
+    private readonly MemoryOptions _config;
     private readonly ILogger _logger;
 
     // In-memory fallback storage (used when ISqlSugarClient is not available)
     private static readonly Dictionary<string, List<LongMemoryEntryEntity>> _inMemoryStore = new();
-    private static readonly object _lock = new();
+    private static readonly Lock _lock = new();
 
     public LongMemoryManager(
         LLMLongMemoryExtractor extractor,
         ISessionMemoryStore sessionStore,
         ITokenCounter tokenCounter,
-        IOptions<MemoryConfiguration> config,
+        IOptions<MemoryOptions> config,
         ILoggerFactory? loggerFactory = null)
     {
         _extractor = extractor;
