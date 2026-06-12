@@ -39,28 +39,31 @@ public sealed class TiktokenCounter : ITokenCounter
             return 0;
         }
 
-        int total = 0;
+        var total = 0;
         foreach (var message in messages)
         {
             // Count all text content from the message
             foreach (var content in message.Contents)
             {
-                if (content is TextContent textContent)
+                switch (content)
                 {
-                    total += CountTokens(textContent.Text);
-                }
-                else if (content is DataContent dataContent)
-                {
-                    // Estimate tokens for data content by URL length
-                    total += CountTokens(dataContent.Uri ?? string.Empty);
+                    case TextContent textContent:
+                        total += CountTokens(textContent.Text);
+                        break;
+                    case DataContent dataContent:
+                        // Estimate tokens for data content by URL length
+                        total += CountTokens(dataContent.Uri ?? string.Empty);
+                        break;
                 }
             }
 
             // Add overhead for role + structure (~4 tokens per message)
             total += 4;
         }
-
-        _logger.LogTrace("Counted {TokenCount} tokens for {MessageCount} messages", total, messages.Count);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("Counted {TokenCount} tokens for {MessageCount} messages", total, messages.Count);
+        }
         return total;
     }
 }

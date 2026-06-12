@@ -9,25 +9,25 @@ using SqlSugar;
 namespace EveConv.Memory.Stores;
 
 /// <summary>
-/// RDB-backed implementation of <see cref="ISessionMemoryStore"/> using <see cref="ISqlSugarClient"/>.
+/// RDB-backed implementation of <see cref="ISessionMemory"/> using <see cref="ISqlSugarClient"/>.
 /// Handles entity-to-domain mapping and persistence for chat messages, sessions, and compactions.
 /// </summary>
-public sealed class RdbSessionMemoryStore : ISessionMemoryStore
+public sealed class RdbSessionMemory : ISessionMemory
 {
     private readonly ISqlSugarClient _sqlClient;
     private readonly ILogger _logger;
 
     /// <summary>
-    /// Initializes a new instance of <see cref="RdbSessionMemoryStore"/>.
+    /// Initializes a new instance of <see cref="RdbSessionMemory"/>.
     /// </summary>
     /// <param name="sqlClient">The SqlSugar client (registered by the startup project).</param>
     /// <param name="loggerFactory">Optional logger factory.</param>
-    public RdbSessionMemoryStore(
+    public RdbSessionMemory(
         ISqlSugarClient sqlClient,
         ILoggerFactory? loggerFactory = null)
     {
         _sqlClient = sqlClient;
-        _logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<RdbSessionMemoryStore>();
+        _logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<RdbSessionMemory>();
     }
 
     /// <inheritdoc />
@@ -71,7 +71,10 @@ public sealed class RdbSessionMemoryStore : ISessionMemoryStore
         await storage.AsInsertable.ExecuteCommandAsync(ct);
         await storage.AsUpdateable.ExecuteCommandAsync(ct);
 
-        _logger.LogTrace("Saved {Count} messages to session {SessionId}", entities.Count, sessionId);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("Saved {Count} messages to session {SessionId}", entities.Count, sessionId);
+        }
     }
 
     /// <inheritdoc />
@@ -93,8 +96,11 @@ public sealed class RdbSessionMemoryStore : ISessionMemoryStore
         var entity = EntityMapper.ToEntity(compaction);
         await _sqlClient.Insertable(entity).ExecuteCommandAsync(ct);
 
-        _logger.LogTrace("Saved compaction {CompactionId} for session {SessionId}",
-            compaction.Id, compaction.SessionId);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("Saved compaction {CompactionId} for session {SessionId}",
+                compaction.Id, compaction.SessionId);
+        }
     }
 
     /// <inheritdoc />
@@ -121,6 +127,9 @@ public sealed class RdbSessionMemoryStore : ISessionMemoryStore
         await storage.AsInsertable.ExecuteCommandAsync(ct);
         await storage.AsUpdateable.ExecuteCommandAsync(ct);
 
-        _logger.LogTrace("Saved session {SessionId}", session.SessionId);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("Saved session {SessionId}", session.SessionId);
+        }
     }
 }

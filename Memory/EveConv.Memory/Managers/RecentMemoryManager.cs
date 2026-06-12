@@ -17,21 +17,25 @@ public sealed class RecentMemoryManager : IRecentMemory
 {
     private readonly MemoryOptions _config;
     private readonly ICache _cache;
-    private readonly ISessionMemoryStore _store;
-    private readonly ITokenCounter _tokenCounter;
+    private readonly ISessionMemory _session;
     private readonly ILogger _logger;
 
+    /// <summary>
+    /// Create a <see cref="RecentMemoryManager"/> instance.
+    /// </summary>
+    /// <param name="cache">Got messages from cache.</param>
+    /// <param name="session">Got messages from session if missing cache.</param>
+    /// <param name="options">Options to control.</param>
+    /// <param name="loggerFactory">Optional logger factory.</param>
     public RecentMemoryManager(
-        IOptions<MemoryOptions> config,
         ICache cache,
-        ISessionMemoryStore store,
-        ITokenCounter tokenCounter,
+        ISessionMemory session,
+        IOptions<MemoryOptions> options,
         ILoggerFactory? loggerFactory = null)
     {
-        _config = config.Value;
+        _config = options.Value;
         _cache = cache;
-        _store = store;
-        _tokenCounter = tokenCounter;
+        _session = session;
         _logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<RecentMemoryManager>();
     }
 
@@ -45,13 +49,19 @@ public sealed class RecentMemoryManager : IRecentMemory
         var cached = await _cache.ListRangeAsync(CacheKey(sessionId), -count, -1, ct);
         if (cached is not null && cached.Count > 0)
         {
-            _logger.LogTrace("Cache hit: {Count} messages for session {SessionId}", cached.Count, sessionId);
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("Cache hit: {Count} messages for session {SessionId}", cached.Count, sessionId);
+            }
             return cached.Cast<ChatMessage>().ToList().AsReadOnly();
         }
 
         // 2. Cache miss — load from DB
-        _logger.LogTrace("Cache miss for session {SessionId}, loading from store", sessionId);
-        var messages = await _store.GetMessagesAsync(sessionId, ct);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("Cache miss for session {SessionId}, loading from store", sessionId);
+        }
+        var messages = await _session.GetMessagesAsync(sessionId, ct);
         var recent = messages.TakeLast(count).ToList();
 
         // 3. Backfill cache
@@ -83,7 +93,7 @@ public sealed class RecentMemoryManager : IRecentMemory
         }
 
         // 2. Persist to DB
-        await _store.SaveMessagesAsync(sessionId, [message], ct);
+        await _session.SaveMessagesAsync(sessionId, [message], ct);
 
         // 3. Push to cache list (right = most recent)
         var cacheKey = CacheKey(sessionId);
@@ -95,9 +105,11 @@ public sealed class RecentMemoryManager : IRecentMemory
             var excess = length - _config.RecentMemoryCount;
             await _cache.ListLeftPopAsync(cacheKey, excess, ct);
         }
-
-        _logger.LogTrace("Pushed message {MessageId} to session {SessionId}",
-            metadata.MessageId, sessionId);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("Pushed message {MessageId} to session {SessionId}",
+                metadata.MessageId, sessionId);
+        }
     }
 
     /// <inheritdoc />
@@ -106,10 +118,14 @@ public sealed class RecentMemoryManager : IRecentMemory
         var cacheKey = CacheKey(sessionId);
         var length = await _cache.ListLengthAsync(cacheKey, ct);
 
-        if (length > maxCount)
+        if (length <= maxCount)
         {
-            var excess = length - maxCount;
-            await _cache.ListLeftPopAsync(cacheKey, excess, ct);
+            return;
+        }
+        var excess = length - maxCount;
+        await _cache.ListLeftPopAsync(cacheKey, excess, ct);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
             _logger.LogTrace("Trimmed {Excess} messages from session {SessionId}", excess, sessionId);
         }
     }

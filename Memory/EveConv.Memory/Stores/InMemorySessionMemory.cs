@@ -6,10 +6,10 @@ using Microsoft.Extensions.Logging;
 namespace EveConv.Memory.Stores;
 
 /// <summary>
-/// In-memory implementation of <see cref="ISessionMemoryStore"/> for development and testing.
+/// In-memory implementation of <see cref="ISessionMemory"/> for development and testing.
 /// Uses <see cref="System.Collections.Concurrent.ConcurrentDictionary{TKey, TValue}"/> for thread-safe storage.
 /// </summary>
-public sealed class InMemorySessionMemoryStore : ISessionMemoryStore
+public sealed class InMemorySessionMemory : ISessionMemory
 {
     private readonly Dictionary<string, List<ChatMessage>> _messages = [];
     private readonly Dictionary<string, ChatSession> _sessions = [];

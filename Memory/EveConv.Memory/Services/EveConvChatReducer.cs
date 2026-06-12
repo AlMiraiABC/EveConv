@@ -1,5 +1,4 @@
-﻿using System.Text;
-using EveConv.Abstraction.Diagnostic;
+﻿using EveConv.Abstraction.Diagnostic;
 using EveConv.Abstraction.Memory;
 using EveConv.Memory.Models;
 using EveConv.Memory.Options;
@@ -7,6 +6,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Scriban;
 
 namespace EveConv.Memory.Services;
 
@@ -17,23 +17,44 @@ namespace EveConv.Memory.Services;
 /// </summary>
 public sealed class EveConvChatReducer : IChatReducer
 {
+    private static readonly Template SummarizationPromptTemplate = Template.Parse("""
+        Summarize the following conversation history. Preserve key facts, decisions, and context.
+        Keep the summary concise while retaining all essential information.
+
+        --- Conversation History ---
+        {{ for message in messages }}
+        [{{ message.role }}]: {{ message.text }}
+        {{ end }}
+        --- End of History ---
+
+        Provide a concise summary:
+        """);
+
     private readonly IChatClient _summarizationClient;
-    private readonly ISessionMemoryStore _store;
+    private readonly ISessionMemory _session;
     private readonly ITokenCounter _tokenCounter;
     private readonly MemoryOptions _config;
     private readonly ILogger _logger;
 
+    /// <summary>
+    /// Create an <see cref="EveConvChatReducer"/> instance.
+    /// </summary>
+    /// <param name="summarizationClient">LLM client to summarize histories.</param>
+    /// <param name="session">Session memory to get all histories.</param>
+    /// <param name="tokenCounter">Calculate context tokens.</param>
+    /// <param name="options">Options to control.</param>
+    /// <param name="loggerFactory">Optional logger factory.</param>
     public EveConvChatReducer(
         [FromKeyedServices("summarization")] IChatClient summarizationClient,
-        ISessionMemoryStore store,
+        ISessionMemory session,
         ITokenCounter tokenCounter,
-        IOptions<MemoryOptions> config,
+        IOptions<MemoryOptions> options,
         ILoggerFactory? loggerFactory = null)
     {
         _summarizationClient = summarizationClient;
-        _store = store;
+        _session = session;
         _tokenCounter = tokenCounter;
-        _config = config.Value;
+        _config = options.Value;
         _logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<EveConvChatReducer>();
     }
 
@@ -55,15 +76,22 @@ public sealed class EveConvChatReducer : IChatReducer
 
         if (metadataList.Count == 0)
         {
-            _logger.LogWarning("No MemoryMetadataContent found on messages — cannot determine session. Skipping compaction.");
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning(
+                    "No MemoryMetadataContent found on messages — cannot determine session. Skipping compaction.");
+            }
             return messageList;
         }
 
         var sessionId = metadataList[0]!.SessionId;
-        _logger.LogTrace("Reducing {MessageCount} messages for session {SessionId}", messageList.Count, sessionId);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("Reducing {MessageCount} messages for session {SessionId}", messageList.Count, sessionId);
+        }
 
         // 2. Query existing compactions
-        var existingCompactions = await _store.GetCompactionsAsync(sessionId, ct);
+        var existingCompactions = await _session.GetCompactionsAsync(sessionId, ct);
 
         // 3. Build model-facing history: existing summaries + uncovered raw messages
         var coveredIds = new HashSet<string>();
@@ -99,13 +127,20 @@ public sealed class EveConvChatReducer : IChatReducer
         // 5. If within window, return as-is
         if (modelTokens <= _config.DefaultContextWindowTokens)
         {
-            _logger.LogTrace("Session {SessionId} model history ({Tokens} tokens) within window — no compaction needed",
-                sessionId, modelTokens);
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("Session {SessionId} model history ({Tokens} tokens) within window — no compaction needed",
+                    sessionId, modelTokens);
+            }
             return modelHistory;
         }
 
-        _logger.LogInformation("Session {SessionId} model history ({Tokens} tokens) exceeds window ({Window}) — compacting",
-            sessionId, modelTokens, _config.DefaultContextWindowTokens);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "Session {SessionId} model history ({Tokens} tokens) exceeds window ({Window}) — compacting",
+                sessionId, modelTokens, _config.DefaultContextWindowTokens);
+        }
 
         // 6. Separate: messages to compact vs. messages to keep
         var keepRecent = uncovered
@@ -118,7 +153,10 @@ public sealed class EveConvChatReducer : IChatReducer
 
         if (toCompact.Count == 0)
         {
-            _logger.LogTrace("Nothing to compact — all messages are within reserve count");
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("Nothing to compact — all messages are within reserve count");
+            }
             return modelHistory;
         }
 
@@ -133,8 +171,12 @@ public sealed class EveConvChatReducer : IChatReducer
 
         if (newLevel > _config.MaxCompactionLevel)
         {
-            _logger.LogWarning("Session {SessionId} has reached max compaction level ({Max}) — skipping further compaction",
-                sessionId, _config.MaxCompactionLevel);
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning(
+                    "Session {SessionId} has reached max compaction level ({Max}) — skipping further compaction",
+                    sessionId, _config.MaxCompactionLevel);
+            }
             return modelHistory;
         }
 
@@ -159,7 +201,7 @@ public sealed class EveConvChatReducer : IChatReducer
             CreatedAt = DateTimeOffset.UtcNow
         };
 
-        await _store.SaveCompactionAsync(newCompaction, ct);
+        await _session.SaveCompactionAsync(newCompaction, ct);
 
         // 9. Build result: compacted model-facing history
         var resultMessages = new List<ChatMessage>();
@@ -170,9 +212,12 @@ public sealed class EveConvChatReducer : IChatReducer
         resultMessages.Add(new ChatMessage(ChatRole.System, summaryText));
         resultMessages.AddRange(keepRecent);
 
-        _logger.LogInformation(
-            "Session {SessionId} compacted {CompactCount} messages → {SummaryTokens} tokens (level {Level})",
-            sessionId, toCompact.Count, compactedTokens, newLevel);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "Session {SessionId} compacted {CompactCount} messages → {SummaryTokens} tokens (level {Level})",
+                sessionId, toCompact.Count, compactedTokens, newLevel);
+        }
 
         return resultMessages;
     }
@@ -180,35 +225,25 @@ public sealed class EveConvChatReducer : IChatReducer
     private async Task<string> SummarizeMessagesAsync(
         IReadOnlyList<ChatMessage> messages, CancellationToken ct)
     {
-        var sb = new StringBuilder();
-        sb.AppendLine("Summarize the following conversation history. Preserve key facts, decisions, and context.");
-        sb.AppendLine("Keep the summary concise while retaining all essential information.");
-        sb.AppendLine();
-        sb.AppendLine("--- Conversation History ---");
-
-        foreach (var message in messages)
-        {
-            var role = message.Role.ToString().ToLowerInvariant();
-            foreach (var content in message.Contents)
-            {
-                if (content is TextContent text)
+        // Flatten messages to role/text pairs for the Scriban template
+        var messageModels = messages
+            .SelectMany(m => m.Contents
+                .OfType<TextContent>()
+                .Select(t => new
                 {
-                    sb.AppendLine($"[{role}]: {text.Text}");
-                }
-            }
-        }
-
-        sb.AppendLine("--- End of History ---");
-        sb.AppendLine();
-        sb.AppendLine("Provide a concise summary:");
-
-        var prompt = sb.ToString();
-
+                    role = m.Role.ToString().ToLowerInvariant(),
+                    text = t.Text
+                }))
+            .ToList();
         try
         {
+            var prompt = await SummarizationPromptTemplate.RenderAsync(new { messages = messageModels });
             var response = await _summarizationClient.GetResponseAsync(prompt, cancellationToken: ct);
             var summary = response.Text ?? string.Empty;
-            _logger.LogTrace("Summarization produced {Length} chars", summary.Length);
+            if(_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("Summarization produced {Length} chars", summary.Length);
+            }
             return summary;
         }
         catch (Exception ex)

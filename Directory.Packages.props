@@ -30,5 +30,6 @@
     <PackageVersion Include="dotenv.net" Version="4.0.0" />
     <PackageVersion Include="MessagePack" Version="3.1.4" />
     <PackageVersion Include="SqlSugarCore" Version="5.1.4.214" />
+    <PackageVersion Include="Scriban" Version="7.2.4" />
   </ItemGroup>
 </Project>

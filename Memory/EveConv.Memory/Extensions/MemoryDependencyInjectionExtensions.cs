@@ -43,15 +43,15 @@ public static class MemoryDependencyInjectionExtensions
         services.AddSingleton<ITokenCounter, TiktokenCounter>();
 
         // --- Store: auto-detect RDB or fallback to in-memory ---
-        services.AddSingleton<ISessionMemoryStore>(sp =>
+        services.AddSingleton<ISessionMemory>(sp =>
         {
             var sqlClient = sp.GetService<ISqlSugarClient>();
             if (sqlClient is not null)
             {
                 var logger = sp.GetService<ILoggerFactory>();
-                return new RdbSessionMemoryStore(sqlClient, logger);
+                return new RdbSessionMemory(sqlClient, logger);
             }
-            return new InMemorySessionMemoryStore();
+            return new InMemorySessionMemory();
         });
 
         // --- Core services ---

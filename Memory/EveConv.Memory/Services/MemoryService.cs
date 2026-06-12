@@ -14,7 +14,7 @@ namespace EveConv.Memory.Services;
 public sealed class MemoryService : IMemoryService
 {
     private readonly IRecentMemory _recentMemory;
-    private readonly ISessionMemoryStore _sessionStore;
+    private readonly ISessionMemory _session;
     private readonly ILongMemory _longMemory;
     private readonly EveConvChatReducer _chatReducer;
     private readonly ITokenCounter _tokenCounter;
@@ -24,7 +24,7 @@ public sealed class MemoryService : IMemoryService
 
     public MemoryService(
         IRecentMemory recentMemory,
-        ISessionMemoryStore sessionStore,
+        ISessionMemory session,
         ILongMemory longMemory,
         EveConvChatReducer chatReducer,
         ITokenCounter tokenCounter,
@@ -33,7 +33,7 @@ public sealed class MemoryService : IMemoryService
         ILoggerFactory? loggerFactory = null)
     {
         _recentMemory = recentMemory;
-        _sessionStore = sessionStore;
+        _session = session;
         _longMemory = longMemory;
         _chatReducer = chatReducer;
         _tokenCounter = tokenCounter;
@@ -46,7 +46,7 @@ public sealed class MemoryService : IMemoryService
     public async Task<ChatContext> GetContextAsync(string sessionId, CancellationToken ct = default)
     {
         // 1. Get the raw session messages
-        var rawMessages = await _sessionStore.GetMessagesAsync(sessionId, ct);
+        var rawMessages = await _session.GetMessagesAsync(sessionId, ct);
 
         // 2. Apply compaction via the reducer to get model-facing history
         var reducedMessages = await _chatReducer.ReduceAsync(rawMessages, ct);
@@ -77,7 +77,7 @@ public sealed class MemoryService : IMemoryService
         await _recentMemory.PushMessageAsync(sessionId, message, ct);
 
         // Ensure session metadata exists
-        var session = await _sessionStore.GetSessionAsync(sessionId, ct);
+        var session = await _session.GetSessionAsync(sessionId, ct);
         if (session is null)
         {
             session = new ChatSession
@@ -94,18 +94,24 @@ public sealed class MemoryService : IMemoryService
             session.TotalMessageCount++;
         }
 
-        await _sessionStore.SaveSessionAsync(session, ct);
+        await _session.SaveSessionAsync(session, ct);
     }
 
     /// <inheritdoc />
     public async Task CompactSessionAsync(string sessionId, CancellationToken ct = default)
     {
-        _logger.LogInformation("Triggering compaction for session {SessionId}", sessionId);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Triggering compaction for session {SessionId}", sessionId);
+        }
 
-        var messages = await _sessionStore.GetMessagesAsync(sessionId, ct);
+        var messages = await _session.GetMessagesAsync(sessionId, ct);
         if (messages.Count == 0)
         {
-            _logger.LogTrace("No messages to compact for session {SessionId}", sessionId);
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("No messages to compact for session {SessionId}", sessionId);
+            }
             return;
         }
 

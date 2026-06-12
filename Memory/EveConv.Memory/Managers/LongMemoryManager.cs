@@ -17,7 +17,7 @@ namespace EveConv.Memory.Managers;
 public sealed class LongMemoryManager : ILongMemory
 {
     private readonly LLMLongMemoryExtractor _extractor;
-    private readonly ISessionMemoryStore _sessionStore;
+    private readonly ISessionMemory _session;
     private readonly ITokenCounter _tokenCounter;
     private readonly MemoryOptions _config;
     private readonly ILogger _logger;
@@ -28,13 +28,13 @@ public sealed class LongMemoryManager : ILongMemory
 
     public LongMemoryManager(
         LLMLongMemoryExtractor extractor,
-        ISessionMemoryStore sessionStore,
+        ISessionMemory session,
         ITokenCounter tokenCounter,
         IOptions<MemoryOptions> config,
         ILoggerFactory? loggerFactory = null)
     {
         _extractor = extractor;
-        _sessionStore = sessionStore;
+        _session = session;
         _tokenCounter = tokenCounter;
         _config = config.Value;
         _logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<LongMemoryManager>();
@@ -74,8 +74,11 @@ public sealed class LongMemoryManager : ILongMemory
             totalTokens += tokens;
         }
 
-        _logger.LogTrace("Built {Count} long memory context messages ({Tokens} tokens) for owner {OwnerKey}",
-            result.Count, totalTokens, ownerKey);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("Built {Count} long memory context messages ({Tokens} tokens) for owner {OwnerKey}",
+                result.Count, totalTokens, ownerKey);
+        }
 
         return result.AsReadOnly();
     }
@@ -90,14 +93,17 @@ public sealed class LongMemoryManager : ILongMemory
             return;
         }
 
-        _logger.LogInformation("Extracting long memory for owner {OwnerKey} from {Count} sessions",
-            ownerKey, sessionIdList.Count);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Extracting long memory for owner {OwnerKey} from {Count} sessions",
+                ownerKey, sessionIdList.Count);
+        }
 
         // Load session compactions for context
         var compactionTexts = new List<string>();
         foreach (var sessionId in sessionIdList)
         {
-            var compactions = await _sessionStore.GetCompactionsAsync(sessionId, ct);
+            var compactions = await _session.GetCompactionsAsync(sessionId, ct);
             foreach (var compaction in compactions)
             {
                 compactionTexts.Add(compaction.CompactedSummary);
@@ -106,7 +112,7 @@ public sealed class LongMemoryManager : ILongMemory
             // If no compactions, load raw messages
             if (compactions.Count == 0)
             {
-                var messages = await _sessionStore.GetMessagesAsync(sessionId, ct);
+                var messages = await _session.GetMessagesAsync(sessionId, ct);
                 var text = string.Join("\n", messages
                     .Select(m => m.Contents.OfType<TextContent>().FirstOrDefault()?.Text ?? ""));
                 if (!string.IsNullOrEmpty(text))
@@ -118,7 +124,10 @@ public sealed class LongMemoryManager : ILongMemory
 
         if (compactionTexts.Count == 0)
         {
-            _logger.LogTrace("No content to extract from sessions");
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("No content to extract from sessions");
+            }
             return;
         }
 
@@ -131,8 +140,11 @@ public sealed class LongMemoryManager : ILongMemory
             await UpsertInternalAsync(ownerKey, entry);
         }
 
-        _logger.LogInformation("Extracted and stored {Count} long memory entries for owner {OwnerKey}",
-            extractedEntries.Count, ownerKey);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Extracted and stored {Count} long memory entries for owner {OwnerKey}",
+                extractedEntries.Count, ownerKey);
+        }
     }
 
     /// <inheritdoc />
@@ -152,7 +164,10 @@ public sealed class LongMemoryManager : ILongMemory
             }
         }
 
-        _logger.LogTrace("Forgot long memory entry {EntryId} for owner {OwnerKey}", entryId, ownerKey);
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("Forgot long memory entry {EntryId} for owner {OwnerKey}", entryId, ownerKey);
+        }
         return Task.CompletedTask;
     }
 
@@ -188,7 +203,10 @@ public sealed class LongMemoryManager : ILongMemory
                 }
                 existing.SourceSessionIdsJson = SerializeSessionIds(existingSessions);
 
-                _logger.LogTrace("Reinforced existing long memory entry {EntryId}", existing.Id);
+                if (_logger.IsEnabled(LogLevel.Trace))
+                {
+                    _logger.LogTrace("Reinforced existing long memory entry {EntryId}", existing.Id);
+                }
             }
             else
             {
@@ -206,7 +224,10 @@ public sealed class LongMemoryManager : ILongMemory
                 };
                 entries.Add(entity);
 
-                _logger.LogTrace("Added new long memory entry {EntryId}", entry.Id);
+                if (_logger.IsEnabled(LogLevel.Trace))
+                {
+                    _logger.LogTrace("Added new long memory entry {EntryId}", entry.Id);
+                }
             }
         }
 

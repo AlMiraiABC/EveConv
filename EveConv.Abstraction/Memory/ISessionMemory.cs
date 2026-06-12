@@ -6,7 +6,7 @@ namespace EveConv.Abstraction.Memory;
 /// Persistence contract for session data.
 /// Abstracts the underlying storage (RDB or in-memory) behind a common interface.
 /// </summary>
-public interface ISessionMemoryStore
+public interface ISessionMemory
 {
     /// <summary>
     /// Retrieves all messages for a session, ordered by sequence number.

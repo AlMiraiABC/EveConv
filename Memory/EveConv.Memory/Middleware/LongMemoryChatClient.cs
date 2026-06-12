@@ -100,8 +100,11 @@ public sealed class LongMemoryChatClient : DelegatingChatClient
             augmented.AddRange(longMemoryMessages);
             augmented.AddRange(messages);
 
-            _logger.LogTrace("Injected {Count} long memory messages for owner {OwnerKey}",
-                longMemoryMessages.Count, ownerKey);
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("Injected {Count} long memory messages for owner {OwnerKey}",
+                    longMemoryMessages.Count, ownerKey);
+            }
 
             return augmented.AsReadOnly();
         }
@@ -136,8 +139,11 @@ public sealed class LongMemoryChatClient : DelegatingChatClient
             }
 
             await _longMemory.ExtractAndStoreAsync(_options.OwnerKey, sessionIds);
-            _logger.LogTrace("Background long memory extraction completed for {Count} sessions",
-                sessionIds.Count);
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("Background long memory extraction completed for {Count} sessions",
+                    sessionIds.Count);
+            }
         }
         catch (Exception ex)
         {

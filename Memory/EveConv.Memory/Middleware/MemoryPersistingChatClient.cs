@@ -80,14 +80,15 @@ public sealed class MemoryPersistingChatClient : DelegatingChatClient
                 .Where(u => u.Text is not null)
                 .Select(u => u.Text));
 
-            if (!string.IsNullOrEmpty(text))
+            if (string.IsNullOrEmpty(text))
             {
-                var msg = new ChatMessage(ChatRole.Assistant, text);
-                var sessionId = ExtractSessionId(messageList);
-                if (!string.IsNullOrEmpty(sessionId))
-                {
-                    await _recentMemory.PushMessageAsync(sessionId, msg, ct);
-                }
+                yield break;
+            }
+            var msg = new ChatMessage(ChatRole.Assistant, text);
+            var sessionId = ExtractSessionId(messageList);
+            if (!string.IsNullOrEmpty(sessionId))
+            {
+                await _recentMemory.PushMessageAsync(sessionId, msg, ct);
             }
         }
     }
@@ -116,7 +117,10 @@ public sealed class MemoryPersistingChatClient : DelegatingChatClient
                     SessionId = sessionId
                 };
                 message.Contents.Add(metadata);
-                _logger.LogTrace("Attached metadata to message {MessageId}", metadata.MessageId);
+                if (_logger.IsEnabled(LogLevel.Trace))
+                {
+                    _logger.LogTrace("Attached metadata to message {MessageId}", metadata.MessageId);
+                }
             }
 
             await _recentMemory.PushMessageAsync(sessionId, message, ct);
@@ -131,11 +135,14 @@ public sealed class MemoryPersistingChatClient : DelegatingChatClient
         // Persist each response message
         foreach (var msg in response.Messages)
         {
-            // Response messages won't have sessionId directly; we persist via the
-            // session that was active during the request — this is handled by the
-            // caller providing sessionId on the incoming messages.
-            // For now, we skip persisting responses without session context.
-            _logger.LogTrace("Response message available for persistence");
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                // Response messages won't have sessionId directly; we persist via the
+                // session that was active during the request — this is handled by the
+                // caller providing sessionId on the incoming messages.
+                // For now, we skip persisting responses without session context.
+                _logger.LogTrace("Response message available for persistence");
+            }
         }
 
         await Task.CompletedTask;
@@ -151,14 +158,6 @@ public sealed class MemoryPersistingChatClient : DelegatingChatClient
 
     private static string? ExtractSessionId(IReadOnlyList<ChatMessage> messages)
     {
-        foreach (var message in messages)
-        {
-            var sessionId = ExtractSessionId(message);
-            if (!string.IsNullOrEmpty(sessionId))
-            {
-                return sessionId;
-            }
-        }
-        return null;
+        return messages.Select(ExtractSessionId).FirstOrDefault(sessionId => !string.IsNullOrEmpty(sessionId));
     }
 }

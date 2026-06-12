@@ -7,6 +7,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Scriban;
 
 namespace EveConv.Memory.Services;
 
@@ -16,6 +17,32 @@ namespace EveConv.Memory.Services;
 /// </summary>
 public sealed class LLMLongMemoryExtractor
 {
+    private static readonly Template ExtractionPromptTemplate = Template.Parse("""
+        Analyze the following conversation history and extract:
+        1. User preferences (likes, dislikes, preferred styles)
+        2. User habits (recurring behaviors, patterns)
+        3. Important events (life events, milestones)
+        4. Facts about the user (name, role, skills, background)
+
+        For each extracted item, output a JSON object with:
+        - category: one of "preference", "habit", "event", "fact"
+        - content: a short description (under 50 words)
+        - importance: a float from 0.0 to 1.0
+
+        Only include items with importance > {{ importance_threshold }}.
+        Output as a JSON array. Example format:
+        [{"category":"preference","content":"Likes Python","importance":0.8}]
+
+        --- Conversation History ---
+        {{ for content in session_contents }}
+        {{ content }}
+        ---
+        {{ end }}
+        --- End of History ---
+
+        Extracted entries (JSON array):
+        """);
+
     private readonly IChatClient _extractionClient;
     private readonly MemoryOptions _config;
     private readonly ILogger _logger;
@@ -46,16 +73,19 @@ public sealed class LLMLongMemoryExtractor
         {
             return [];
         }
-
-        var prompt = BuildExtractionPrompt(sessionContents);
-
         try
         {
+            var prompt = await ExtractionPromptTemplate.RenderAsync(new
+            {
+                importance_threshold = _config.ImportanceThreshold,
+                session_contents = sessionContents
+            });
             var response = await _extractionClient.GetResponseAsync(prompt, cancellationToken: ct);
             var responseText = response.Text ?? string.Empty;
-
-            _logger.LogTrace("LLM extraction response: {Length} chars", responseText.Length);
-
+            if(_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("LLM extraction response: {Length} chars", responseText.Length);
+            }
             return ParseExtractionResponse(responseText, sourceSessionIds);
         }
         catch (Exception ex)
@@ -63,37 +93,6 @@ public sealed class LLMLongMemoryExtractor
             _logger.LogError(ex, "LLM long memory extraction failed");
             return [];
         }
-    }
-
-    private string BuildExtractionPrompt(IReadOnlyList<string> sessionContents)
-    {
-        var sb = new StringBuilder();
-        sb.AppendLine("Analyze the following conversation history and extract:");
-        sb.AppendLine("1. User preferences (likes, dislikes, preferred styles)");
-        sb.AppendLine("2. User habits (recurring behaviors, patterns)");
-        sb.AppendLine("3. Important events (life events, milestones)");
-        sb.AppendLine("4. Facts about the user (name, role, skills, background)");
-        sb.AppendLine();
-        sb.AppendLine("For each extracted item, output a JSON object with:");
-        sb.AppendLine("- category: one of \"preference\", \"habit\", \"event\", \"fact\"");
-        sb.AppendLine("- content: a short description (under 50 words)");
-        sb.AppendLine("- importance: a float from 0.0 to 1.0");
-        sb.AppendLine();
-        sb.AppendLine($"Only include items with importance > {_config.ImportanceThreshold}.");
-        sb.AppendLine("Output as a JSON array. Example format:");
-        sb.AppendLine("[{\"category\":\"preference\",\"content\":\"Likes Python\",\"importance\":0.8}]");
-        sb.AppendLine();
-        sb.AppendLine("--- Conversation History ---");
-        foreach (var content in sessionContents)
-        {
-            sb.AppendLine(content);
-            sb.AppendLine("---");
-        }
-        sb.AppendLine("--- End of History ---");
-        sb.AppendLine();
-        sb.AppendLine("Extracted entries (JSON array):");
-
-        return sb.ToString();
     }
 
     private IReadOnlyList<LongMemoryEntry> ParseExtractionResponse(
@@ -107,7 +106,10 @@ public sealed class LLMLongMemoryExtractor
 
             if (jsonStart < 0 || jsonEnd < 0 || jsonEnd <= jsonStart)
             {
-                _logger.LogWarning("Could not find JSON array in extraction response");
+                if (_logger.IsEnabled(LogLevel.Warning))
+                {
+                    _logger.LogWarning("Could not find JSON array in extraction response");
+                }
                 return [];
             }
 
@@ -144,8 +146,10 @@ public sealed class LLMLongMemoryExtractor
                     LastReinforcedAt = now
                 });
             }
-
-            _logger.LogTrace("Parsed {Count} entries from extraction response", entries.Count);
+            if(_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("Parsed {Count} entries from extraction response", entries.Count);
+            }
             return entries.AsReadOnly();
         }
         catch (Exception ex)

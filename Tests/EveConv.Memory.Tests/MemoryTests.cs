@@ -122,12 +122,12 @@ public class MemoryMetadataContentSerializationTests
 /// <summary>
 /// Unit tests for InMemorySessionMemoryStore.
 /// </summary>
-public class InMemorySessionMemoryStoreTests
+public class InMemorySessionMemoryTests
 {
     [Fact]
     public async Task SaveAndGetMessages_RoundTrip_PreservesData()
     {
-        var store = new InMemorySessionMemoryStore();
+        var store = new InMemorySessionMemory();
         var message = new ChatMessage(ChatRole.User, "Hello");
         message.Contents.Add(new MemoryMetadataContent
         {
@@ -145,7 +145,7 @@ public class InMemorySessionMemoryStoreTests
     [Fact]
     public async Task GetSession_NonExistent_ReturnsNull()
     {
-        var store = new InMemorySessionMemoryStore();
+        var store = new InMemorySessionMemory();
         var result = await store.GetSessionAsync("nonexistent", TestContext.Current.CancellationToken);
         Assert.Null(result);
     }
@@ -153,7 +153,7 @@ public class InMemorySessionMemoryStoreTests
     [Fact]
     public async Task SaveAndGetSession_RoundTrip_PreservesData()
     {
-        var store = new InMemorySessionMemoryStore();
+        var store = new InMemorySessionMemory();
         var session = new ChatSession
         {
             SessionId = "session-1",
@@ -173,7 +173,7 @@ public class InMemorySessionMemoryStoreTests
     [Fact]
     public async Task SaveAndGetCompactions_RoundTrip_PreservesData()
     {
-        var store = new InMemorySessionMemoryStore();
+        var store = new InMemorySessionMemory();
         var compaction = new SessionCompaction
         {
             Id = "comp-1",
