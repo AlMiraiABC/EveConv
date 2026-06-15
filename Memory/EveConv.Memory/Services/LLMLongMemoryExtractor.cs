@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using EveConv.Abstraction.Diagnostic;
 using EveConv.Abstraction.Memory;
 using EveConv.Memory.Options;
@@ -161,8 +162,11 @@ public sealed class LLMLongMemoryExtractor
 
     private sealed class RawExtractedEntry
     {
+        [JsonPropertyName("category")]
         public string Category { get; set; } = string.Empty;
+        [JsonPropertyName("content")]
         public string Content { get; set; } = string.Empty;
+        [JsonPropertyName("importance")]
         public float Importance { get; set; }
     }
 }
