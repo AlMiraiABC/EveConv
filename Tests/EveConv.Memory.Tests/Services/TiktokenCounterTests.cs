@@ -6,7 +6,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
-namespace EveConv.Memory.Tests;
+namespace EveConv.Memory.Tests.Services;
 
 /// <summary>
 /// Unit tests for the TiktokenCounter service.

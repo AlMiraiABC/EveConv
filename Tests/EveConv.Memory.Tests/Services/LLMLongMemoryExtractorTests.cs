@@ -8,7 +8,7 @@ using Moq;
 
 using MemoryOptions = EveConv.Memory.Options.MemoryOptions;
 
-namespace EveConv.Memory.Tests;
+namespace EveConv.Memory.Tests.Services;
 
 /// <summary>
 /// Unit tests for LLMLongMemoryExtractor.ExtractAsync.

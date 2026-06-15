@@ -68,68 +68,26 @@ public sealed class EveConvChatReducer : IChatReducer
             return messageList;
         }
 
-        // 1. Extract metadata
-        var metadataList = messageList
-            .Select(m => m.Contents.OfType<MemoryMetadataContent>().FirstOrDefault())
-            .Where(m => m is not null)
-            .ToList();
-
-        if (metadataList.Count == 0)
+        var sessionId = TryGetSessionId(messageList);
+        if (sessionId is null)
         {
-            if (_logger.IsEnabled(LogLevel.Warning))
-            {
-                _logger.LogWarning(
-                    "No MemoryMetadataContent found on messages — cannot determine session. Skipping compaction.");
-            }
             return messageList;
         }
 
-        var sessionId = metadataList[0]!.SessionId;
-        if (_logger.IsEnabled(LogLevel.Trace))
-        {
-            _logger.LogTrace("Reducing {MessageCount} messages for session {SessionId}", messageList.Count, sessionId);
-        }
-
-        // 2. Query existing compactions
+        // 1. Load existing compactions and build model-facing history
         var existingCompactions = await _session.GetCompactionsAsync(sessionId, ct);
+        var coveredIds = BuildCoveredIdSet(existingCompactions);
+        var uncovered = FilterUncovered(messageList, coveredIds);
+        var modelHistory = BuildResultHistory(existingCompactions, uncovered);
 
-        // 3. Build model-facing history: existing summaries + uncovered raw messages
-        var coveredIds = new HashSet<string>();
-        foreach (var compaction in existingCompactions)
-        {
-            foreach (var id in compaction.SourceMessageIds)
-            {
-                coveredIds.Add(id);
-            }
-        }
-
-        var uncovered = new List<ChatMessage>();
-        foreach (var message in messageList)
-        {
-            var meta = message.Contents.OfType<MemoryMetadataContent>().FirstOrDefault();
-            if (meta is null || !coveredIds.Contains(meta.MessageId))
-            {
-                uncovered.Add(message);
-            }
-        }
-
-        // Build model-facing history
-        var modelHistory = new List<ChatMessage>();
-        foreach (var existing in existingCompactions.OrderBy(c => c.CompactionLevel))
-        {
-            modelHistory.Add(new ChatMessage(ChatRole.System, existing.CompactedSummary));
-        }
-        modelHistory.AddRange(uncovered);
-
-        // 4. Calculate tokens
+        // 2. If within context window, return as-is
         var modelTokens = _tokenCounter.CountTokens(modelHistory);
-
-        // 5. If within window, return as-is
         if (modelTokens <= _config.DefaultContextWindowTokens)
         {
             if (_logger.IsEnabled(LogLevel.Trace))
             {
-                _logger.LogTrace("Session {SessionId} model history ({Tokens} tokens) within window — no compaction needed",
+                _logger.LogTrace(
+                    "Session {SessionId} model history ({Tokens} tokens) within window — no compaction needed",
                     sessionId, modelTokens);
             }
             return modelHistory;
@@ -142,84 +100,8 @@ public sealed class EveConvChatReducer : IChatReducer
                 sessionId, modelTokens, _config.DefaultContextWindowTokens);
         }
 
-        // 6. Separate: messages to compact vs. messages to keep
-        var keepRecent = uncovered
-            .Skip(Math.Max(0, uncovered.Count - _config.CompactReserveRecentCount))
-            .ToList();
-
-        var toCompact = uncovered
-            .Take(Math.Max(0, uncovered.Count - _config.CompactReserveRecentCount))
-            .ToList();
-
-        if (toCompact.Count == 0)
-        {
-            if (_logger.IsEnabled(LogLevel.Trace))
-            {
-                _logger.LogTrace("Nothing to compact — all messages are within reserve count");
-            }
-            return modelHistory;
-        }
-
-        // 7. Build LLM summarization prompt
-        var summaryText = await SummarizeMessagesAsync(toCompact, ct);
-
-        // 8. Create and persist compaction
-        var maxLevel = existingCompactions.Count > 0
-            ? existingCompactions.Max(c => c.CompactionLevel)
-            : 0;
-        var newLevel = maxLevel + 1;
-
-        if (newLevel > _config.MaxCompactionLevel)
-        {
-            if (_logger.IsEnabled(LogLevel.Warning))
-            {
-                _logger.LogWarning(
-                    "Session {SessionId} has reached max compaction level ({Max}) — skipping further compaction",
-                    sessionId, _config.MaxCompactionLevel);
-            }
-            return modelHistory;
-        }
-
-        var sourceIds = toCompact
-            .Select(m => m.Contents.OfType<MemoryMetadataContent>().FirstOrDefault()?.MessageId)
-            .Where(id => id is not null)
-            .Cast<string>()
-            .ToList();
-
-        var originalTokens = _tokenCounter.CountTokens(toCompact);
-        var compactedTokens = _tokenCounter.CountTokens(summaryText);
-
-        var newCompaction = new SessionCompaction
-        {
-            Id = Guid.NewGuid().ToString("N"),
-            SessionId = sessionId,
-            CompactedSummary = summaryText,
-            SourceMessageIds = sourceIds.AsReadOnly(),
-            OriginalTokenCount = originalTokens,
-            CompactedTokenCount = compactedTokens,
-            CompactionLevel = newLevel,
-            CreatedAt = DateTimeOffset.UtcNow
-        };
-
-        await _session.SaveCompactionAsync(newCompaction, ct);
-
-        // 9. Build result: compacted model-facing history
-        var resultMessages = new List<ChatMessage>();
-        foreach (var existing in existingCompactions.OrderBy(c => c.CompactionLevel))
-        {
-            resultMessages.Add(new ChatMessage(ChatRole.System, existing.CompactedSummary));
-        }
-        resultMessages.Add(new ChatMessage(ChatRole.System, summaryText));
-        resultMessages.AddRange(keepRecent);
-
-        if (_logger.IsEnabled(LogLevel.Information))
-        {
-            _logger.LogInformation(
-                "Session {SessionId} compacted {CompactCount} messages → {SummaryTokens} tokens (level {Level})",
-                sessionId, toCompact.Count, compactedTokens, newLevel);
-        }
-
-        return resultMessages;
+        // 3. Execute compaction pipeline
+        return await ExecuteCompactionAsync(sessionId, uncovered, existingCompactions, modelHistory, ct);
     }
 
     private async Task<string> SummarizeMessagesAsync(
@@ -252,5 +134,198 @@ public sealed class EveConvChatReducer : IChatReducer
             // Fallback: return the last few messages as-is
             return "Summary unavailable. Recent conversation context follows.";
         }
+    }
+
+    /// <summary>
+    /// Try to extract the session ID from the first message carrying <see cref="MemoryMetadataContent"/>.
+    /// Returns <c>null</c> and logs a warning if no metadata is found on any message.
+    /// </summary>
+    private string? TryGetSessionId(IReadOnlyList<ChatMessage> messages)
+    {
+        var metadata = messages
+            .Select(m => m.Contents.OfType<MemoryMetadataContent>().FirstOrDefault())
+            .FirstOrDefault(m => m is not null);
+
+        if (metadata is null)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning(
+                    "No MemoryMetadataContent found on messages — cannot determine session. Skipping compaction.");
+            }
+            return null;
+        }
+
+        if (_logger.IsEnabled(LogLevel.Trace))
+        {
+            _logger.LogTrace("Reducing {MessageCount} messages for session {SessionId}", messages.Count, metadata.SessionId);
+        }
+
+        return metadata.SessionId;
+    }
+
+    /// <summary>
+    /// Build the set of message IDs that have already been compacted.
+    /// </summary>
+    private static HashSet<string> BuildCoveredIdSet(IReadOnlyList<SessionCompaction> compactions)
+    {
+        var covered = new HashSet<string>();
+        foreach (var compaction in compactions)
+        {
+            foreach (var id in compaction.SourceMessageIds)
+            {
+                covered.Add(id);
+            }
+        }
+        return covered;
+    }
+
+    /// <summary>
+    /// Return messages whose IDs are not yet covered by any existing compaction.
+    /// Messages without <see cref="MemoryMetadataContent"/> are treated as uncovered.
+    /// </summary>
+    private static List<ChatMessage> FilterUncovered(
+        IReadOnlyList<ChatMessage> messages, HashSet<string> coveredIds)
+    {
+        var uncovered = new List<ChatMessage>();
+        foreach (var message in messages)
+        {
+            var meta = message.Contents.OfType<MemoryMetadataContent>().FirstOrDefault();
+            if (meta is null || !coveredIds.Contains(meta.MessageId))
+            {
+                uncovered.Add(message);
+            }
+        }
+        return uncovered;
+    }
+
+    /// <summary>
+    /// Build the model-facing history from existing compaction summaries and recent messages.
+    /// When <paramref name="newSummary"/> is provided it is appended after the existing summaries.
+    /// </summary>
+    private static List<ChatMessage> BuildResultHistory(
+        IReadOnlyList<SessionCompaction> compactions,
+        IEnumerable<ChatMessage> recentMessages,
+        string? newSummary = null)
+    {
+        var result = new List<ChatMessage>();
+        foreach (var existing in compactions.OrderBy(c => c.CompactionLevel))
+        {
+            result.Add(new ChatMessage(ChatRole.System, existing.CompactedSummary));
+        }
+        if (newSummary is not null)
+        {
+            result.Add(new ChatMessage(ChatRole.System, newSummary));
+        }
+        result.AddRange(recentMessages);
+        return result;
+    }
+
+    /// <summary>
+    /// Split uncovered messages into to-compact and keep-recent buckets,
+    /// and validate that compaction can proceed (has messages + within level cap).
+    /// Returns <c>null</c> when compaction should be skipped.
+    /// </summary>
+    private (List<ChatMessage> ToCompact, List<ChatMessage> KeepRecent, int NewLevel)?
+        TryPrepareCompaction(
+            List<ChatMessage> uncovered,
+            IReadOnlyList<SessionCompaction> existingCompactions)
+    {
+        var reserve = _config.CompactReserveRecentCount;
+        var keepRecent = uncovered.Skip(Math.Max(0, uncovered.Count - reserve)).ToList();
+        var toCompact = uncovered.Take(Math.Max(0, uncovered.Count - reserve)).ToList();
+
+        if (toCompact.Count == 0)
+        {
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("Nothing to compact — all messages are within reserve count");
+            }
+            return null;
+        }
+
+        var maxLevel = existingCompactions.Count > 0
+            ? existingCompactions.Max(c => c.CompactionLevel)
+            : 0;
+        var newLevel = maxLevel + 1;
+
+        if (newLevel > _config.MaxCompactionLevel)
+        {
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning(
+                    "Session has reached max compaction level ({Max}) — skipping further compaction",
+                    _config.MaxCompactionLevel);
+            }
+            return null;
+        }
+
+        return (toCompact, keepRecent, newLevel);
+    }
+
+    /// <summary>
+    /// Execute the full compaction pipeline: prepare, summarize, persist, and assemble result.
+    /// Falls back to <paramref name="modelHistory"/> when compaction cannot proceed.
+    /// </summary>
+    private async Task<IEnumerable<ChatMessage>> ExecuteCompactionAsync(
+        string sessionId,
+        List<ChatMessage> uncovered,
+        IReadOnlyList<SessionCompaction> existingCompactions,
+        List<ChatMessage> modelHistory,
+        CancellationToken ct)
+    {
+        var prepared = TryPrepareCompaction(uncovered, existingCompactions);
+        if (prepared is null)
+        {
+            return modelHistory;
+        }
+
+        var (toCompact, keepRecent, newLevel) = prepared.Value;
+
+        var summaryText = await SummarizeMessagesAsync(toCompact, ct);
+        var compactedTokens = _tokenCounter.CountTokens(summaryText);
+
+        await PersistCompactionAsync(sessionId, toCompact, summaryText, compactedTokens, newLevel, ct);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation(
+                "Session {SessionId} compacted {CompactCount} messages → {SummaryTokens} tokens (level {Level})",
+                sessionId, toCompact.Count, compactedTokens, newLevel);
+        }
+
+        return BuildResultHistory(existingCompactions, keepRecent, summaryText);
+    }
+
+    /// <summary>
+    /// Create a <see cref="SessionCompaction"/> record and persist it to the session store.
+    /// </summary>
+    private async Task PersistCompactionAsync(
+        string sessionId,
+        IReadOnlyList<ChatMessage> toCompact,
+        string summaryText,
+        int compactedTokens,
+        int newLevel,
+        CancellationToken ct)
+    {
+        var sourceIds = toCompact
+            .Select(m => m.Contents.OfType<MemoryMetadataContent>().FirstOrDefault()?.MessageId)
+            .Where(id => id is not null)
+            .Cast<string>()
+            .ToList();
+
+        var newCompaction = new SessionCompaction
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            SessionId = sessionId,
+            CompactedSummary = summaryText,
+            SourceMessageIds = sourceIds.AsReadOnly(),
+            OriginalTokenCount = _tokenCounter.CountTokens(toCompact),
+            CompactedTokenCount = compactedTokens,
+            CompactionLevel = newLevel,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+
+        await _session.SaveCompactionAsync(newCompaction, ct);
     }
 }

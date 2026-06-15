@@ -5,7 +5,7 @@ using Microsoft.Extensions.AI;
 using OpenAI;
 using MemoryOptions = EveConv.Memory.Options.MemoryOptions;
 
-namespace EveConv.Memory.Tests;
+namespace EveConv.Memory.Tests.Services;
 
 /// <summary>
 /// Integration tests for <see cref="LLMLongMemoryExtractor"/> using a real OpenAI-compatible API.
