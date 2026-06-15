@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.Options;
 
-namespace EveConv.Memory.Options;
+namespace EveConv.Memory.Config;
 
 /// <summary>
 /// Configuration for the EveConv memory system.
-/// Bound from the <c>"Memory"</c> section of appinittings.json.
+/// Bound from the <c>"Memory"</c> section of <c>appsettings.json</c>.
 /// </summary>
-public class MemoryOptions : IOptions<MemoryOptions>
+public class MemoryConfiguration : IOptions<MemoryConfiguration>
 {
     /// <summary>
     /// Number of most recent messages to keep in recent memory cache.
@@ -49,7 +49,7 @@ public class MemoryOptions : IOptions<MemoryOptions>
     /// </summary>
     public float ImportanceThreshold { get; init; } = 0.5f;
 
-    public MemoryOptions Value => this;
+    public MemoryConfiguration Value => this;
 }
 
 /// <summary>

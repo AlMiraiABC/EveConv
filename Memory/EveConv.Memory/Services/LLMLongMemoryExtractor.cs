@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using EveConv.Abstraction.Diagnostic;
 using EveConv.Abstraction.Memory;
-using EveConv.Memory.Options;
+using EveConv.Memory.Config;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -45,12 +45,12 @@ public sealed class LLMLongMemoryExtractor
         """);
 
     private readonly IChatClient _extractionClient;
-    private readonly MemoryOptions _config;
+    private readonly MemoryConfiguration _config;
     private readonly ILogger _logger;
 
     public LLMLongMemoryExtractor(
         [FromKeyedServices("extraction")] IChatClient extractionClient,
-        IOptions<MemoryOptions> config,
+        IOptions<MemoryConfiguration> config,
         ILoggerFactory? loggerFactory = null)
     {
         _extractionClient = extractionClient;

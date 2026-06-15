@@ -3,7 +3,7 @@ using EveConv.Abstraction.Cache;
 using EveConv.Abstraction.Memory;
 using EveConv.Memory.Managers;
 using EveConv.Memory.Models;
-using EveConv.Memory.Options;
+using EveConv.Memory.Config;
 using EveConv.Memory.Services;
 using EveConv.Memory.Stores;
 using Microsoft.Extensions.AI;
@@ -34,7 +34,7 @@ public static class MemoryDependencyInjectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.Configure<MemoryOptions>(
+        services.Configure<MemoryConfiguration>(
             configuration.GetSection("Memory"));
         services.Configure<LongMemoryOptions>(
             configuration.GetSection("Memory:LongMemory"));

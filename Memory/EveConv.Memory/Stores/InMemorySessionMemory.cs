@@ -14,7 +14,7 @@ public sealed class InMemorySessionMemory : ISessionMemory
     private readonly Dictionary<string, List<ChatMessage>> _messages = [];
     private readonly Dictionary<string, ChatSession> _sessions = [];
     private readonly Dictionary<string, List<SessionCompaction>> _compactions = [];
-    private readonly object _lock = new();
+    private readonly Lock _lock = new();
 
     /// <inheritdoc />
     public Task<IReadOnlyList<ChatMessage>> GetMessagesAsync(

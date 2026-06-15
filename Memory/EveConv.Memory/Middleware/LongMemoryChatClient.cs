@@ -2,7 +2,7 @@
 using EveConv.Abstraction.Diagnostic;
 using EveConv.Abstraction.Memory;
 using EveConv.Memory.Models;
-using EveConv.Memory.Options;
+using EveConv.Memory.Config;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

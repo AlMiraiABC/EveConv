@@ -1,7 +1,7 @@
 ﻿using EveConv.Abstraction.Diagnostic;
 using EveConv.Abstraction.Memory;
 using EveConv.Memory.Models;
-using EveConv.Memory.Options;
+using EveConv.Memory.Config;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -33,7 +33,7 @@ public sealed class EveConvChatReducer : IChatReducer
     private readonly IChatClient _summarizationClient;
     private readonly ISessionMemory _session;
     private readonly ITokenCounter _tokenCounter;
-    private readonly MemoryOptions _config;
+    private readonly MemoryConfiguration _config;
     private readonly ILogger _logger;
 
     /// <summary>
@@ -48,7 +48,7 @@ public sealed class EveConvChatReducer : IChatReducer
         [FromKeyedServices("summarization")] IChatClient summarizationClient,
         ISessionMemory session,
         ITokenCounter tokenCounter,
-        IOptions<MemoryOptions> options,
+        IOptions<MemoryConfiguration> options,
         ILoggerFactory? loggerFactory = null)
     {
         _summarizationClient = summarizationClient;

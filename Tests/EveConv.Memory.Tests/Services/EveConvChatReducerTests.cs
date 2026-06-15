@@ -1,9 +1,10 @@
 ﻿using EveConv.Abstraction.Memory;
 using EveConv.Memory.Models;
-using EveConv.Memory.Options;
+using EveConv.Memory.Config;
 using EveConv.Memory.Services;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 
 namespace EveConv.Memory.Tests.Services;
@@ -33,8 +34,8 @@ public class EveConvChatReducerTests
         return msg;
     }
 
-    /// <summary>Create default <see cref="MemoryOptions"/> for tests.</summary>
-    private static MemoryOptions CreateOptions(
+    /// <summary>Create default <see cref="MemoryConfiguration"/> for tests.</summary>
+    private static MemoryConfiguration CreateOptions(
         int windowTokens = DefaultWindowTokens,
         int reserveRecent = DefaultReserveRecent,
         int maxLevel = DefaultMaxLevel)
@@ -48,12 +49,12 @@ public class EveConvChatReducerTests
     /// <summary>Create the reducer with mocked dependencies.</summary>
     private static (EveConvChatReducer Sut, Mock<IChatClient> ChatClient, Mock<ISessionMemory> Session,
         Mock<ITokenCounter> TokenCounter)
-        CreateSut(MemoryOptions? options = null)
+        CreateSut(MemoryConfiguration? options = null)
     {
         var chatClient = new Mock<IChatClient>();
         var session = new Mock<ISessionMemory>();
         var tokenCounter = new Mock<ITokenCounter>();
-        var opts = Microsoft.Extensions.Options.Options.Create(options ?? CreateOptions());
+        var opts = Options.Create(options ?? CreateOptions());
 
         var sut = new EveConvChatReducer(
             chatClient.Object,

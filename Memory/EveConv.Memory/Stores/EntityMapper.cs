@@ -17,9 +17,7 @@ public static class EntityMapper
         WriteIndented = false
     };
 
-    // ──────────────────────────────────────────────
-    // ChatMessage ↔ ChatMessageEntity
-    // ──────────────────────────────────────────────
+    #region ChatMessage ↔ ChatMessageEntity
 
     /// <summary>
     /// Converts a <see cref="ChatMessageEntity"/> to a MEAI <see cref="ChatMessage"/>.
@@ -80,9 +78,9 @@ public static class EntityMapper
         };
     }
 
-    // ──────────────────────────────────────────────
-    // ChatSession ↔ ChatSessionEntity
-    // ──────────────────────────────────────────────
+    #endregion
+
+    #region ChatSession ↔ ChatSessionEntity
 
     /// <summary>
     /// Converts a <see cref="ChatSessionEntity"/> to a domain <see cref="ChatSession"/>.
@@ -114,9 +112,9 @@ public static class EntityMapper
         };
     }
 
-    // ──────────────────────────────────────────────
-    // SessionCompaction ↔ SessionCompactionEntity
-    // ──────────────────────────────────────────────
+    #endregion
+
+    #region SessionCompaction ↔ SessionCompactionEntity
 
     /// <summary>
     /// Converts a <see cref="SessionCompactionEntity"/> to a domain <see cref="SessionCompaction"/>.
@@ -154,9 +152,9 @@ public static class EntityMapper
         };
     }
 
-    // ──────────────────────────────────────────────
-    // LongMemoryEntry ↔ LongMemoryEntryEntity
-    // ──────────────────────────────────────────────
+    #endregion
+
+    #region LongMemoryEntry ↔ LongMemoryEntryEntity
 
     /// <summary>
     /// Converts a <see cref="LongMemoryEntryEntity"/> to a domain <see cref="LongMemoryEntry"/>.
@@ -194,9 +192,9 @@ public static class EntityMapper
         };
     }
 
-    // ──────────────────────────────────────────────
-    // Helpers
-    // ──────────────────────────────────────────────
+    #endregion
+
+    #region helpers
 
     private static string SerializeStringList(IEnumerable<string> items)
     {
@@ -219,4 +217,6 @@ public static class EntityMapper
             return [];
         }
     }
+
+    #endregion
 }

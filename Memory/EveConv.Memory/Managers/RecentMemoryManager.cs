@@ -2,7 +2,7 @@
 using EveConv.Abstraction.Diagnostic;
 using EveConv.Abstraction.Memory;
 using EveConv.Memory.Models;
-using EveConv.Memory.Options;
+using EveConv.Memory.Config;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -15,7 +15,7 @@ namespace EveConv.Memory.Managers;
 /// </summary>
 public sealed class RecentMemoryManager : IRecentMemory
 {
-    private readonly MemoryOptions _config;
+    private readonly MemoryConfiguration _config;
     private readonly ICache _cache;
     private readonly ISessionMemory _session;
     private readonly ILogger _logger;
@@ -30,7 +30,7 @@ public sealed class RecentMemoryManager : IRecentMemory
     public RecentMemoryManager(
         ICache cache,
         ISessionMemory session,
-        IOptions<MemoryOptions> options,
+        IOptions<MemoryConfiguration> options,
         ILoggerFactory? loggerFactory = null)
     {
         _config = options.Value;

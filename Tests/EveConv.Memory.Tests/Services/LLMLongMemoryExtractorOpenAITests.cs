@@ -1,9 +1,10 @@
 using System.ClientModel;
 using dotenv.net;
+using EveConv.Memory.Config;
 using EveConv.Memory.Services;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Options;
 using OpenAI;
-using MemoryOptions = EveConv.Memory.Options.MemoryOptions;
 
 namespace EveConv.Memory.Tests.Services;
 
@@ -39,7 +40,7 @@ public class LLMLongMemoryExtractorOpenAITests
         IChatClient? chatClient = null,
         float importanceThreshold = 0.3f)
     {
-        var options = Microsoft.Extensions.Options.Options.Create(new MemoryOptions
+        var options = Options.Create(new MemoryConfiguration
         {
             ImportanceThreshold = importanceThreshold
         });

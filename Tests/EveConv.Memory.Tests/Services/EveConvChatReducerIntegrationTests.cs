@@ -2,11 +2,12 @@ using System.ClientModel;
 using dotenv.net;
 using EveConv.Abstraction.Memory;
 using EveConv.Memory.Models;
-using EveConv.Memory.Options;
+using EveConv.Memory.Config;
 using EveConv.Memory.Services;
 using EveConv.Memory.Stores;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using OpenAI;
 
 namespace EveConv.Memory.Tests.Services;
@@ -50,9 +51,9 @@ public class EveConvChatReducerIntegrationTests
         IChatClient chatClient,
         ISessionMemory session,
         ITokenCounter tokenCounter,
-        MemoryOptions? options = null)
+        MemoryConfiguration? options = null)
     {
-        var opts = Microsoft.Extensions.Options.Options.Create(options ?? new MemoryOptions
+        var opts = Options.Create(options ?? new MemoryConfiguration
         {
             DefaultContextWindowTokens = 4096,
             CompactReserveRecentCount = 3,
@@ -96,7 +97,7 @@ public class EveConvChatReducerIntegrationTests
         var chatClient = CreateChatClient();
         var session = new InMemorySessionMemory();
         var tokenCounter = new TiktokenCounter();
-        var options = new MemoryOptions
+        var options = new MemoryConfiguration
         {
             DefaultContextWindowTokens = 50, // very small window to force compaction
             CompactReserveRecentCount = 1, // keep only the last message
@@ -174,7 +175,7 @@ public class EveConvChatReducerIntegrationTests
         };
         await session.SaveCompactionAsync(existingCompaction, TestContext.Current.CancellationToken);
 
-        var options = new MemoryOptions
+        var options = new MemoryConfiguration
         {
             DefaultContextWindowTokens = 20, // very small — force compaction
             CompactReserveRecentCount = 1,
@@ -235,7 +236,7 @@ public class EveConvChatReducerIntegrationTests
         var chatClient = CreateChatClient();
         var session = new InMemorySessionMemory();
         var tokenCounter = new TiktokenCounter();
-        var options = new MemoryOptions
+        var options = new MemoryConfiguration
         {
             DefaultContextWindowTokens = 4096, // large window
             CompactReserveRecentCount = 5,

@@ -1,12 +1,12 @@
 ﻿using EveConv.Abstraction.Memory;
 using EveConv.Memory.Models;
+using EveConv.Memory.Config;
 using EveConv.Memory.Services;
 using EveConv.Memory.Stores;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
-
-using MemoryOptions = EveConv.Memory.Options.MemoryOptions;
 
 namespace EveConv.Memory.Tests.Services;
 
@@ -15,9 +15,9 @@ namespace EveConv.Memory.Tests.Services;
 /// </summary>
 public class LLMLongMemoryExtractorTests
 {
-    private static Microsoft.Extensions.Options.IOptions<MemoryOptions> CreateOptions(float importanceThreshold = 0.5f)
+    private static IOptions<MemoryConfiguration> CreateOptions(float importanceThreshold = 0.5f)
     {
-        return Microsoft.Extensions.Options.Options.Create(new MemoryOptions { ImportanceThreshold = importanceThreshold });
+        return Options.Create(new MemoryConfiguration { ImportanceThreshold = importanceThreshold });
     }
 
     private static IChatClient CreateMockChatClient(string responseText)
