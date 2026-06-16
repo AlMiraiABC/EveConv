@@ -5,11 +5,11 @@ using EveConv.Memory.Managers;
 using EveConv.Memory.Models;
 using EveConv.Memory.Config;
 using EveConv.Memory.Services;
-using EveConv.Memory.Stores;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using SqlSugar;
 
 namespace EveConv.Memory.Extensions;
@@ -49,17 +49,28 @@ public static class MemoryDependencyInjectionExtensions
             if (sqlClient is not null)
             {
                 var logger = sp.GetService<ILoggerFactory>();
-                return new RdbSessionMemory(sqlClient, logger);
+                return new SessionMemory(sqlClient, logger);
             }
             return new InMemorySessionMemory();
         });
 
         // --- Core services ---
-        services.AddSingleton<IRecentMemory, RecentMemoryManager>();
+        services.AddSingleton<IRecentMemory, RecentMemory>();
         services.AddSingleton<IMemoryService, MemoryService>();
         services.AddSingleton<EveConvChatReducer>();
         services.AddSingleton<LLMLongMemoryExtractor>();
-        services.AddSingleton<ILongMemory, LongMemoryManager>();
+
+        // ILongMemory: requires ISqlSugarClient for RDB persistence
+        services.AddSingleton<ILongMemory>(sp =>
+        {
+            var extractor = sp.GetRequiredService<LLMLongMemoryExtractor>();
+            var session = sp.GetRequiredService<ISessionMemory>();
+            var tokenCounter = sp.GetRequiredService<ITokenCounter>();
+            var config = sp.GetRequiredService<IOptions<MemoryConfiguration>>();
+            var sqlClient = sp.GetRequiredService<ISqlSugarClient>();
+            var loggerFactory = sp.GetService<ILoggerFactory>();
+            return new LongMemory(extractor, session, tokenCounter, config, sqlClient, loggerFactory);
+        });
 
         return services;
     }

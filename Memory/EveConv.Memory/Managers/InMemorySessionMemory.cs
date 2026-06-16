@@ -3,7 +3,7 @@ using EveConv.Abstraction.Memory;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 
-namespace EveConv.Memory.Stores;
+namespace EveConv.Memory.Managers;
 
 /// <summary>
 /// In-memory implementation of <see cref="ISessionMemory"/> for development and testing.

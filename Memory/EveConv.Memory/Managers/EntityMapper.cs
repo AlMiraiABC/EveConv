@@ -3,7 +3,7 @@ using EveConv.Abstraction.Memory;
 using EveConv.Memory.Models;
 using Microsoft.Extensions.AI;
 
-namespace EveConv.Memory.Stores;
+namespace EveConv.Memory.Managers;
 
 /// <summary>
 /// Static helper for converting between SqlSugar persistence entities

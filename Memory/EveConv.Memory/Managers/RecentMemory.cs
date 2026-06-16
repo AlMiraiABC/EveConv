@@ -13,7 +13,7 @@ namespace EveConv.Memory.Managers;
 /// Manages the most recent N chat messages per session,
 /// with cache-first reads and dual-write to cache + DB.
 /// </summary>
-public sealed class RecentMemoryManager : IRecentMemory
+public sealed class RecentMemory : IRecentMemory
 {
     private readonly MemoryConfiguration _config;
     private readonly ICache _cache;
@@ -21,13 +21,13 @@ public sealed class RecentMemoryManager : IRecentMemory
     private readonly ILogger _logger;
 
     /// <summary>
-    /// Create a <see cref="RecentMemoryManager"/> instance.
+    /// Create a <see cref="RecentMemory"/> instance.
     /// </summary>
     /// <param name="cache">Got messages from cache.</param>
     /// <param name="session">Got messages from session if missing cache.</param>
     /// <param name="options">Options to control.</param>
     /// <param name="loggerFactory">Optional logger factory.</param>
-    public RecentMemoryManager(
+    public RecentMemory(
         ICache cache,
         ISessionMemory session,
         IOptions<MemoryConfiguration> options,
@@ -36,7 +36,7 @@ public sealed class RecentMemoryManager : IRecentMemory
         _config = options.Value;
         _cache = cache;
         _session = session;
-        _logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<RecentMemoryManager>();
+        _logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<RecentMemory>();
     }
 
     private static string CacheKey(string sessionId) => $"recent:{sessionId}";

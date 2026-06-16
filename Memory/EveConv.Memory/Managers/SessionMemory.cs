@@ -6,28 +6,28 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using SqlSugar;
 
-namespace EveConv.Memory.Stores;
+namespace EveConv.Memory.Managers;
 
 /// <summary>
 /// RDB-backed implementation of <see cref="ISessionMemory"/> using <see cref="ISqlSugarClient"/>.
 /// Handles entity-to-domain mapping and persistence for chat messages, sessions, and compactions.
 /// </summary>
-public sealed class RdbSessionMemory : ISessionMemory
+public sealed class SessionMemory : ISessionMemory
 {
     private readonly ISqlSugarClient _sqlClient;
     private readonly ILogger _logger;
 
     /// <summary>
-    /// Initializes a new instance of <see cref="RdbSessionMemory"/>.
+    /// Initializes a new instance of <see cref="SessionMemory"/>.
     /// </summary>
     /// <param name="sqlClient">The SqlSugar client (registered by the startup project).</param>
     /// <param name="loggerFactory">Optional logger factory.</param>
-    public RdbSessionMemory(
+    public SessionMemory(
         ISqlSugarClient sqlClient,
         ILoggerFactory? loggerFactory = null)
     {
         _sqlClient = sqlClient;
-        _logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<RdbSessionMemory>();
+        _logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<SessionMemory>();
     }
 
     /// <inheritdoc />

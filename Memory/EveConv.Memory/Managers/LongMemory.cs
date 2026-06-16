@@ -4,40 +4,41 @@ using EveConv.Abstraction.Memory;
 using EveConv.Memory.Models;
 using EveConv.Memory.Config;
 using EveConv.Memory.Services;
+using EveConv.Memory.Managers;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using SqlSugar;
 
 namespace EveConv.Memory.Managers;
 
 /// <summary>
 /// Manages long-term memory entries — individual facts/habits/preferences/events
-/// extracted across sessions via LLM and persisted independently.
+/// extracted across sessions via LLM and persisted to RDB via <see cref="ISqlSugarClient"/>.
 /// </summary>
-public sealed class LongMemoryManager : ILongMemory
+public sealed class LongMemory : ILongMemory
 {
     private readonly LLMLongMemoryExtractor _extractor;
     private readonly ISessionMemory _session;
     private readonly ITokenCounter _tokenCounter;
     private readonly MemoryConfiguration _config;
+    private readonly ISqlSugarClient _sqlClient;
     private readonly ILogger _logger;
 
-    // In-memory fallback storage (used when ISqlSugarClient is not available)
-    private static readonly Dictionary<string, List<LongMemoryEntryEntity>> _inMemoryStore = new();
-    private static readonly Lock _lock = new();
-
-    public LongMemoryManager(
+    public LongMemory(
         LLMLongMemoryExtractor extractor,
         ISessionMemory session,
         ITokenCounter tokenCounter,
         IOptions<MemoryConfiguration> config,
+        ISqlSugarClient sqlClient,
         ILoggerFactory? loggerFactory = null)
     {
         _extractor = extractor;
         _session = session;
         _tokenCounter = tokenCounter;
         _config = config.Value;
-        _logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<LongMemoryManager>();
+        _sqlClient = sqlClient;
+        _logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<LongMemory>();
     }
 
     /// <inheritdoc />
@@ -154,97 +155,71 @@ public sealed class LongMemoryManager : ILongMemory
     }
 
     /// <inheritdoc />
-    public Task ForgetAsync(string ownerKey, string entryId, CancellationToken ct = default)
+    public async Task ForgetAsync(string ownerKey, string entryId, CancellationToken ct = default)
     {
-        lock (_lock)
-        {
-            if (_inMemoryStore.TryGetValue(ownerKey, out var entries))
-            {
-                entries.RemoveAll(e => e.Id == entryId);
-            }
-        }
+        await _sqlClient.Deleteable<LongMemoryEntryEntity>()
+            .Where(e => e.OwnerKey == ownerKey && e.Id == entryId)
+            .ExecuteCommandAsync(ct);
 
         if (_logger.IsEnabled(LogLevel.Trace))
         {
             _logger.LogTrace("Forgot long memory entry {EntryId} for owner {OwnerKey}", entryId, ownerKey);
         }
-        return Task.CompletedTask;
     }
 
     private async Task UpsertInternalAsync(string ownerKey, LongMemoryEntry entry)
     {
-        lock (_lock)
+        // Find existing entry by owner + content
+        var existing = await _sqlClient.Queryable<LongMemoryEntryEntity>()
+            .Where(e => e.OwnerKey == ownerKey && e.Content == entry.Content)
+            .FirstAsync();
+
+        if (existing is not null)
         {
-            if (!_inMemoryStore.TryGetValue(ownerKey, out var entries))
+            // Update existing entry
+            existing.Importance = Math.Max(existing.Importance, entry.Importance);
+            existing.LastReinforcedAt = DateTime.UtcNow;
+
+            // Merge source session IDs
+            var existingSessions = DeserializeSessionIds(existing.SourceSessionIdsJson);
+            foreach (var sid in entry.SourceSessionIds)
             {
-                entries = [];
-                _inMemoryStore[ownerKey] = entries;
-            }
-
-            // Dedup by content similarity (simple hash-based)
-            var contentHash = entry.Content.GetHashCode(StringComparison.Ordinal);
-            var existing = entries.FirstOrDefault(e =>
-                e.Content.GetHashCode(StringComparison.Ordinal) == contentHash);
-
-            if (existing is not null)
-            {
-                // Update existing entry
-                existing.Importance = Math.Max(existing.Importance, entry.Importance);
-                existing.LastReinforcedAt = DateTime.UtcNow;
-
-                // Merge source session IDs
-                var existingSessions = DeserializeSessionIds(existing.SourceSessionIdsJson);
-                foreach (var sid in entry.SourceSessionIds)
+                if (!existingSessions.Contains(sid))
                 {
-                    if (!existingSessions.Contains(sid))
-                    {
-                        existingSessions.Add(sid);
-                    }
-                }
-                existing.SourceSessionIdsJson = SerializeSessionIds(existingSessions);
-
-                if (_logger.IsEnabled(LogLevel.Trace))
-                {
-                    _logger.LogTrace("Reinforced existing long memory entry {EntryId}", existing.Id);
+                    existingSessions.Add(sid);
                 }
             }
-            else
-            {
-                // Add new entry
-                var entity = new LongMemoryEntryEntity
-                {
-                    Id = entry.Id,
-                    OwnerKey = ownerKey,
-                    Category = entry.Category,
-                    Content = entry.Content,
-                    SourceSessionIdsJson = SerializeSessionIds(entry.SourceSessionIds),
-                    Importance = entry.Importance,
-                    CreatedAt = entry.CreatedAt.UtcDateTime,
-                    LastReinforcedAt = entry.LastReinforcedAt.UtcDateTime
-                };
-                entries.Add(entity);
+            existing.SourceSessionIdsJson = SerializeSessionIds(existingSessions);
 
-                if (_logger.IsEnabled(LogLevel.Trace))
-                {
-                    _logger.LogTrace("Added new long memory entry {EntryId}", entry.Id);
-                }
+            await _sqlClient.Updateable(existing)
+                .WhereColumns(e => new { e.Id })
+                .ExecuteCommandAsync();
+
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("Reinforced existing long memory entry {EntryId}", existing.Id);
             }
         }
+        else
+        {
+            // Add new entry
+            var entity = EntityMapper.ToEntity(entry);
+            entity.OwnerKey = ownerKey;
 
-        await Task.CompletedTask;
+            await _sqlClient.Insertable(entity).ExecuteCommandAsync();
+
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("Added new long memory entry {EntryId}", entry.Id);
+            }
+        }
     }
 
-    private Task<List<LongMemoryEntryEntity>> GetEntriesAsync(string ownerKey)
+    private async Task<List<LongMemoryEntryEntity>> GetEntriesAsync(string ownerKey)
     {
-        lock (_lock)
-        {
-            if (_inMemoryStore.TryGetValue(ownerKey, out var entries))
-            {
-                return Task.FromResult(entries.ToList());
-            }
-        }
-
-        return Task.FromResult(new List<LongMemoryEntryEntity>());
+        return await _sqlClient.Queryable<LongMemoryEntryEntity>()
+            .Where(e => e.OwnerKey == ownerKey)
+            .ToListAsync();
     }
 
     private static List<string> DeserializeSessionIds(string json)

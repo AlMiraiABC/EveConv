@@ -1,7 +1,7 @@
 ﻿using EveConv.Abstraction.Memory;
 using EveConv.Memory.Models;
 using EveConv.Memory.Services;
-using EveConv.Memory.Stores;
+using EveConv.Memory.Managers;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
