@@ -132,19 +132,34 @@ public sealed class LongMemory : ILongMemory
             return;
         }
 
-        // Use LLM to extract entries
-        var extractedEntries = await _extractor.ExtractAsync(compactionTexts, sessionIdList, ct);
+        // Load existing entries to pass to LLM for intelligent merge
+        var existingEntities = await GetEntriesAsync(ownerKey);
+        var existingEntries = existingEntities
+            .Select(EntityMapper.ToDomain)
+            .ToList();
 
-        // Upsert each entry
-        foreach (var entry in extractedEntries)
+        // Choose strategy: first extraction vs incremental merge
+        IReadOnlyList<LongMemoryEntry> mergedEntries;
+        if (existingEntries.Count == 0)
         {
-            await UpsertInternalAsync(ownerKey, entry);
+            // No existing memories — simple extraction is faster and uses fewer tokens
+            mergedEntries = await _extractor.ExtractAsync(compactionTexts, sessionIdList, ct);
         }
+        else
+        {
+            // Existing memories — LLM merges old and new intelligently
+            mergedEntries = await _extractor.MergeAsync(
+                existingEntries, compactionTexts, sessionIdList, ct);
+        }
+
+        // Replace all entries atomically with the merged set
+        await ReplaceAllEntriesAsync(ownerKey, mergedEntries);
 
         if (_logger.IsEnabled(LogLevel.Information))
         {
-            _logger.LogInformation("Extracted and stored {Count} long memory entries for owner {OwnerKey}",
-                extractedEntries.Count, ownerKey);
+            _logger.LogInformation(
+                "Merged long memory for owner {OwnerKey}: {OldCount} existing + {NewSessions} sessions → {MergedCount} entries",
+                ownerKey, existingEntries.Count, sessionIdList.Count, mergedEntries.Count);
         }
     }
 
@@ -220,6 +235,38 @@ public sealed class LongMemory : ILongMemory
         return await _sqlClient.Queryable<LongMemoryEntryEntity>()
             .Where(e => e.OwnerKey == ownerKey)
             .ToListAsync();
+    }
+
+    /// <summary>
+    /// Atomically replaces all long memory entries for an owner with the given set.
+    /// Used after LLM merge to ensure the DB reflects the complete merged state.
+    /// </summary>
+    private async Task ReplaceAllEntriesAsync(
+        string ownerKey, IReadOnlyList<LongMemoryEntry> entries)
+    {
+        // Delete all existing entries for this owner
+        await _sqlClient.Deleteable<LongMemoryEntryEntity>()
+            .Where(e => e.OwnerKey == ownerKey)
+            .ExecuteCommandAsync();
+
+        // Bulk insert the merged set
+        if (entries.Count > 0)
+        {
+            var entities = entries.Select(e =>
+            {
+                var entity = EntityMapper.ToEntity(e);
+                entity.OwnerKey = ownerKey;
+                return entity;
+            }).ToList();
+
+            await _sqlClient.Insertable(entities).ExecuteCommandAsync();
+        }
+
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Replaced all {Count} long memory entries for owner {OwnerKey}",
+                entries.Count, ownerKey);
+        }
     }
 
     private static List<string> DeserializeSessionIds(string json)

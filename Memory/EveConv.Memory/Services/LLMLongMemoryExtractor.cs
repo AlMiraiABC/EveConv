@@ -44,6 +44,47 @@ public sealed class LLMLongMemoryExtractor
         Extracted entries (JSON array):
         """);
 
+    private static readonly Template MergePromptTemplate = Template.Parse("""
+        You maintain a long-term memory for a user. Your task is to produce the COMPLETE
+        updated memory list by incorporating new conversations into existing memories.
+
+        Rules:
+        - KEEP entries that are still valid (include them in output as-is, or update them)
+        - UPDATE an entry if new information revises it (change content, adjust importance)
+        - DELETE an entry by omitting it from output (stale, contradicted, or no longer relevant)
+        - ADD new entries from new conversations when you discover important facts
+        - MERGE semantically similar entries into a single entry with higher importance
+
+        Output ONLY a JSON array. Each object has:
+        - category: "preference", "habit", "event", or "fact"
+        - content: a short description (under 50 words)
+        - importance: a float from 0.0 to 1.0 (higher = more confident/important)
+
+        Output as a JSON array. Example format:
+        [{"category":"preference","content":"Likes Python","importance":0.8}]
+
+        Only include items with importance > {{ importance_threshold }}.
+
+        --- EXISTING MEMORIES ---
+        {{ if existing_entries | array.size > 0 }}
+        {{ for entry in existing_entries }}
+        [{{ entry.category }} | importance: {{ entry.importance }}]
+        {{ entry.content }}
+        ---
+        {{ end }}
+        {{ else }}
+        (no existing memories yet)
+        {{ end }}
+
+        --- NEW CONVERSATIONS ---
+        {{ for content in session_contents }}
+        {{ content }}
+        ---
+        {{ end }}
+
+        Updated memory list (JSON array):
+        """);
+
     private readonly IChatClient _extractionClient;
     private readonly MemoryConfiguration _config;
     private readonly ILogger _logger;
@@ -83,7 +124,7 @@ public sealed class LLMLongMemoryExtractor
             });
             var response = await _extractionClient.GetResponseAsync(prompt, cancellationToken: ct);
             var responseText = response.Text ?? string.Empty;
-            if(_logger.IsEnabled(LogLevel.Trace))
+            if (_logger.IsEnabled(LogLevel.Trace))
             {
                 _logger.LogTrace("LLM extraction response: {Length} chars", responseText.Length);
             }
@@ -93,6 +134,76 @@ public sealed class LLMLongMemoryExtractor
         {
             _logger.LogError(ex, "LLM long memory extraction failed");
             return [];
+        }
+    }
+
+    /// <summary>
+    /// Merges new session content into an existing set of long-term memory entries.
+    /// The LLM receives both existing memories and new conversations, and outputs
+    /// the complete updated list — handling updates, deletions, and additions.
+    /// </summary>
+    /// <param name="existingEntries">Current long-term memory entries for the owner.</param>
+    /// <param name="sessionContents">Session compaction or message texts to analyze.</param>
+    /// <param name="sourceSessionIds">The session IDs being analyzed.</param>
+    /// <param name="ct">A cancellation token.</param>
+    /// <returns>The complete merged list of <see cref="LongMemoryEntry"/> instances.</returns>
+    public async Task<IReadOnlyList<LongMemoryEntry>> MergeAsync(
+        IReadOnlyList<LongMemoryEntry> existingEntries,
+        IReadOnlyList<string> sessionContents,
+        IReadOnlyList<string> sourceSessionIds,
+        CancellationToken ct = default)
+    {
+        if (sessionContents is null || sessionContents.Count == 0)
+        {
+            // No new content — return existing entries unchanged
+            return existingEntries;
+        }
+
+        try
+        {
+            var existingViews = existingEntries
+                .Select(e => new { e.Category, e.Content, e.Importance })
+                .ToList();
+
+            var prompt = await MergePromptTemplate.RenderAsync(new
+            {
+                importance_threshold = _config.ImportanceThreshold,
+                existing_entries = existingViews,
+                session_contents = sessionContents
+            });
+
+            var response = await _extractionClient.GetResponseAsync(prompt, cancellationToken: ct);
+            var responseText = response.Text ?? string.Empty;
+
+            if (_logger.IsEnabled(LogLevel.Trace))
+            {
+                _logger.LogTrace("LLM merge response: {Length} chars", responseText.Length);
+            }
+
+            // If the LLM response doesn't contain a JSON array at all,
+            // the merge failed — keep existing entries unchanged.
+            if (!responseText.Contains('[') || !responseText.Contains(']'))
+            {
+                _logger.LogWarning("LLM merge response contained no JSON array — keeping existing entries");
+                return existingEntries;
+            }
+
+            var merged = ParseExtractionResponse(responseText, sourceSessionIds);
+            if (merged.Count == 0)
+            {
+                // LLM returned empty array — interpret as "delete all memories"
+                if (_logger.IsEnabled(LogLevel.Debug))
+                {
+                    _logger.LogDebug("LLM merge returned empty list — all memories cleared");
+                }
+            }
+
+            return merged;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "LLM long memory merge failed — returning existing entries unchanged");
+            return existingEntries;
         }
     }
 

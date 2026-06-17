@@ -1,5 +1,6 @@
 using System.ClientModel;
 using dotenv.net;
+using EveConv.Abstraction.Memory;
 using EveConv.Memory.Config;
 using EveConv.Memory.Services;
 using Microsoft.Extensions.AI;
@@ -49,6 +50,8 @@ public class LLMLongMemoryExtractorOpenAITests
             chatClient ?? CreateChatClient(),
             options);
     }
+
+    #region ExtractAsync
 
     /// <summary>
     /// Integration test: extracts long-term memory entries from realistic
@@ -198,4 +201,132 @@ public class LLMLongMemoryExtractorOpenAITests
 
         Assert.Empty(result);
     }
+
+    #endregion
+
+    #region MergeAsync
+
+    /// <summary>
+    /// Integration test: merges new conversations into existing memories.
+    /// Existing entries that are still valid should be preserved,
+    /// and new facts should be added.
+    /// </summary>
+    [Fact]
+    public async Task MergeAsync_WithRealLLM_PreservesAndAddsEntries()
+    {
+        var existingEntries = new List<LongMemoryEntry>
+        {
+            new()
+            {
+                Id = "existing-1",
+                OwnerKey = "default",
+                Category = "fact",
+                Content = "Alice is a software engineer at California",
+                Importance = 0.85f,
+                SourceSessionIds = ["old-session"],
+                CreatedAt = DateTimeOffset.UtcNow.AddDays(-7),
+                LastReinforcedAt = DateTimeOffset.UtcNow.AddDays(-7)
+            },
+            new()
+            {
+                Id = "existing-2",
+                OwnerKey = "default",
+                Category = "preference",
+                Content = "Prefers Go for backend services",
+                Importance = 0.8f,
+                SourceSessionIds = ["old-session"],
+                CreatedAt = DateTimeOffset.UtcNow.AddDays(-7),
+                LastReinforcedAt = DateTimeOffset.UtcNow.AddDays(-7)
+            }
+        };
+
+        var sessionContents = new List<string>
+        {
+            """
+            User: I've started running every morning — 5km before work.
+            Assistant: That's a great habit! When did you start?
+            User: About 3 months ago. It really helps me focus.
+            """
+        };
+
+        var extractor = CreateExtractor();
+        var result = await extractor.MergeAsync(
+            existingEntries,
+            sessionContents,
+            ["new-session"],
+            TestContext.Current.CancellationToken);
+
+        Assert.NotEmpty(result);
+
+        // Should include at least the new habit (running)
+        var hasRunningHabit = result.Any(e =>
+            e.Category == "habit" &&
+            e.Content.Contains("run", StringComparison.OrdinalIgnoreCase));
+        Assert.True(hasRunningHabit,
+            $"Expected a habit entry about running. Got: [{string.Join("; ", result.Select(e => $"({e.Category}) {e.Content}"))}]");
+
+        // New entries should have the new session ID
+        Assert.All(result, e => Assert.Equal(["new-session"], e.SourceSessionIds));
+
+        // Entries should be well-formed
+        Assert.All(result, e =>
+        {
+            Assert.NotEmpty(e.Id);
+            Assert.NotEmpty(e.Category);
+            Assert.NotEmpty(e.Content);
+            Assert.True(e.Importance is >= 0f and <= 1f);
+        });
+    }
+
+    /// <summary>
+    /// Integration test: when new information contradicts existing memories,
+    /// the LLM should update or remove the outdated entry.
+    /// </summary>
+    [Fact]
+    public async Task MergeAsync_WithRealLLM_UpdatesContradictedFacts()
+    {
+        var existingEntries = new List<LongMemoryEntry>
+        {
+            new()
+            {
+                Id = "existing-1",
+                OwnerKey = "default",
+                Category = "fact",
+                Content = "Bob works at Contoso as a DBA",
+                Importance = 0.85f,
+                SourceSessionIds = ["old-session"],
+                CreatedAt = DateTimeOffset.UtcNow.AddDays(-7),
+                LastReinforcedAt = DateTimeOffset.UtcNow.AddDays(-7)
+            }
+        };
+
+        var sessionContents = new List<string>
+        {
+            """
+            User: I just switched jobs — now I work at Fabrikam as a cloud architect.
+            Assistant: Congratulations on the new role!
+            User: Thanks! It's a big change from being a DBA.
+            """
+        };
+
+        var extractor = CreateExtractor(importanceThreshold: 0.3f);
+        var result = await extractor.MergeAsync(
+            existingEntries,
+            sessionContents,
+            ["new-session"],
+            TestContext.Current.CancellationToken);
+
+        Assert.NotEmpty(result);
+
+        // The job fact should be updated to Fabrikam, not still Contoso
+        var hasContoso = result.Any(e => e.Content.Contains("Contoso", StringComparison.OrdinalIgnoreCase));
+        var hasFabrikam = result.Any(e => e.Content.Contains("Fabrikam", StringComparison.OrdinalIgnoreCase));
+
+        Assert.True(hasFabrikam,
+            $"Expected updated job fact mentioning Fabrikam. Got: [{string.Join("; ", result.Select(e => e.Content))}]");
+        Assert.False(hasContoso,
+            $"Expected old Contoso fact to be removed or updated. Got: [{string.Join("; ", result.Select(e => e.Content))}]");
+    }
+
+    #endregion
 }
