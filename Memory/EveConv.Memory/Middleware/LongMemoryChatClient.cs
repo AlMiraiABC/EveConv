@@ -82,8 +82,8 @@ public sealed class LongMemoryChatClient : DelegatingChatClient
         _ = ExtractInBackgroundAsync(messageList);
     }
 
-    private async Task<IReadOnlyList<ChatMessage>> AugmentWithLongMemoryAsync(
-        IReadOnlyList<ChatMessage> messages, CancellationToken ct)
+    private async Task<IEnumerable<ChatMessage>> AugmentWithLongMemoryAsync(
+        List<ChatMessage> messages, CancellationToken ct)
     {
         try
         {
