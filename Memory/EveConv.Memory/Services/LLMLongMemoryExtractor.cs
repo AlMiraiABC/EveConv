@@ -18,53 +18,55 @@ namespace EveConv.Memory.Services;
 /// </summary>
 public sealed class LLMLongMemoryExtractor
 {
-    private static readonly Template ExtractionPromptTemplate = Template.Parse("""
+    private static readonly Template ExtractionPromptTemplate = Template.Parse(
+        """
         Analyze the following conversation history and extract:
         1. User preferences (likes, dislikes, preferred styles)
         2. User habits (recurring behaviors, patterns)
         3. Important events (life events, milestones)
         4. Facts about the user (name, role, skills, background)
-
+        
         For each extracted item, output a JSON object with:
         - category: one of "preference", "habit", "event", "fact"
         - content: a short description (under 50 words)
         - importance: a float from 0.0 to 1.0
-
+        
         Only include items with importance > {{ importance_threshold }}.
         Output as a JSON array. Example format:
         [{"category":"preference","content":"Likes Python","importance":0.8}]
-
+        
         --- Conversation History ---
         {{ for content in session_contents }}
         {{ content }}
         ---
         {{ end }}
         --- End of History ---
-
+        
         Extracted entries (JSON array):
         """);
 
-    private static readonly Template MergePromptTemplate = Template.Parse("""
+    private static readonly Template MergePromptTemplate = Template.Parse(
+        """
         You maintain a long-term memory for a user. Your task is to produce the COMPLETE
         updated memory list by incorporating new conversations into existing memories.
-
+        
         Rules:
         - KEEP entries that are still valid (include them in output as-is, or update them)
         - UPDATE an entry if new information revises it (change content, adjust importance)
         - DELETE an entry by omitting it from output (stale, contradicted, or no longer relevant)
         - ADD new entries from new conversations when you discover important facts
         - MERGE semantically similar entries into a single entry with higher importance
-
+        
         Output ONLY a JSON array. Each object has:
         - category: "preference", "habit", "event", or "fact"
         - content: a short description (under 50 words)
         - importance: a float from 0.0 to 1.0 (higher = more confident/important)
-
+        
         Output as a JSON array. Example format:
         [{"category":"preference","content":"Likes Python","importance":0.8}]
 
         Only include items with importance > {{ importance_threshold }}.
-
+        
         --- EXISTING MEMORIES ---
         {{ if existing_entries | array.size > 0 }}
         {{ for entry in existing_entries }}
@@ -75,13 +77,13 @@ public sealed class LLMLongMemoryExtractor
         {{ else }}
         (no existing memories yet)
         {{ end }}
-
+        
         --- NEW CONVERSATIONS ---
         {{ for content in session_contents }}
         {{ content }}
         ---
         {{ end }}
-
+        
         Updated memory list (JSON array):
         """);
 
@@ -122,7 +124,10 @@ public sealed class LLMLongMemoryExtractor
                 importance_threshold = _config.ImportanceThreshold,
                 session_contents = sessionContents
             });
-            var response = await _extractionClient.GetResponseAsync(prompt, cancellationToken: ct);
+            var response = await _extractionClient.GetResponseAsync(prompt, new()
+            {
+                ResponseFormat = ChatResponseFormat.Json,
+            }, ct);
             var responseText = response.Text ?? string.Empty;
             if (_logger.IsEnabled(LogLevel.Trace))
             {
@@ -172,7 +177,10 @@ public sealed class LLMLongMemoryExtractor
                 session_contents = sessionContents
             });
 
-            var response = await _extractionClient.GetResponseAsync(prompt, cancellationToken: ct);
+            var response = await _extractionClient.GetResponseAsync(prompt, new()
+            {
+                ResponseFormat = ChatResponseFormat.Json,
+            }, ct);
             var responseText = response.Text ?? string.Empty;
 
             if (_logger.IsEnabled(LogLevel.Trace))
@@ -258,7 +266,7 @@ public sealed class LLMLongMemoryExtractor
                     LastReinforcedAt = now
                 });
             }
-            if(_logger.IsEnabled(LogLevel.Trace))
+            if (_logger.IsEnabled(LogLevel.Trace))
             {
                 _logger.LogTrace("Parsed {Count} entries from extraction response", entries.Count);
             }
@@ -273,11 +281,8 @@ public sealed class LLMLongMemoryExtractor
 
     private sealed class RawExtractedEntry
     {
-        [JsonPropertyName("category")]
-        public string Category { get; set; } = string.Empty;
-        [JsonPropertyName("content")]
-        public string Content { get; set; } = string.Empty;
-        [JsonPropertyName("importance")]
-        public float Importance { get; set; }
+        [JsonPropertyName("category")] public string Category { get; set; } = string.Empty;
+        [JsonPropertyName("content")] public string Content { get; set; } = string.Empty;
+        [JsonPropertyName("importance")] public float Importance { get; set; }
     }
 }
