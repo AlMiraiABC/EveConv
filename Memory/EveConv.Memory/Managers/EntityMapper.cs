@@ -23,6 +23,7 @@ public static class EntityMapper
     /// Converts a <see cref="ChatMessageEntity"/> to a MEAI <see cref="ChatMessage"/>.
     /// Deserializes the stored JSON and reconstructs <see cref="MemoryMetadataContent"/>.
     /// </summary>
+    /// <seealso cref="ToEntity(ChatMessage, string, int)"/>
     public static ChatMessage ToChatMessage(ChatMessageEntity entity)
     {
         // Deserialize the stored ChatMessage JSON
@@ -58,13 +59,18 @@ public static class EntityMapper
     /// Converts a MEAI <see cref="ChatMessage"/> to a <see cref="ChatMessageEntity"/> for persistence.
     /// Extracts <see cref="MemoryMetadataContent"/> for message ID and session ID.
     /// </summary>
+    /// <seealso cref="ToChatMessage"/>
     public static ChatMessageEntity ToEntity(
         ChatMessage message, string sessionId, int sequenceNumber)
     {
         var meta = message.Contents.OfType<MemoryMetadataContent>().FirstOrDefault();
 
-        // Serialize the ChatMessage to JSON (without the metadata content for clean serialization)
-        var cleanMessage = new ChatMessage(message.Role, [.. message.Contents]);
+        // Serialize the ChatMessage to JSON without MemoryMetadataContent.
+        // It is re-attached from entity fields during deserialization
+        // that stored separately.
+        var cleanMessage = new ChatMessage(
+            message.Role,
+            message.Contents.Where(c => c is not MemoryMetadataContent).ToArray());
         var json = JsonSerializer.Serialize(cleanMessage, _jsonOptions);
 
         return new ChatMessageEntity

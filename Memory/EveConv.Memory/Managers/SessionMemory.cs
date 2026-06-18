@@ -64,9 +64,9 @@ public sealed class SessionMemory : ISessionMemory
         if (entities.Count == 0) return;
 
         // Use Storageable for upsert (insert or update)
-        var storage = _sqlClient.Storageable(entities)
+        var storage = await _sqlClient.Storageable(entities)
             .WhereColumns(it => new { it.Id })
-            .ToStorage();
+            .ToStorageAsync();
 
         await storage.AsInsertable.ExecuteCommandAsync(ct);
         await storage.AsUpdateable.ExecuteCommandAsync(ct);
