@@ -20,6 +20,7 @@ applyTo: "**/*.cs,**/*.csproj"
 - Tests should only depend on one project being tested.
 - You can mark project's classes or methods to `internal` visibility and use `<InternalsVisibleTo Include="$(AssemblyName).Tests" />` in `csproj` to allow test project to access them.
 - Remember to clean up any resources created during tests to avoid side effects.
+- Add `TestContext.Current.CancellationToken` for async tests if it needs cancelation support.
 
 ## Integration Tests
 
