@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Memory\EveConv.Memory\EveConv.Memory.csproj" />
+    <ProjectReference Include="..\..\Reference\Cache\EveConv.Cache.InMemory\EveConv.Cache.InMemory.csproj" />
   </ItemGroup>
 
   <ItemGroup>

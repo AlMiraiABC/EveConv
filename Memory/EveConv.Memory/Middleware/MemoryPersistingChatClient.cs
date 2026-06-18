@@ -48,7 +48,7 @@ public sealed class MemoryPersistingChatClient : DelegatingChatClient
         var response = await base.GetResponseAsync(messageList, options, ct);
 
         // AFTER: Persist response messages
-        await PersistResponseMessagesAsync(response, ct);
+        await PersistResponseMessagesAsync(messageList, response, ct);
 
         return response;
     }
@@ -127,25 +127,25 @@ public sealed class MemoryPersistingChatClient : DelegatingChatClient
         }
     }
 
-    private async Task PersistResponseMessagesAsync(ChatResponse response, CancellationToken ct)
+    private async Task PersistResponseMessagesAsync(
+        IReadOnlyList<ChatMessage> requestMessages,
+        ChatResponse response,
+        CancellationToken ct)
     {
-        // Try to extract sessionId from response metadata or message context
-        // In practice, the sessionId is carried via MemoryMetadataContent
-
-        // Persist each response message
-        foreach (var msg in response.Messages)
+        var sessionId = ExtractSessionId(requestMessages);
+        if (string.IsNullOrEmpty(sessionId))
         {
             if (_logger.IsEnabled(LogLevel.Trace))
             {
-                // Response messages won't have sessionId directly; we persist via the
-                // session that was active during the request — this is handled by the
-                // caller providing sessionId on the incoming messages.
-                // For now, we skip persisting responses without session context.
-                _logger.LogTrace("Response message available for persistence");
+                _logger.LogTrace("Skipping response persistence: no sessionId in request messages");
             }
+            return;
         }
 
-        await Task.CompletedTask;
+        foreach (var msg in response.Messages)
+        {
+            await _recentMemory.PushMessageAsync(sessionId, msg, ct);
+        }
     }
 
     private static string? ExtractSessionId(ChatMessage message)
