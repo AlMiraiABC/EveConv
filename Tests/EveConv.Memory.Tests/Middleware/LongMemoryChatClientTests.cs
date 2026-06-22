@@ -31,27 +31,16 @@ public class LongMemoryChatClientTests
         return new Mock<ILongMemory>();
     }
 
-    private static IOptions<LongMemoryOptions> CreateOptions(string? ownerKey = null)
-    {
-        return Options.Create(new LongMemoryOptions
-        {
-            OwnerKey = ownerKey ?? DefaultOwnerKey
-        });
-    }
-
     private static LongMemoryChatClient CreateSut(
         Mock<IChatClient>? innerMock = null,
-        Mock<ILongMemory>? longMemoryMock = null,
-        IOptions<LongMemoryOptions>? options = null)
+        Mock<ILongMemory>? longMemoryMock = null)
     {
         innerMock ??= CreateInnerMock();
         longMemoryMock ??= CreateLongMemoryMock();
-        options ??= CreateOptions();
 
         return new LongMemoryChatClient(
             innerMock.Object,
             longMemoryMock.Object,
-            options,
             NullLoggerFactory.Instance);
     }
 

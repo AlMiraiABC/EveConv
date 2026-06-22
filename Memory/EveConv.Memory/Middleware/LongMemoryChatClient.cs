@@ -15,8 +15,9 @@ namespace EveConv.Memory.Middleware;
 /// </summary>
 public sealed class LongMemoryChatClient : DelegatingChatClient
 {
+    public const string DEFAULT_OWNER_KEY = "default";
+
     private readonly ILongMemory _longMemory;
-    private readonly LongMemoryOptions _options;
     private readonly ILogger _logger;
 
     // Simple debounce: extract at most once per N requests
@@ -28,19 +29,18 @@ public sealed class LongMemoryChatClient : DelegatingChatClient
     /// </summary>
     /// <param name="inner">The inner <see cref="IChatClient"/>.</param>
     /// <param name="longMemory">The long-term memory manager.</param>
-    /// <param name="options">Long memory options carrying the owner key.</param>
     /// <param name="loggerFactory">Optional logger factory.</param>
     public LongMemoryChatClient(
         IChatClient inner,
         ILongMemory longMemory,
-        IOptions<LongMemoryOptions> options,
         ILoggerFactory? loggerFactory = null)
         : base(inner)
     {
         _longMemory = longMemory;
-        _options = options.Value;
         _logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<LongMemoryChatClient>();
     }
+
+    public Func<string>? GetOwnerKey { get; set; }
 
     /// <inheritdoc />
     public override async Task<ChatResponse> GetResponseAsync(
@@ -87,7 +87,7 @@ public sealed class LongMemoryChatClient : DelegatingChatClient
     {
         try
         {
-            var ownerKey = _options.OwnerKey;
+            var ownerKey = GetOwnerKey?.Invoke() ?? DEFAULT_OWNER_KEY;
             var longMemoryMessages = await _longMemory.GetContextMessagesAsync(ownerKey, ct);
 
             if (longMemoryMessages is null || longMemoryMessages.Count == 0)
@@ -138,7 +138,7 @@ public sealed class LongMemoryChatClient : DelegatingChatClient
                 return;
             }
 
-            await _longMemory.ExtractAndStoreAsync(_options.OwnerKey, sessionIds);
+            await _longMemory.ExtractAndStoreAsync(GetOwnerKey?.Invoke() ?? DEFAULT_OWNER_KEY, sessionIds);
             if (_logger.IsEnabled(LogLevel.Trace))
             {
                 _logger.LogTrace("Background long memory extraction completed for {Count} sessions",

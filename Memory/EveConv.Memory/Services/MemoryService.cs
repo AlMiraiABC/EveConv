@@ -13,13 +13,14 @@ namespace EveConv.Memory.Services;
 /// </summary>
 public sealed class MemoryService : IMemoryService
 {
+    public const string DEFAULT_OWNER_KEY = "default";
+
     private readonly IRecentMemory _recentMemory;
     private readonly ISessionMemory _session;
     private readonly ILongMemory _longMemory;
     private readonly EveConvChatReducer _chatReducer;
     private readonly ITokenCounter _tokenCounter;
     private readonly MemoryConfiguration _config;
-    private readonly LongMemoryOptions _longMemoryOptions;
     private readonly ILogger _logger;
 
     public MemoryService(
@@ -29,7 +30,6 @@ public sealed class MemoryService : IMemoryService
         EveConvChatReducer chatReducer,
         ITokenCounter tokenCounter,
         IOptions<MemoryConfiguration> config,
-        IOptions<LongMemoryOptions> longMemoryOptions,
         ILoggerFactory? loggerFactory = null)
     {
         _recentMemory = recentMemory;
@@ -38,9 +38,10 @@ public sealed class MemoryService : IMemoryService
         _chatReducer = chatReducer;
         _tokenCounter = tokenCounter;
         _config = config.Value;
-        _longMemoryOptions = longMemoryOptions.Value;
         _logger = (loggerFactory ?? DefaultLogger.Factory).CreateLogger<MemoryService>();
     }
+
+    public Func<string>? GetOwnerKey { get; set; }
 
     /// <inheritdoc />
     public async Task<ChatContext> GetContextAsync(string sessionId, CancellationToken ct = default)
@@ -53,8 +54,8 @@ public sealed class MemoryService : IMemoryService
         var modelMessages = reducedMessages?.ToList() ?? rawMessages.ToList();
 
         // 3. Get long-term memory context
-        var ownerKey = _longMemoryOptions.OwnerKey;
-        var longMemoryMessages = await _longMemory.GetContextMessagesAsync(ownerKey, ct);
+        var longMemoryMessages =
+            await _longMemory.GetContextMessagesAsync(GetOwnerKey?.Invoke() ?? DEFAULT_OWNER_KEY, ct);
 
         // 4. Calculate total tokens
         var allMessages = new List<ChatMessage>(modelMessages.Count + longMemoryMessages.Count);

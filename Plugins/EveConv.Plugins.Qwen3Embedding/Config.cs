@@ -10,31 +10,22 @@ namespace EveConv.Plugins.Qwen3Embedding
         public string Model
         {
             get;
-            set
-            {
-                field = (string.IsNullOrWhiteSpace(value) ? "0.6b" : value.Trim()).ToLower();
-            }
+            init => field = (string.IsNullOrWhiteSpace(value) ? "0.6b" : value.Trim()).ToLower();
         } = "0.6b";
         public string Quantized
         {
             get;
-            set
-            {
-                field = (string.IsNullOrWhiteSpace(value) ? "q4f16" : value.Trim()).ToLower();
-            }
+            init => field = (string.IsNullOrWhiteSpace(value) ? "q4f16" : value.Trim()).ToLower();
         } = "q4f16";
         public string OrtOptimizedSaveFolder
         {
             get;
-            set
-            {
-                field = string.IsNullOrWhiteSpace(value) ? "optm" : value.Trim();
-            }
+            init => field = string.IsNullOrWhiteSpace(value) ? "optm" : value.Trim();
         } = "optm";
         public string OrtOptimizedSaveExtension
         {
             get;
-            set
+            init
             {
                 if (string.IsNullOrWhiteSpace(value))
                 {
@@ -50,10 +41,7 @@ namespace EveConv.Plugins.Qwen3Embedding
         public string OrtGraphOptimizationLevel
         {
             get;
-            set
-            {
-                field = string.IsNullOrWhiteSpace(value) ? nameof(GraphOptimizationLevel.ORT_DISABLE_ALL) : value.Trim();
-            }
+            init => field = string.IsNullOrWhiteSpace(value) ? nameof(GraphOptimizationLevel.ORT_DISABLE_ALL) : value.Trim();
         } = "ORT_ENABLE_ALL";
 
         public string TokenizerJsonFileName => $"{Model}_tokenizer.json";
@@ -62,11 +50,8 @@ namespace EveConv.Plugins.Qwen3Embedding
         public string HFToken { get; set; } = string.Empty;
         public string HFEndpoint
         {
-            get
-            {
-                return string.IsNullOrWhiteSpace(field) ? "https://huggingface.co/" : field;
-            }
-            set
+            get => string.IsNullOrWhiteSpace(field) ? "https://huggingface.co/" : field;
+            init
             {
                 if (string.IsNullOrWhiteSpace(value))
                 {

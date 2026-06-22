@@ -51,16 +51,3 @@ public class MemoryConfiguration : IOptions<MemoryConfiguration>
 
     public MemoryConfiguration Value => this;
 }
-
-/// <summary>
-/// Options for long memory owner key resolution.
-/// Single-user clients configure <c>"default"</c>; multi-user systems provide a custom
-/// <see cref="EveConv.Abstraction.Memory.ILongMemoryOwnerKeyProvider"/>.
-/// </summary>
-public class LongMemoryOptions
-{
-    /// <summary>
-    /// Opaque partition key for long-term memory. Defaults to <c>"default"</c> for single-user scenarios.
-    /// </summary>
-    public string OwnerKey { get; init; } = "default";
-}

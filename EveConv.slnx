@@ -20,6 +20,7 @@
   </Folder>
   <Folder Name="/Plugins/">
     <Project Path="Plugins/EveConv.Plugins.Api/EveConv.Plugins.Api.csproj" Id="7c66568a-f38e-4990-b007-de73370964f4" />
+    <Project Path="Plugins/EveConv.Plugins.OpenAIApiClient/EveConv.Plugins.OpenAIApiClient.csproj" />
     <Project Path="Plugins/EveConv.Plugins.Qwen3Embedding/EveConv.Plugins.Qwen3Embedding.csproj" Id="78b99336-8337-4878-826e-6bba6a2af2f3" />
   </Folder>
   <Folder Name="/Reference/">

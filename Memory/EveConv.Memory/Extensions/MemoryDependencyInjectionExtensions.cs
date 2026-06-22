@@ -36,8 +36,6 @@ public static class MemoryDependencyInjectionExtensions
     {
         services.Configure<MemoryConfiguration>(
             configuration.GetSection("Memory"));
-        services.Configure<LongMemoryOptions>(
-            configuration.GetSection("Memory:LongMemory"));
 
         // --- Token counter ---
         services.AddSingleton<ITokenCounter, TiktokenCounter>();

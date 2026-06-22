@@ -15,7 +15,8 @@ namespace EveConv.Memory.Extensions;
 public static class MemoryChatClientBuilderExtensions
 {
     /// <summary>
-    /// Adds EveConv memory middleware to the chat pipeline:
+    /// Adds EveConv memory middleware to the chat pipeline using externally provided
+    /// instances, without requiring an <see cref="IServiceProvider"/>.
     /// <list type="number">
     /// <item><description>Session compaction via <see cref="EveConvChatReducer"/></description></item>
     /// <item><description>Automatic message persistence via <see cref="MemoryPersistingChatClient"/></description></item>
@@ -23,26 +24,45 @@ public static class MemoryChatClientBuilderExtensions
     /// </list>
     /// </summary>
     /// <param name="builder">The <see cref="ChatClientBuilder"/> to configure.</param>
+    /// <param name="reducer">The compaction reducer to use.</param>
+    /// <param name="recentMemory">The recent memory service for message persistence.</param>
+    /// <param name="longMemory">The long-term memory service for context injection.</param>
+    /// <param name="loggerFactory">Optional logger factory.</param>
+    /// <returns>The builder for chaining.</returns>
+    public static ChatClientBuilder UseMemory(
+        this ChatClientBuilder builder,
+        EveConvChatReducer reducer,
+        IRecentMemory recentMemory,
+        ILongMemory longMemory,
+        ILoggerFactory? loggerFactory = null)
+    {
+        return builder
+            .UseChatReducer(reducer)
+            .Use((inner, _) => new MemoryPersistingChatClient(inner, recentMemory, loggerFactory))
+            .Use((inner, _) => new LongMemoryChatClient(inner, longMemory, loggerFactory));
+    }
+
+    /// <summary>
+    /// Adds EveConv memory middleware to the chat pipeline, resolving or creating an
+    /// <see cref="EveConvChatReducer"/> from the provided <see cref="IServiceProvider"/>.
+    /// </summary>
+    /// <param name="builder">The <see cref="ChatClientBuilder"/> to configure.</param>
     /// <param name="services">The <see cref="IServiceProvider"/> to resolve dependencies.</param>
     /// <returns>The builder for chaining.</returns>
     public static ChatClientBuilder UseMemory(this ChatClientBuilder builder, IServiceProvider services)
     {
-        var reducer = services.GetRequiredService<EveConvChatReducer>();
+        var reducer = services.GetService<EveConvChatReducer>()
+            ?? new EveConvChatReducer(
+                services.GetRequiredKeyedService<IChatClient>("summarization"),
+                services.GetRequiredService<ISessionMemory>(),
+                services.GetRequiredService<ITokenCounter>(),
+                services.GetRequiredService<IOptions<MemoryConfiguration>>(),
+                services.GetService<ILoggerFactory>());
 
-        return builder
-            .UseChatReducer(reducer)
-            .Use((inner, sp) =>
-            {
-                var recentMemory = sp.GetRequiredService<IRecentMemory>();
-                var loggerFactory = sp.GetService<ILoggerFactory>();
-                return new MemoryPersistingChatClient(inner, recentMemory, loggerFactory);
-            })
-            .Use((inner, sp) =>
-            {
-                var longMemory = sp.GetRequiredService<ILongMemory>();
-                var options = sp.GetRequiredService<IOptions<LongMemoryOptions>>();
-                var loggerFactory = sp.GetService<ILoggerFactory>();
-                return new LongMemoryChatClient(inner, longMemory, options, loggerFactory);
-            });
+        return builder.UseMemory(
+            reducer,
+            services.GetRequiredService<IRecentMemory>(),
+            services.GetRequiredService<ILongMemory>(),
+            services.GetService<ILoggerFactory>());
     }
 }
