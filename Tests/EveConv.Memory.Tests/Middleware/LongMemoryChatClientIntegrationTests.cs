@@ -110,19 +110,15 @@ public class LongMemoryChatClientIntegrationTests
     /// </summary>
     private static LongMemoryChatClient CreateSut(
         IChatClient chatClient,
-        LongMemory longMemory,
-        string? ownerKey = null)
+        LongMemory longMemory)
     {
-        var options = Options.Create(new LongMemoryOptions
-        {
-            OwnerKey = ownerKey ?? DefaultOwnerKey
-        });
-
         return new LongMemoryChatClient(
             chatClient,
             longMemory,
-            options,
-            NullLoggerFactory.Instance);
+            NullLoggerFactory.Instance)
+        {
+            GetOwnerKey = () => DefaultOwnerKey
+        };
     }
 
     /// <summary>

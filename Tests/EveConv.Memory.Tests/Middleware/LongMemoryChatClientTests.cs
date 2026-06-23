@@ -41,7 +41,10 @@ public class LongMemoryChatClientTests
         return new LongMemoryChatClient(
             innerMock.Object,
             longMemoryMock.Object,
-            NullLoggerFactory.Instance);
+            NullLoggerFactory.Instance)
+        {
+            GetOwnerKey = () => DefaultOwnerKey
+        };
     }
 
     /// <summary>
