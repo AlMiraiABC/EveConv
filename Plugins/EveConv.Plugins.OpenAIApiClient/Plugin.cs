@@ -3,12 +3,14 @@ using EveConv.Abstraction.Diagnostic;
 using EveConv.Abstraction.Memory;
 using EveConv.Memory.Config;
 using EveConv.Memory.Extensions;
+using EveConv.Memory.Managers;
 using EveConv.Memory.Services;
 using EveConv.Plugins.Api;
 using EveConv.Plugins.Api.Abstraction;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using SqlSugar;
 
 namespace EveConv.Plugins.OpenAIApiClient;
 
@@ -35,29 +37,73 @@ public class Plugin : Plugable, IDisposable
                     Endpoint = new Uri(this._config.Endpoint),
                 })
             .AsIChatClient();
+        var memoryService = _internalExport.GetService<IMemoryService>();
+        if (memoryService is null)
+        {
+            memoryService = CreateMemoryService();
+            if (_logger.IsEnabled(LogLevel.Debug))
+            {
+                _logger.LogDebug("Created new MemoryService instance for Plugin");
+            }
+        }
         this._chatClient = new ChatClientBuilder(openAIChatClient)
-            .UseMemory(
-                GetChatReducer(),
-                _internalExport.GetRequiredService<IRecentMemory>(),
-                _internalExport.GetRequiredService<ILongMemory>(),
-                loggerFactory)
+            .UseMemory(memoryService, loggerFactory)
             .Build();
     }
 
-    private EveConvChatReducer GetChatReducer()
+    private IMemoryService CreateMemoryService()
     {
-        var client = _internalExport.GetKeyedService<IChatClient>("summarization")
-                     ?? (string.IsNullOrWhiteSpace(this._config.Summerization?.ApiKey)
-                         ? CreateChatClient(this._config)
-                         : CreateChatClient(this._config.Summerization));
-        return new EveConvChatReducer(client,
-            _internalExport.GetRequiredService<ISessionMemory>(),
-            _internalExport.GetRequiredService<ITokenCounter>(),
-            Options.Create(this._config.Memory), _loggerFactory);
+        var summarizationClient = _internalExport.GetKeyedService<IChatClient>("summarization")
+                                    ?? (string.IsNullOrWhiteSpace(this._config.Summerization?.ApiKey)
+                                        ? CreateChatClient(this._config)
+                                        : CreateChatClient(this._config.Summerization));
+        var sessionMemory = _internalExport.GetService<ISessionMemory>()
+                            ?? new SessionMemory(
+                                _internalExport.GetRequiredService<ISqlSugarClient>(),
+                                _loggerFactory);
+        var tokenCounter = _internalExport.GetService<ITokenCounter>()
+                            ?? new TiktokenCounter(_loggerFactory);
+        var extractionClient = _internalExport.GetKeyedService<IChatClient>("extraction")
+                                ?? (string.IsNullOrWhiteSpace(this._config.Extraction?.ApiKey)
+                                    ? CreateChatClient(this._config)
+                                    : CreateChatClient(this._config.Extraction));
+        var llmLongMemoryExtractor = _internalExport.GetService<LLMLongMemoryExtractor>()
+                                        ?? new LLMLongMemoryExtractor(
+                                            extractionClient,
+                                            Options.Create(this._config.Memory),
+                                            _loggerFactory);
+        var longMemory = _internalExport.GetService<ILongMemory>()
+                         ?? new LongMemory(
+                             llmLongMemoryExtractor,
+                             sessionMemory,
+                             tokenCounter,
+                             Options.Create(this._config.Memory),
+                             _internalExport.GetRequiredService<ISqlSugarClient>(),
+                             _loggerFactory);
+        var reducer = _internalExport.GetService<EveConvChatReducer>()
+                      ?? new EveConvChatReducer(
+                          summarizationClient,
+                          sessionMemory,
+                          tokenCounter,
+                          Options.Create(this._config.Memory),
+                          _loggerFactory);
+
+        return new MemoryService(
+            _internalExport.GetRequiredService<IRecentMemory>(),
+            sessionMemory,
+            longMemory,
+            reducer,
+            tokenCounter,
+            Options.Create(this._config.Memory),
+            _loggerFactory);
     }
 
-    private static IChatClient CreateChatClient(ChatConfig config)
+    private IChatClient CreateChatClient(ChatConfig config)
     {
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Creating ChatClient for model {ModelName} with endpoint {Endpoint}", config.ModelName, config.Endpoint);
+        }
         return new OpenAI.Chat.ChatClient(
                 config.ModelName,
                 new ApiKeyCredential(config.ApiKey),
