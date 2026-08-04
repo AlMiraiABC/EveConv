@@ -6,22 +6,27 @@ namespace EveConv.Abstraction.DocParser.Block
 {
 
     /// <summary>
-    /// A hyper link.
+    /// A hyperlink.
     /// </summary>
     public sealed record HyperLinkBlock : ParagraphBlock<IParagraphBlock>
     {
+        /// <summary>
+        /// Uri of this link.
+        /// </summary>
+        public string Uri { get; init; } = string.Empty;
+
         /// <summary>
         /// Optional title of this link.
         /// </summary>
         public string Title { get; init; } = string.Empty;
 
         /// <summary>
-        /// Create a hyper link content instance.
+        /// Create a hyperlink content instance.
         /// </summary>
         /// <param name="uri"><see cref="Uri"/></param>
-        /// <param name="title"><see cref="Title"/></param>
-        public HyperLinkBlock(IParagraphBlock content) : base(content)
+        public HyperLinkBlock(IParagraphBlock content, string uri) : base(content)
         {
+            Uri = uri;
         }
     }
 }

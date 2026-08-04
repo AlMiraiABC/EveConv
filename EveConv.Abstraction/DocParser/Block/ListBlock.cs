@@ -9,12 +9,12 @@ namespace EveConv.Abstraction.DocParser.Block
     /// </summary>
     public record ListBlock<T> : ParagraphBlock<IEnumerable<T>>
     {
-        public ListBlock(ParagraphBlock<IEnumerable<T>> items) : base(items)
+        public ListBlock(IEnumerable<T> items) : base(items)
         {
         }
 
         /// <summary>
-        /// Type of list. E.g. ordered, unordered, etc.
+        /// Type of list. E.g. ordered, unordered, quote, etc.
         /// </summary>
         public string ListType { get; init; } = string.Empty;
         /// <summary>

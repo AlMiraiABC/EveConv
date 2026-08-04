@@ -52,6 +52,11 @@ namespace EveConv.Abstraction.DocParser
         /// It may be empty if the document is not organized by sections.
         /// </remarks>
         public IEnumerable<SectionBlock> Sections { get; init; } = [];
+
+        /// <summary>
+        /// The collection of metadata about this document.
+        /// </summary>
+        public Dictionary<string, string> Metadata { get; init; } = new();
     }
 
 }

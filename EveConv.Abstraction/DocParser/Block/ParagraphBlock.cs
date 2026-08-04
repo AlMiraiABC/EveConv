@@ -9,7 +9,15 @@ namespace EveConv.Abstraction.DocParser.Block
     /// </summary>
     public interface IParagraphBlock
     {
+        /// <summary>
+        /// Content numbering. E.g. Figure-1, Table-2, etc.
+        /// </summary>
+        string Numbering { get; }
 
+        /// <summary>
+        /// Extended properties or information.
+        /// </summary>
+        Dictionary<string, string> Properties { get; }
     }
 
     /// <summary>
@@ -22,10 +30,11 @@ namespace EveConv.Abstraction.DocParser.Block
         /// Content.
         /// </summary>
         public T Content { get; protected set; }
-        /// <summary>
-        /// Content numbering. E.g. Figure-1, Table-2, etc.
-        /// </summary>
+
         public string Numbering { get; init; } = string.Empty;
+
+        public Dictionary<string, string> Properties { get; init; } = [];
+
         /// <summary>
         /// Create a paragraph with specified content.
         /// </summary>

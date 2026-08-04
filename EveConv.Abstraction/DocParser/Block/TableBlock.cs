@@ -4,13 +4,15 @@ using System.Text;
 
 namespace EveConv.Abstraction.DocParser.Block
 {
-    // A table
+    /// <summary>
+    /// A table.
+    /// </summary>
     public sealed record TableBlock : ParagraphBlock<TableDataBlock>
     {
         /// <summary>
-        /// Optional title of this link.
+        /// Optional title of this table.
         /// </summary>
-        public string? Title { get; }
+        public string? Title { get; init; }
 
         /// <summary>
         /// Alias of <see cref="ParagraphBlock{T}.Content"/>.

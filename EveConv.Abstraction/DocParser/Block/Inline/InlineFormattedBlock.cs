@@ -5,16 +5,16 @@ using System.Text;
 namespace EveConv.Abstraction.DocParser.Block.Inline
 {
     /// <summary>
-    /// An inline formated text.
+    /// An inline formatted text.
     /// </summary>
-    public record InlineFormatedBlock : InlineTextBlock
+    public record InlineFormattedBlock : InlineTextBlock
     {
         /// <summary>
-        /// Format type, e.g. "bold", "italic", "code", etc.
+        /// Format type, e.g. "formula", "code", etc.
         /// </summary>
         public string Formating { get; init; } = string.Empty;
 
-        public InlineFormatedBlock(string text) : base(text)
+        public InlineFormattedBlock(string text) : base(text)
         {
         }
     }

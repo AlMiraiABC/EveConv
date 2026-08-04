@@ -7,7 +7,7 @@ namespace EveConv.Abstraction.DocParser.Block
     /// <summary>
     /// A rich text.
     /// </summary>
-    public sealed record RichTextBlock : ParagraphBlock<IParagraphBlock>
+    public sealed record RichTextBlock : ParagraphBlock<IEnumerable<IParagraphBlock>>
     {
         /// <summary>
         /// Optional raw data encoded to base64 string. E.g. images.
@@ -24,7 +24,17 @@ namespace EveConv.Abstraction.DocParser.Block
         /// </summary>
         /// <param name="content"><see cref="Content"/></param>
         /// <param name="contentType"><see cref="ContentType"/></param>
-        public RichTextBlock(IParagraphBlock content, string contentType) : base(content)
+        public RichTextBlock(IParagraphBlock content, string contentType) : base([content])
+        {
+            ContentType = contentType;
+        }
+
+        /// <summary>
+        /// Create a rich text content instance.
+        /// </summary>
+        /// <param name="content"><see cref="Content"/></param>
+        /// <param name="contentType"><see cref="ContentType"/></param>
+        public RichTextBlock(IEnumerable<IParagraphBlock> content, string contentType) : base(content)
         {
             ContentType = contentType;
         }
