@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.IO.Compression;
+using System.Xml;
 using System.Xml.Linq;
 using EveConv.Abstraction;
 using EveConv.Abstraction.DocParser.Block;
@@ -99,7 +100,7 @@ public class DocxParser : DocParseable
             FillAppMetadata(metadata, LoadXml(archive, "docProps/app.xml"));
             FillCustomMetadata(metadata, LoadXml(archive, "docProps/custom.xml"));
         }
-        catch (InvalidDataException)
+        catch (Exception ex) when (ex is InvalidDataException or XmlException or IOException)
         {
         }
 
@@ -405,8 +406,8 @@ public class DocxParser : DocParseable
         metadata.LastModifiedBy = GetElementValue(coreProperties.Root, Cp + "lastModifiedBy");
         metadata.RevisionNumber = GetElementValue(coreProperties.Root, Cp + "revision");
         metadata.Version = GetElementValue(coreProperties.Root, Cp + "version");
-        metadata.CreatedAt ??= GetDateValue(coreProperties.Root, Dcterms + "created");
-        metadata.UpdatedAt ??= GetDateValue(coreProperties.Root, Dcterms + "modified");
+        metadata.CreatedAt = GetDateValue(coreProperties.Root, Dcterms + "created") ?? metadata.CreatedAt;
+        metadata.UpdatedAt = GetDateValue(coreProperties.Root, Dcterms + "modified") ?? metadata.UpdatedAt;
         metadata.LastPrinted = GetDateValue(coreProperties.Root, Cp + "lastPrinted");
     }
 
@@ -488,7 +489,8 @@ public class DocxParser : DocParseable
         }
 
         using var stream = entry.Open();
-        return XDocument.Load(stream, LoadOptions.None);
+        using var reader = XmlReader.Create(stream, new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit });
+        return XDocument.Load(reader, LoadOptions.None);
     }
 
     private static string? GetElementValue(XElement root, XName name)

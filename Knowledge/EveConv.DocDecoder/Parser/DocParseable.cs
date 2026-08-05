@@ -153,7 +153,6 @@ namespace EveConv.DocDecoder.Parser
 
         /// <summary>
         /// Converts this metadata instance to a <see cref="Dictionary{String, String}"/>.
-        /// Null-valued properties are excluded. <see cref="DateTime"/> values use the round-trip ("O") format.
         /// Uses runtime type resolution so that properties declared on derived classes are included.
         /// </summary>
         public virtual Dictionary<string, string?> ToDictionary()
