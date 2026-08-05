@@ -6,7 +6,7 @@ using EveConv.Abstraction.DocParser.Block;
 
 namespace EveConv.DocDecoder.Parser
 {
-    internal class TxtParser : DocParseable
+    public class TxtParser : DocParseable
     {
         public TxtParser(IMimeTypeDetection mimeTypeDetection) : base(mimeTypeDetection)
         {

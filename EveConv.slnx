@@ -56,6 +56,7 @@
     <Project Path="Tests/EveConv.Channel.Client.Tests/EveConv.Channel.Client.Tests.csproj" />
     <Project Path="Tests/EveConv.Channel.Server.Tests/EveConv.Channel.Server.Tests.csproj" Id="9f108615-e9f9-4153-b106-f3fa8e540e08" />
     <Project Path="Tests/EveConv.Core.Channel.Tests/EveConv.Core.Channel.Tests.csproj" />
+    <Project Path="Tests/EveConv.DocDecoder.Tests/EveConv.DocDecoder.Tests.csproj" />
     <Project Path="Tests/EveConv.Downloader.Tests/EveConv.Downloader.Tests.csproj" Id="4182d8da-1dd4-4112-8e48-b03a1a87a4fc" />
     <Project Path="Tests/EveConv.Embedder.Tests/EveConv.Embedder.Tests.csproj" Id="78966aec-2b65-4ed1-b1f2-8ceb56925e5f" />
     <Project Path="Tests/EveConv.FileStorage.Local.Tests/EveConv.FileStorage.Local.Tests.csproj" Id="3f8e86d1-4c64-4320-b152-60ba0aa26503" />
