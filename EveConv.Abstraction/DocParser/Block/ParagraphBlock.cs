@@ -17,7 +17,7 @@ namespace EveConv.Abstraction.DocParser.Block
         /// <summary>
         /// Extended properties or information.
         /// </summary>
-        Dictionary<string, string> Properties { get; }
+        Dictionary<string, string?> Properties { get; }
     }
 
     /// <summary>
@@ -33,7 +33,7 @@ namespace EveConv.Abstraction.DocParser.Block
 
         public string Numbering { get; init; } = string.Empty;
 
-        public Dictionary<string, string> Properties { get; init; } = [];
+        public Dictionary<string, string?> Properties { get; init; } = [];
 
         /// <summary>
         /// Create a paragraph with specified content.

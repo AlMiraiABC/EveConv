@@ -56,7 +56,7 @@ namespace EveConv.Abstraction.DocParser
         /// <summary>
         /// The collection of metadata about this document.
         /// </summary>
-        public Dictionary<string, string> Metadata { get; init; } = new();
+        public Dictionary<string, string?> Metadata { get; init; } = new();
     }
 
 }
