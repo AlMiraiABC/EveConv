@@ -8,6 +8,7 @@ namespace EveConv.Abstraction.DocParser.Block
     /// A list.
     /// </summary>
     public record ListBlock<T> : ParagraphBlock<IEnumerable<T>>
+        where T: IParagraphBlock
     {
         public ListBlock(IEnumerable<T> items) : base(items)
         {
