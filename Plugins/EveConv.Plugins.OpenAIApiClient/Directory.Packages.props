@@ -1,7 +1,5 @@
 ﻿<Project>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Packages.props, $(MSBuildThisFileDirectory)..))" />
   <ItemGroup>
-    <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.6.0" />
-    <PackageVersion Include="Microsoft.Extensions.AI" Version="$(MSEXVersion)" />
   </ItemGroup>
 </Project>
