@@ -38,7 +38,7 @@ public class DocxParserTests
         var inlines = paragraph.Content.ToList();
         var formatted = Assert.IsType<InlineFormattedBlock>(inlines[1]);
         Assert.Equal("World", formatted.Text);
-        Assert.Equal("bold", formatted.Formating);
+        Assert.Equal("bold", formatted.Formatting);
 
         var link = Assert.IsAssignableFrom<InlineLinkBlock>(inlines[2]);
         Assert.Equal("https://example.com", link.Uri);

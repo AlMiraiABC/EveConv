@@ -10,4 +10,8 @@
     <ProjectReference Include="..\..\EveConv.Abstraction\EveConv.Abstraction.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Markdig" />
+  </ItemGroup>
+
 </Project>

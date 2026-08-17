@@ -12,7 +12,7 @@ namespace EveConv.Abstraction.DocParser.Block.Inline
         /// <summary>
         /// Format type, e.g. "formula", "code", etc.
         /// </summary>
-        public string Formating { get; init; } = string.Empty;
+        public string Formatting { get; init; } = string.Empty;
 
         public InlineFormattedBlock(string text) : base(text)
         {

@@ -215,7 +215,7 @@ public class DocxParser : DocParseable
         {
             return new InlineFormattedBlock(text)
             {
-                Formating = formatting,
+                Formatting = formatting,
                 CharStart = charStart,
                 CharEnd = charEnd,
             };
