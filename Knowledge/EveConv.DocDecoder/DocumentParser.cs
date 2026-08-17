@@ -49,7 +49,7 @@ namespace EveConv.DocDecoder
         /// <remarks>
         ///     If the same type of <paramref name="parser"/> has been exists, it will be replaced.
         ///     This is not thread-safe.
-        ///     This will clear the accpet cache.
+        ///     This will clear the accepted caches.
         /// </remarks>
         public void RegisterParser(IDocumentParser parser)
         {
