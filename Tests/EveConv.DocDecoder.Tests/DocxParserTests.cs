@@ -3,6 +3,7 @@ using EveConv.Abstraction;
 using EveConv.Abstraction.DocParser.Block;
 using EveConv.Abstraction.DocParser.Block.Inline;
 using EveConv.DocDecoder.Parser;
+using EveConv.Downloader;
 
 namespace EveConv.DocDecoder.Tests;
 
@@ -13,10 +14,11 @@ public class DocxParserTests
     [Fact]
     public async Task ParseAsync_ExtractsParagraphsTablesAndMetadata()
     {
-        using var stream = CreateDocxStream();
-        var parser = new DocxParser(new TestMimeTypeDetection());
+        CreateDocx("sample.docx");
+        var mimeTypeDetection = new TestMimeTypeDetection();
+        var parser = new DocxParser(mimeTypeDetection, new LocalDownloader(mimeTypeDetection));
 
-        var document = await parser.ParseAsync("sample.docx", stream, TestContext.Current.CancellationToken);
+        var document = await parser.ParseAsync("sample.docx", TestContext.Current.CancellationToken);
 
         Assert.Equal(DocxMimeType, document.DocType);
         Assert.Equal("Unit Test", document.Metadata["Author"]);
@@ -62,96 +64,96 @@ public class DocxParserTests
     [InlineData(DocxMimeType + "; charset=utf-8")]
     public void Accept_ReturnsTrueForDocxTypes(string fileType)
     {
-        var parser = new DocxParser(new TestMimeTypeDetection());
+        var mimeTypeDetection = new TestMimeTypeDetection();
+        var parser = new DocxParser(mimeTypeDetection, new LocalDownloader(mimeTypeDetection));
 
         Assert.True(parser.Accept(fileType));
     }
 
-    private static MemoryStream CreateDocxStream()
+    private static void CreateDocx(string filePath)
     {
-        var stream = new MemoryStream();
-        using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true))
+        using (var fileStream = File.Create(filePath))
         {
-            AddEntry(archive, "[Content_Types].xml", """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-                  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-                  <Default Extension="xml" ContentType="application/xml"/>
-                  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-                  <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
-                  <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
-                  <Override PartName="/docProps/custom.xml" ContentType="application/vnd.openxmlformats-officedocument.custom-properties+xml"/>
-                </Types>
-                """);
-            AddEntry(archive, "word/_rels/document.xml.rels", """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-                  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://example.com" TargetMode="External"/>
-                </Relationships>
-                """);
-            AddEntry(archive, "word/document.xml", """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
-                            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-                  <w:body>
-                    <w:p>
-                      <w:r><w:t xml:space="preserve">Hello </w:t></w:r>
-                      <w:r><w:rPr><w:b/></w:rPr><w:t>World</w:t></w:r>
-                      <w:hyperlink r:id="rId1"><w:r><w:t xml:space="preserve"> Link</w:t></w:r></w:hyperlink>
-                    </w:p>
-                    <w:tbl>
-                      <w:tr>
-                        <w:tc>
-                          <w:tcPr><w:vMerge w:val="restart"/></w:tcPr>
-                          <w:p><w:r><w:t>A</w:t></w:r></w:p>
-                        </w:tc>
-                        <w:tc><w:p><w:r><w:t>D</w:t></w:r></w:p></w:tc>
-                      </w:tr>
-                      <w:tr>
-                        <w:tc><w:tcPr><w:vMerge/></w:tcPr><w:p/></w:tc>
-                        <w:tc><w:p><w:r><w:t>B</w:t></w:r></w:p></w:tc>
-                      </w:tr>
-                    </w:tbl>
-                  </w:body>
-                </w:document>
-                """);
-            AddEntry(archive, "docProps/core.xml", """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
-                                   xmlns:dc="http://purl.org/dc/elements/1.1/"
-                                   xmlns:dcterms="http://purl.org/dc/terms/">
-                  <dc:title>DocxParser sample</dc:title>
-                  <dc:description>Parser test document</dc:description>
-                  <dc:creator>Unit Test</dc:creator>
-                  <cp:category>Tests</cp:category>
-                  <cp:lastModifiedBy>Codex</cp:lastModifiedBy>
-                  <dcterms:created>2026-08-05T00:00:00Z</dcterms:created>
-                </cp:coreProperties>
-                """);
-            AddEntry(archive, "docProps/app.xml", """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
-                  <Application>Microsoft Word</Application>
-                  <Company>EveConv</Company>
-                  <Pages>2</Pages>
-                  <Words>42</Words>
-                  <Characters>128</Characters>
-                  <AppVersion>16.0000</AppVersion>
-                </Properties>
-                """);
-            AddEntry(archive, "docProps/custom.xml", """
-                <?xml version="1.0" encoding="UTF-8"?>
-                <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties"
-                            xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
-                  <property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="2" name="Department">
-                    <vt:lpwstr>Research</vt:lpwstr>
-                  </property>
-                </Properties>
-                """);
+            using (var archive = new ZipArchive(fileStream, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                AddEntry(archive, "[Content_Types].xml", """
+                        <?xml version="1.0" encoding="UTF-8"?>
+                        <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+                          <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+                          <Default Extension="xml" ContentType="application/xml"/>
+                          <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+                          <Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>
+                          <Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>
+                          <Override PartName="/docProps/custom.xml" ContentType="application/vnd.openxmlformats-officedocument.custom-properties+xml"/>
+                        </Types>
+                        """);
+                AddEntry(archive, "word/_rels/document.xml.rels", """
+                        <?xml version="1.0" encoding="UTF-8"?>
+                        <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+                          <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://example.com" TargetMode="External"/>
+                        </Relationships>
+                        """);
+                AddEntry(archive, "word/document.xml", """
+                        <?xml version="1.0" encoding="UTF-8"?>
+                        <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+                                    xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+                          <w:body>
+                            <w:p>
+                              <w:r><w:t xml:space="preserve">Hello </w:t></w:r>
+                              <w:r><w:rPr><w:b/></w:rPr><w:t>World</w:t></w:r>
+                              <w:hyperlink r:id="rId1"><w:r><w:t xml:space="preserve"> Link</w:t></w:r></w:hyperlink>
+                            </w:p>
+                            <w:tbl>
+                              <w:tr>
+                                <w:tc>
+                                  <w:tcPr><w:vMerge w:val="restart"/></w:tcPr>
+                                  <w:p><w:r><w:t>A</w:t></w:r></w:p>
+                                </w:tc>
+                                <w:tc><w:p><w:r><w:t>D</w:t></w:r></w:p></w:tc>
+                              </w:tr>
+                              <w:tr>
+                                <w:tc><w:tcPr><w:vMerge/></w:tcPr><w:p/></w:tc>
+                                <w:tc><w:p><w:r><w:t>B</w:t></w:r></w:p></w:tc>
+                              </w:tr>
+                            </w:tbl>
+                          </w:body>
+                        </w:document>
+                        """);
+                AddEntry(archive, "docProps/core.xml", """
+                        <?xml version="1.0" encoding="UTF-8"?>
+                        <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
+                                          xmlns:dc="http://purl.org/dc/elements/1.1/"
+                                          xmlns:dcterms="http://purl.org/dc/terms/">
+                          <dc:title>DocxParser sample</dc:title>
+                          <dc:description>Parser test document</dc:description>
+                          <dc:creator>Unit Test</dc:creator>
+                          <cp:category>Tests</cp:category>
+                          <cp:lastModifiedBy>Codex</cp:lastModifiedBy>
+                          <dcterms:created>2026-08-05T00:00:00Z</dcterms:created>
+                        </cp:coreProperties>
+                        """);
+                AddEntry(archive, "docProps/app.xml", """
+                        <?xml version="1.0" encoding="UTF-8"?>
+                        <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
+                          <Application>Microsoft Word</Application>
+                          <Company>EveConv</Company>
+                          <Pages>2</Pages>
+                          <Words>42</Words>
+                          <Characters>128</Characters>
+                          <AppVersion>16.0000</AppVersion>
+                        </Properties>
+                        """);
+                AddEntry(archive, "docProps/custom.xml", """
+                        <?xml version="1.0" encoding="UTF-8"?>
+                        <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/custom-properties"
+                                    xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
+                          <property fmtid="{D5CDD505-2E9C-101B-9397-08002B2CF9AE}" pid="2" name="Department">
+                            <vt:lpwstr>Research</vt:lpwstr>
+                          </property>
+                        </Properties>
+                        """);
+            }
         }
-
-        stream.Position = 0;
-        return stream;
     }
 
     private static void AddEntry(ZipArchive archive, string name, string content)

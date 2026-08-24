@@ -109,11 +109,10 @@ namespace EveConv.DocDecoder
         /// Asynchronously parse a document from a stream.
         /// </summary>
         /// <param name="source">Source path to identified this stream.</param>
-        /// <param name="fileStream">Stream of file content.</param>
         /// <param name="cancellationToken">A cancellation token.</param>
         /// <returns>Parsed document.</returns>
         /// <exception cref="NotSupportedException">File type is not supported.</exception>
-        public async Task<Document> ParseAsync(string source, Stream fileStream, CancellationToken cancellationToken = default)
+        public async Task<Document> ParseAsync(string source, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(source);
             var fileType = this._mimeTypeDetection.GetFileType(source);
@@ -140,7 +139,7 @@ namespace EveConv.DocDecoder
                 throw new NotSupportedException($"Type of {source} is not supported.");
             }
             _acceptCache.TryAdd(fileType, parser);
-            return await parser.ParseAsync(source, fileStream, cancellationToken);
+            return await parser.ParseAsync(source, cancellationToken);
         }
 
         private class PriorityComaprer : IComparer<int>

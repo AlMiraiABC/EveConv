@@ -5,7 +5,7 @@ using System.Text;
 namespace EveConv.Abstraction.DocParser
 {
     /// <summary>
-    /// 
+    ///
     /// </summary>
     public interface IDocumentParser
     {
@@ -25,9 +25,8 @@ namespace EveConv.Abstraction.DocParser
         /// Asynchronously parses the specified file stream to document.
         /// </summary>
         /// <param name="source">Original file source.</param>
-        /// <param name="fileStream">The specified file stream.</param>
         /// <param name="cancellationToken">Task cancellation token.</param>
         /// <returns>A task that represents the asynchronous operation that contains a structured document.</returns>
-        Task<Document> ParseAsync(string source, Stream fileStream, CancellationToken cancellationToken = default);
+        Task<Document> ParseAsync(string source, CancellationToken cancellationToken = default);
     }
 }

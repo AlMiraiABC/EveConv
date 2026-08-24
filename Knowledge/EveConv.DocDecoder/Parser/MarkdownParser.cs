@@ -1,6 +1,7 @@
 using EveConv.Abstraction;
 using EveConv.Abstraction.DocParser.Block;
 using EveConv.Abstraction.DocParser.Block.Inline;
+using EveConv.Abstraction.Downloader;
 using Markdig;
 using Markdig.Helpers;
 using Markdig.Syntax;
@@ -18,7 +19,7 @@ public sealed class MarkdownParser : DocParseable
         .UseAdvancedExtensions()
         .Build();
 
-    public MarkdownParser(IMimeTypeDetection mimeTypeDetection) : base(mimeTypeDetection)
+    public MarkdownParser(IMimeTypeDetection mimeTypeDetection, IDownloader downloader) : base(mimeTypeDetection, downloader)
     {
     }
 
@@ -42,15 +43,16 @@ public sealed class MarkdownParser : DocParseable
     }
 
     protected override async Task<(IEnumerable<IParagraphBlock> Paragraphs, IEnumerable<SectionBlock> Sections)> ParseAsync(
-        Stream fileStream,
+        StreamableFileContent file,
         CancellationToken cancellationToken = default)
     {
-        using var reader = new StreamReader(fileStream, leaveOpen: true);
+        using var stream = await file.GetStreamAsync();
+        using var reader = new StreamReader(stream, leaveOpen: true);
         var content = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
 
-        if (fileStream.CanSeek)
+        if (stream.CanSeek)
         {
-            fileStream.Position = 0;
+            stream.Position = 0;
         }
 
         var normalized = Markdown.Normalize(content);

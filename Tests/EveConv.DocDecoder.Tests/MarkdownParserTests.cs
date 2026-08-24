@@ -1,7 +1,9 @@
+using System.Text;
 using EveConv.Abstraction;
 using EveConv.Abstraction.DocParser.Block;
 using EveConv.Abstraction.DocParser.Block.Inline;
 using EveConv.DocDecoder.Parser;
+using EveConv.Downloader;
 
 namespace EveConv.DocDecoder.Tests;
 
@@ -18,7 +20,8 @@ public class MarkdownParserTests
     [InlineData(MarkdownMimeType + "; charset=utf-8")]
     public void Accept_ReturnsTrueForMarkdownTypes(string fileType)
     {
-        var parser = new MarkdownParser(new TestMimeTypeDetection());
+        var mimeTypeDetection = new TestMimeTypeDetection();
+        var parser = new MarkdownParser(mimeTypeDetection, new LocalDownloader(mimeTypeDetection));
 
         Assert.True(parser.Accept(fileType));
     }
@@ -38,11 +41,11 @@ public class MarkdownParserTests
             Console.WriteLine("Hi");
             ```
             """;
+        await File.WriteAllBytesAsync("sample.md", Encoding.UTF8.GetBytes(markdown), TestContext.Current.CancellationToken);
+        var mimeTypeDetection = new TestMimeTypeDetection();
+        var parser = new MarkdownParser(mimeTypeDetection, new LocalDownloader(mimeTypeDetection));
 
-        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(markdown));
-        var parser = new MarkdownParser(new TestMimeTypeDetection());
-
-        var document = await parser.ParseAsync("sample.md", stream, TestContext.Current.CancellationToken);
+        var document = await parser.ParseAsync("sample.md", TestContext.Current.CancellationToken);
 
         Assert.Equal(MarkdownMimeType, document.DocType);
 
@@ -77,12 +80,12 @@ public class MarkdownParserTests
             # Title
             body
             """;
-
+        await File.WriteAllBytesAsync("sample.md", Encoding.UTF8.GetBytes(markdown), TestContext.Current.CancellationToken);
         var mimeTypeDetection = new TestMimeTypeDetection();
-        var parser = new DocumentParser([new TxtParser(mimeTypeDetection), new MarkdownParser(mimeTypeDetection)], mimeTypeDetection);
-        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(markdown));
+        var downloader = new LocalDownloader(mimeTypeDetection);
+        var parser = new DocumentParser([new TxtParser(mimeTypeDetection, downloader), new MarkdownParser(mimeTypeDetection, downloader)], mimeTypeDetection);
 
-        var document = await parser.ParseAsync("sample.md", stream, TestContext.Current.CancellationToken);
+        var document = await parser.ParseAsync("sample.md", TestContext.Current.CancellationToken);
 
         var section = Assert.Single(document.Sections);
         Assert.Equal("Title", section.Title);

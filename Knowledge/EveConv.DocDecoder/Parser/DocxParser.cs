@@ -5,6 +5,7 @@ using System.Xml.Linq;
 using EveConv.Abstraction;
 using EveConv.Abstraction.DocParser.Block;
 using EveConv.Abstraction.DocParser.Block.Inline;
+using EveConv.Abstraction.Downloader;
 
 namespace EveConv.DocDecoder.Parser;
 
@@ -21,7 +22,7 @@ public class DocxParser : DocParseable
     private static readonly XNamespace Ep = "http://schemas.openxmlformats.org/officeDocument/2006/extended-properties";
     private static readonly XNamespace Custom = "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties";
 
-    public DocxParser(IMimeTypeDetection mimeTypeDetection) : base(mimeTypeDetection)
+    public DocxParser(IMimeTypeDetection mimeTypeDetection, IDownloader downloader) : base(mimeTypeDetection, downloader)
     {
     }
 
@@ -38,18 +39,18 @@ public class DocxParser : DocParseable
             || string.Equals(normalized, "docx", StringComparison.OrdinalIgnoreCase);
     }
 
-    protected override Task<(IEnumerable<IParagraphBlock> Paragraphs, IEnumerable<SectionBlock> Sections)> ParseAsync(
-        Stream fileStream,
+    protected override async Task<(IEnumerable<IParagraphBlock> Paragraphs, IEnumerable<SectionBlock> Sections)> ParseAsync(
+        StreamableFileContent file,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        ResetStream(fileStream);
+        using var stream = await file.GetStreamAsync();
 
-        using var archive = new ZipArchive(fileStream, ZipArchiveMode.Read, leaveOpen: true);
+        using var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true);
         var document = LoadXml(archive, "word/document.xml");
         if (document?.Root is null)
         {
-            return Task.FromResult<(IEnumerable<IParagraphBlock>, IEnumerable<SectionBlock>)>(([], []));
+            return ([], []);
         }
 
         var relationships = LoadRelationships(archive, "word/_rels/document.xml.rels");
@@ -78,24 +79,23 @@ public class DocxParser : DocParseable
             }
         }
 
-        ResetStream(fileStream);
-        return Task.FromResult<(IEnumerable<IParagraphBlock>, IEnumerable<SectionBlock>)>((paragraphs, []));
+        return (paragraphs, []);
     }
 
     protected override async Task<Dictionary<string, string?>> GetMetadataAsync(
         string source,
-        Stream fileStream,
+        StreamableFileContent file,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var baseMetadata = await GetFileSystemMetadataAsync(source, fileStream).ConfigureAwait(false);
+        var baseMetadata = await GetFileSystemMetadataAsync(source, file).ConfigureAwait(false);
         var metadata = new DocxMetadata(baseMetadata);
-        ResetStream(fileStream);
+        using var stream = await file.GetStreamAsync();
 
         try
         {
-            using var archive = new ZipArchive(fileStream, ZipArchiveMode.Read, leaveOpen: true);
+            using var archive = new ZipArchive(stream, ZipArchiveMode.Read, leaveOpen: true);
             FillCoreMetadata(metadata, LoadXml(archive, "docProps/core.xml"));
             FillAppMetadata(metadata, LoadXml(archive, "docProps/app.xml"));
             FillCustomMetadata(metadata, LoadXml(archive, "docProps/custom.xml"));
@@ -104,7 +104,6 @@ public class DocxParser : DocParseable
         {
         }
 
-        ResetStream(fileStream);
         return metadata.ToDictionary();
     }
 
@@ -586,14 +585,6 @@ public class DocxParser : DocParseable
         for (var col = columnIndex; col < columnIndex + colSpan; col++)
         {
             verticalMerges.Remove(col);
-        }
-    }
-
-    private static void ResetStream(Stream stream)
-    {
-        if (stream.CanSeek)
-        {
-            stream.Position = 0;
         }
     }
 

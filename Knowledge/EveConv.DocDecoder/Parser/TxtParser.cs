@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Text;
 using EveConv.Abstraction;
 using EveConv.Abstraction.DocParser.Block;
+using EveConv.Abstraction.Downloader;
 
 namespace EveConv.DocDecoder.Parser
 {
     public class TxtParser : DocParseable
     {
-        public TxtParser(IMimeTypeDetection mimeTypeDetection) : base(mimeTypeDetection)
+        public TxtParser(IMimeTypeDetection mimeTypeDetection, IDownloader downloader) : base(mimeTypeDetection, downloader)
         {
         }
 
@@ -17,14 +18,15 @@ namespace EveConv.DocDecoder.Parser
             return true;
         }
 
-        protected override async Task<(IEnumerable<IParagraphBlock> Paragraphs, IEnumerable<SectionBlock> Sections)> ParseAsync(Stream fileStream, CancellationToken cancellationToken = default)
+        protected override async Task<(IEnumerable<IParagraphBlock> Paragraphs, IEnumerable<SectionBlock> Sections)> ParseAsync(StreamableFileContent file, CancellationToken cancellationToken = default)
         {
-            using var reader = new StreamReader(fileStream);
+            using var stream = await file.GetStreamAsync();
+            using var reader = new StreamReader(stream, leaveOpen: true);
             var content = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
             var paragraphs = content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
                 .Select(c => new PlainTextBlock(c))
                 .ToList();
-            return (paragraphs, []);
+            return (paragraphs, Enumerable.Empty<SectionBlock>());
         }
     }
 }

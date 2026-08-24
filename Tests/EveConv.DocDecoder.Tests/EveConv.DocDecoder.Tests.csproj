@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Knowledge\EveConv.DocDecoder\EveConv.DocDecoder.csproj" />
+    <ProjectReference Include="..\..\Reference\EveConv.Downloader\EveConv.Downloader.csproj" />
   </ItemGroup>
 
 </Project>

@@ -5,6 +5,7 @@ using System.IO;
 using EveConv.Abstraction;
 using EveConv.Abstraction.DocParser;
 using EveConv.Abstraction.DocParser.Block;
+using EveConv.Abstraction.Downloader;
 
 namespace EveConv.DocDecoder.Parser
 {
@@ -13,20 +14,23 @@ namespace EveConv.DocDecoder.Parser
         public const int DEFAULT_PRIORITY = 100;
 
         protected IMimeTypeDetection _mimeTypeDetection;
+        protected IDownloader _downloader;
 
-        protected DocParseable(IMimeTypeDetection mimeTypeDetection)
+        protected DocParseable(IMimeTypeDetection mimeTypeDetection, IDownloader downloader)
         {
             this._mimeTypeDetection = mimeTypeDetection;
+            this._downloader = downloader;
         }
 
         public virtual int Priority => DEFAULT_PRIORITY;
 
         public abstract bool Accept(string fileType);
 
-        public async Task<Document> ParseAsync(string source, Stream fileStream, CancellationToken cancellationToken = default)
+        public async Task<Document> ParseAsync(string source, CancellationToken cancellationToken = default)
         {
-            var (paragraphs, sections) = await ParseAsync(fileStream, cancellationToken).ConfigureAwait(false);
-            var metadata = await GetMetadataAsync(source, fileStream, cancellationToken).ConfigureAwait(false);
+            var file = await _downloader.DownloadAsync(source, cancellationToken);
+            var (paragraphs, sections) = await ParseAsync(file, cancellationToken).ConfigureAwait(false);
+            var metadata = await GetMetadataAsync(source, file, cancellationToken).ConfigureAwait(false);
             return new(GetFileType(source), source)
             {
                 Paragraphs = paragraphs ?? [],
@@ -40,28 +44,28 @@ namespace EveConv.DocDecoder.Parser
             return _mimeTypeDetection.GetFileType(source);
         }
 
-        protected virtual Task<(IEnumerable<IParagraphBlock> Paragraphs, IEnumerable<SectionBlock> Sections)> ParseAsync(Stream fileStream, CancellationToken cancellationToken = default)
+        protected virtual Task<(IEnumerable<IParagraphBlock> Paragraphs, IEnumerable<SectionBlock> Sections)> ParseAsync(StreamableFileContent file, CancellationToken cancellationToken = default)
         {
             return Task.FromResult<(IEnumerable<IParagraphBlock>, IEnumerable<SectionBlock>)>(([], []));
         }
 
-        protected virtual async Task<Dictionary<string, string?>> GetMetadataAsync(string source, Stream fileStream, CancellationToken cancellationToken = default)
+        protected virtual async Task<Dictionary<string, string?>> GetMetadataAsync(string source, StreamableFileContent file, CancellationToken cancellationToken = default)
         {
-            var metadata = await GetFileSystemMetadataAsync(source, fileStream).ConfigureAwait(false);
+            var metadata = await GetFileSystemMetadataAsync(source, file).ConfigureAwait(false);
             return metadata.ToDictionary();
         }
 
         /// <summary>
         /// Extracts basic file system metadata from the source path and stream.
         /// </summary>
-        protected virtual Task<BaseMetadata> GetFileSystemMetadataAsync(string source, Stream fileStream)
+        protected virtual Task<BaseMetadata> GetFileSystemMetadataAsync(string source, StreamableFileContent file)
         {
             var metadata = new BaseMetadata();
 
             // Extract file size from stream
             try
             {
-                metadata.FileSize = fileStream.Length;
+                metadata.FileSize = file.FileSize;
             }
             catch { }
 
