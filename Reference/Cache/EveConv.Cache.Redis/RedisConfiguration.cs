@@ -67,12 +67,12 @@ public enum SerializationType
 /// </summary>
 public static class RedisConfigurationValidator
 {
-#pragma warning disable SYSLIB1045 // ×ª»»Îª¡°GeneratedRegexAttribute¡±¡£
+#pragma warning disable SYSLIB1045 // è½¬æ¢ä¸ºâ€œGeneratedRegexAttributeâ€ã€‚
     // GeneratedRegex is not required, this validator is a one time setup cost.
     private static readonly Regex ConnectionStringPattern = new(
         @"^([a-zA-Z0-9.-]+)(:\d+)?(\s*,\s*[a-zA-Z0-9.-]+(:\d+)?)*$",
         RegexOptions.Compiled);
-#pragma warning restore SYSLIB1045 // ×ª»»Îª¡°GeneratedRegexAttribute¡±¡£
+#pragma warning restore SYSLIB1045 // è½¬æ¢ä¸ºâ€œGeneratedRegexAttributeâ€ã€‚
 
     /// <summary>
     /// Validates the Redis configuration and throws exceptions for invalid settings.
