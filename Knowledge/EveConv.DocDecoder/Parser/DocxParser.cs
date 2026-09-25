@@ -9,19 +9,52 @@ using EveConv.Abstraction.Downloader;
 
 namespace EveConv.DocDecoder.Parser;
 
+/// <summary>
+/// Extracts structured content and metadata from Office Open XML DOCX documents.
+/// </summary>
+/// <remarks>
+/// <para>
+/// The parser extracts paragraph text, common run formatting, hyperlinks, numbering references,
+/// tables (including horizontal and vertical cell spans), core and application metadata, and
+/// custom document properties.
+/// </para>
+/// <para>
+/// Embedded images referenced from <c>word/media</c> are emitted as <see cref="RichTextBlock"/>
+/// instances. Their <see cref="RichTextBlock.Data"/> value is a data URI, their content type is
+/// the detected image MIME type, and compact presentation metadata such as alternative text,
+/// dimensions, rotation, flipping, and cropping is stored in the block properties. Text and
+/// images retain their order within a paragraph. Images larger than 20 MiB are ignored.
+/// </para>
+/// <para>
+/// This parser does not reproduce page layout or provide lossless OOXML round-tripping. It does
+/// not interpret stylesheets, headers, footers, comments, footnotes, tracked changes, equations,
+/// charts, SmartArt, embedded objects, macros, external images, ink strokes, DrawingML shapes,
+/// VML shapes, or drawing canvases. Text or fallback images nested in unsupported objects may be
+/// extracted when represented by otherwise supported WordprocessingML or image elements, but the
+/// containing object's geometry, relationships, and visual semantics are not preserved.
+/// </para>
+/// </remarks>
 public class DocxParser : DocParseable
 {
     private const string DocxMimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    private const long MaxEmbeddedImageBytes = 20 * 1024 * 1024;
 
     private static readonly XNamespace W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
     private static readonly XNamespace R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
     private static readonly XNamespace Rel = "http://schemas.openxmlformats.org/package/2006/relationships";
+    private static readonly XNamespace A = "http://schemas.openxmlformats.org/drawingml/2006/main";
+    private static readonly XNamespace Wp = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing";
     private static readonly XNamespace Cp = "http://schemas.openxmlformats.org/package/2006/metadata/core-properties";
     private static readonly XNamespace Dc = "http://purl.org/dc/elements/1.1/";
     private static readonly XNamespace Dcterms = "http://purl.org/dc/terms/";
     private static readonly XNamespace Ep = "http://schemas.openxmlformats.org/officeDocument/2006/extended-properties";
     private static readonly XNamespace Custom = "http://schemas.openxmlformats.org/officeDocument/2006/custom-properties";
 
+    /// <summary>
+    /// Initializes a DOCX parser.
+    /// </summary>
+    /// <param name="mimeTypeDetection">The service used to identify the source document type.</param>
+    /// <param name="downloader">The service used to retrieve the source document.</param>
     public DocxParser(IMimeTypeDetection mimeTypeDetection, IDownloader downloader) : base(mimeTypeDetection, downloader)
     {
     }
@@ -62,7 +95,7 @@ public class DocxParser : DocParseable
             cancellationToken.ThrowIfCancellationRequested();
             if (element.Name == W + "p")
             {
-                var paragraph = ParseParagraph(element, relationships, lineNumber);
+                var paragraph = ParseParagraph(element, relationships, archive, lineNumber);
                 if (!IsEmpty(paragraph))
                 {
                     paragraphs.Add(paragraph);
@@ -71,7 +104,7 @@ public class DocxParser : DocParseable
             }
             else if (element.Name == W + "tbl")
             {
-                var table = ParseTable(element, relationships, ref lineNumber);
+                var table = ParseTable(element, relationships, archive, ref lineNumber);
                 if (table is not null)
                 {
                     paragraphs.Add(table);
@@ -107,34 +140,46 @@ public class DocxParser : DocParseable
         return metadata.ToDictionary();
     }
 
-    private static PlainTextBlock ParseParagraph(
+    private static IParagraphBlock ParseParagraph(
         XElement paragraphElement,
         IReadOnlyDictionary<string, string> relationships,
+        ZipArchive archive,
         int lineNumber)
     {
+        var blocks = new List<IParagraphBlock>();
         var inlines = new List<DocumentInlineBlock>();
         var charIndex = 0;
 
         foreach (var child in paragraphElement.Elements())
         {
-            ParseInlineContent(child, relationships, inlines, ref charIndex);
+            ParseInlineContent(child, relationships, archive, blocks, inlines, ref charIndex);
         }
 
         var properties = GetParagraphProperties(paragraphElement);
-        var paragraph = new PlainTextBlock(inlines)
+        FlushTextBlock(blocks, inlines, lineNumber);
+        if (blocks.Count == 1 && blocks[0] is PlainTextBlock plainText)
+        {
+            return plainText with
+            {
+                Numbering = GetNumbering(properties),
+                Properties = properties,
+            };
+        }
+
+        return new RichTextBlock(blocks, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
         {
             LineStart = lineNumber,
             LineEnd = lineNumber,
             Numbering = GetNumbering(properties),
             Properties = properties,
         };
-
-        return paragraph;
     }
 
     private static void ParseInlineContent(
         XElement element,
         IReadOnlyDictionary<string, string> relationships,
+        ZipArchive archive,
+        List<IParagraphBlock> blocks,
         List<DocumentInlineBlock> inlines,
         ref int charIndex,
         string? hyperlinkUri = null)
@@ -149,7 +194,7 @@ public class DocxParser : DocParseable
 
             foreach (var child in element.Elements())
             {
-                ParseInlineContent(child, relationships, inlines, ref charIndex, uri ?? hyperlinkUri);
+                ParseInlineContent(child, relationships, archive, blocks, inlines, ref charIndex, uri ?? hyperlinkUri);
             }
 
             return;
@@ -157,26 +202,41 @@ public class DocxParser : DocParseable
 
         if (element.Name == W + "r")
         {
-            ParseRun(element, hyperlinkUri, inlines, ref charIndex);
+            ParseRun(element, relationships, archive, blocks, inlines, hyperlinkUri, ref charIndex);
             return;
         }
 
         foreach (var child in element.Elements())
         {
-            ParseInlineContent(child, relationships, inlines, ref charIndex, hyperlinkUri);
+            ParseInlineContent(child, relationships, archive, blocks, inlines, ref charIndex, hyperlinkUri);
         }
     }
 
     private static void ParseRun(
         XElement run,
-        string? hyperlinkUri,
+        IReadOnlyDictionary<string, string> relationships,
+        ZipArchive archive,
+        List<IParagraphBlock> blocks,
         List<DocumentInlineBlock> inlines,
+        string? hyperlinkUri,
         ref int charIndex)
     {
         var formatting = GetRunFormatting(run.Element(W + "rPr"));
 
         foreach (var child in run.Elements())
         {
+            if (child.Name == W + "drawing")
+            {
+                var image = ParseImage(child, relationships, archive);
+                if (image is not null)
+                {
+                    FlushTextBlock(blocks, inlines);
+                    blocks.Add(image);
+                    charIndex = 0;
+                }
+                continue;
+            }
+
             var text = child.Name switch
             {
                 var name when name == W + "t" => child.Value,
@@ -195,6 +255,170 @@ public class DocxParser : DocParseable
             inlines.Add(CreateInline(text, charIndex, formatting, hyperlinkUri));
             charIndex += text.Length;
         }
+    }
+
+    private static RichTextBlock? ParseImage(
+        XElement drawing,
+        IReadOnlyDictionary<string, string> relationships,
+        ZipArchive archive)
+    {
+        var blip = drawing.Descendants(A + "blip").FirstOrDefault();
+        var relationshipId = (string?)blip?.Attribute(R + "embed");
+        if (relationshipId is null || !relationships.TryGetValue(relationshipId, out var target))
+        {
+            return null;
+        }
+
+        var entryPath = ResolveWordPartPath(target);
+        if (!entryPath.StartsWith("word/media/", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var entry = archive.GetEntry(entryPath);
+        if (entry is null || entry.Length > MaxEmbeddedImageBytes)
+        {
+            return null;
+        }
+
+        using var imageStream = entry.Open();
+        using var buffer = new MemoryStream((int)entry.Length);
+        imageStream.CopyTo(buffer);
+
+        var contentType = GetImageContentType(entryPath);
+
+        return new RichTextBlock([], contentType)
+        {
+            Data = $"data:{contentType};base64,{Convert.ToBase64String(buffer.GetBuffer(), 0, (int)buffer.Length)}",
+            Properties = GetImageProperties(drawing, entryPath),
+        };
+    }
+
+    private static Dictionary<string, string?> GetImageProperties(XElement drawing, string entryPath)
+    {
+        var properties = new Dictionary<string, string?>
+        {
+            ["ResourcePath"] = entryPath,
+        };
+
+        var documentProperties = drawing.Descendants(Wp + "docPr").FirstOrDefault();
+        AddAttribute(properties, "Name", documentProperties, "name");
+        AddAttribute(properties, "AlternativeText", documentProperties, "descr");
+        AddAttribute(properties, "Title", documentProperties, "title");
+
+        var extent = drawing.Descendants(Wp + "extent").FirstOrDefault();
+        AddAttribute(properties, "WidthEmu", extent, "cx");
+        AddAttribute(properties, "HeightEmu", extent, "cy");
+
+        var transform = drawing.Descendants(A + "xfrm").FirstOrDefault();
+        var rotation = (string?)transform?.Attribute("rot");
+        if (long.TryParse(rotation, NumberStyles.Integer, CultureInfo.InvariantCulture, out var rotationUnits))
+        {
+            properties["RotationDegrees"] = (rotationUnits / 60000d).ToString(CultureInfo.InvariantCulture);
+        }
+        AddTrueAttribute(properties, "FlipHorizontal", transform, "flipH");
+        AddTrueAttribute(properties, "FlipVertical", transform, "flipV");
+
+        var sourceRectangle = drawing.Descendants(A + "srcRect").FirstOrDefault();
+        AddPercentageAttribute(properties, "CropLeftPercent", sourceRectangle, "l");
+        AddPercentageAttribute(properties, "CropTopPercent", sourceRectangle, "t");
+        AddPercentageAttribute(properties, "CropRightPercent", sourceRectangle, "r");
+        AddPercentageAttribute(properties, "CropBottomPercent", sourceRectangle, "b");
+        return properties;
+    }
+
+    private static void AddAttribute(
+        Dictionary<string, string?> properties,
+        string key,
+        XElement? element,
+        XName attributeName)
+    {
+        var value = (string?)element?.Attribute(attributeName);
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            properties[key] = value;
+        }
+    }
+
+    private static void AddTrueAttribute(
+        Dictionary<string, string?> properties,
+        string key,
+        XElement? element,
+        XName attributeName)
+    {
+        var value = (string?)element?.Attribute(attributeName);
+        if (string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase))
+        {
+            properties[key] = bool.TrueString;
+        }
+    }
+
+    private static void AddPercentageAttribute(
+        Dictionary<string, string?> properties,
+        string key,
+        XElement? element,
+        XName attributeName)
+    {
+        var value = (string?)element?.Attribute(attributeName);
+        if (long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var percentageUnits))
+        {
+            properties[key] = (percentageUnits / 1000d).ToString(CultureInfo.InvariantCulture);
+        }
+    }
+
+    private static void FlushTextBlock(
+        List<IParagraphBlock> blocks,
+        List<DocumentInlineBlock> inlines,
+        int? lineNumber = null)
+    {
+        if (inlines.Count == 0)
+        {
+            return;
+        }
+
+        blocks.Add(new PlainTextBlock(inlines.ToArray())
+        {
+            LineStart = lineNumber ?? 0,
+            LineEnd = lineNumber ?? 0,
+        });
+        inlines.Clear();
+    }
+
+    private static string ResolveWordPartPath(string target)
+    {
+        var path = target.Replace('\\', '/').TrimStart('/');
+        var segments = new List<string>();
+        foreach (var segment in ("word/" + path).Split('/', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (segment == "..")
+            {
+                if (segments.Count > 0)
+                {
+                    segments.RemoveAt(segments.Count - 1);
+                }
+            }
+            else if (segment != ".")
+            {
+                segments.Add(segment);
+            }
+        }
+        return string.Join('/', segments);
+    }
+
+    private static string GetImageContentType(string path)
+    {
+        return Path.GetExtension(path).ToLowerInvariant() switch
+        {
+            ".bmp" => "image/bmp",
+            ".gif" => "image/gif",
+            ".jpeg" or ".jpg" => "image/jpeg",
+            ".png" => "image/png",
+            ".svg" => "image/svg+xml",
+            ".tif" or ".tiff" => "image/tiff",
+            ".webp" => "image/webp",
+            _ => "application/octet-stream",
+        };
     }
 
     private static DocumentInlineBlock CreateInline(string text, int charStart, string formatting, string? hyperlinkUri)
@@ -230,6 +454,7 @@ public class DocxParser : DocParseable
     private static TableBlock? ParseTable(
         XElement tableElement,
         IReadOnlyDictionary<string, string> relationships,
+        ZipArchive archive,
         ref int lineNumber)
     {
         var rows = new List<List<CellDraft>>();
@@ -261,7 +486,7 @@ public class DocxParser : DocParseable
                 {
                     RemoveCoveredMerges(verticalMerges, columnIndex, colSpan);
 
-                    var content = ParseCellContent(cellElement, relationships);
+                    var content = ParseCellContent(cellElement, relationships, archive);
                     var cell = new CellDraft(content, colSpan);
                     row.Add(cell);
 
@@ -300,13 +525,13 @@ public class DocxParser : DocParseable
 
     private static IParagraphBlock ParseCellContent(
         XElement cellElement,
-        IReadOnlyDictionary<string, string> relationships)
+        IReadOnlyDictionary<string, string> relationships,
+        ZipArchive archive)
     {
         var paragraphs = cellElement
             .Elements(W + "p")
-            .Select((paragraph, index) => ParseParagraph(paragraph, relationships, index + 1))
+            .Select((paragraph, index) => ParseParagraph(paragraph, relationships, archive, index + 1))
             .Where(paragraph => !IsEmpty(paragraph))
-            .Cast<IParagraphBlock>()
             .ToList();
 
         return paragraphs.Count switch
@@ -379,10 +604,16 @@ public class DocxParser : DocParseable
         };
     }
 
-    private static bool IsEmpty(PlainTextBlock paragraph)
+    private static bool IsEmpty(IParagraphBlock paragraph)
     {
-        return paragraph.Content.All(inline => inline is not InlineTextBlock textBlock
-            || string.IsNullOrWhiteSpace(textBlock.Text));
+        return paragraph switch
+        {
+            PlainTextBlock plainText => plainText.Content.All(inline => inline is not InlineTextBlock textBlock
+                || string.IsNullOrWhiteSpace(textBlock.Text)),
+            RichTextBlock richText => string.IsNullOrWhiteSpace(richText.Data)
+                && richText.Content.All(IsEmpty),
+            _ => false,
+        };
     }
 
     private static void FillCoreMetadata(DocxMetadata metadata, XDocument? coreProperties)

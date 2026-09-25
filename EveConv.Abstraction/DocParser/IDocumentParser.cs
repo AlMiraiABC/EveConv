@@ -5,8 +5,14 @@ using System.Text;
 namespace EveConv.Abstraction.DocParser
 {
     /// <summary>
-    ///
+    /// Extracts document content and information into a structured document model.
     /// </summary>
+    /// <remarks>
+    /// Implementations are intended for content and metadata extraction, such as text,
+    /// tables, links, embedded resources, and document properties. This contract does not
+    /// require lossless document structure restoration, page-layout reconstruction, or
+    /// round-tripping the original document format.
+    /// </remarks>
     public interface IDocumentParser
     {
         /// <summary>
@@ -22,11 +28,11 @@ namespace EveConv.Abstraction.DocParser
         public bool Accept(string fileType);
 
         /// <summary>
-        /// Asynchronously parses the specified file stream to document.
+        /// Asynchronously extracts content and information from the specified file stream.
         /// </summary>
         /// <param name="source">Original file source.</param>
         /// <param name="cancellationToken">Task cancellation token.</param>
-        /// <returns>A task that represents the asynchronous operation that contains a structured document.</returns>
+        /// <returns>A task that represents the asynchronous operation and contains extracted document content and information.</returns>
         Task<Document> ParseAsync(string source, CancellationToken cancellationToken = default);
     }
 }

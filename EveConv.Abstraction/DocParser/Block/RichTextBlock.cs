@@ -10,9 +10,10 @@ namespace EveConv.Abstraction.DocParser.Block
     public sealed record RichTextBlock : ParagraphBlock<IEnumerable<IParagraphBlock>>
     {
         /// <summary>
-        /// Optional raw data encoded to base64 string. E.g. images.
+        /// Optional resource data or location, such as a data URI,
+        /// an absolute URL, or a document-relative resource path.
         /// </summary>
-        public string? Base64Data { get; init; }
+        public string? Data { get; init; }
 
         /// <summary>
         /// Type of <see cref="Content"/>. E.g. html, markdown, diagram, code, formula, etc.

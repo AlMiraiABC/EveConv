@@ -10,6 +10,7 @@ namespace EveConv.DocDecoder.Tests;
 public class DocxParserTests
 {
     private const string DocxMimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  private static readonly byte[] ImageBytes = [137, 80, 78, 71, 13, 10, 26, 10];
 
     [Fact]
     public async Task ParseAsync_ExtractsParagraphsTablesAndMetadata()
@@ -57,6 +58,36 @@ public class DocxParserTests
         Assert.Equal("B", GetText(cells[1, 1]!.Content));
     }
 
+    [Fact]
+    public async Task ParseAsync_EmbeddedImage_ReturnsDataUriInDocumentOrder()
+    {
+        CreateDocx("image.docx", includeImage: true);
+        var mimeTypeDetection = new TestMimeTypeDetection();
+        var parser = new DocxParser(mimeTypeDetection, new LocalDownloader(mimeTypeDetection));
+
+        var document = await parser.ParseAsync("image.docx", TestContext.Current.CancellationToken);
+
+        var paragraph = Assert.IsType<RichTextBlock>(document.Paragraphs.ElementAt(1));
+        var content = paragraph.Content.ToList();
+        Assert.Equal(3, content.Count);
+        Assert.Equal("Before", GetText(content[0]));
+        var image = Assert.IsType<RichTextBlock>(content[1]);
+        Assert.Equal("image/png", image.ContentType);
+        Assert.Equal($"data:image/png;base64,{Convert.ToBase64String(ImageBytes)}", image.Data);
+        Assert.Equal("Picture 1", image.Properties["Name"]);
+        Assert.Equal("Test image", image.Properties["AlternativeText"]);
+        Assert.Equal("Image title", image.Properties["Title"]);
+        Assert.Equal("word/media/image1.png", image.Properties["ResourcePath"]);
+        Assert.Equal("914400", image.Properties["WidthEmu"]);
+        Assert.Equal("457200", image.Properties["HeightEmu"]);
+        Assert.Equal("45", image.Properties["RotationDegrees"]);
+        Assert.Equal(bool.TrueString, image.Properties["FlipHorizontal"]);
+        Assert.Equal("10", image.Properties["CropLeftPercent"]);
+        Assert.Equal("After", GetText(content[2]));
+        var trailingText = Assert.IsType<PlainTextBlock>(content[2]);
+        Assert.Equal(0, Assert.Single(trailingText.Content).CharStart);
+    }
+
     [Theory]
     [InlineData("docx")]
     [InlineData(".docx")]
@@ -70,7 +101,7 @@ public class DocxParserTests
         Assert.True(parser.Accept(fileType));
     }
 
-    private static void CreateDocx(string filePath)
+  private static void CreateDocx(string filePath, bool includeImage = false)
     {
         using (var fileStream = File.Create(filePath))
         {
@@ -91,9 +122,31 @@ public class DocxParserTests
                         <?xml version="1.0" encoding="UTF-8"?>
                         <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
                           <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="https://example.com" TargetMode="External"/>
+                          <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.png"/>
                         </Relationships>
                         """);
-                AddEntry(archive, "word/document.xml", """
+                var imageRun = includeImage
+                    ? """
+                          <w:r><w:t>Before</w:t></w:r>
+                          <w:r>
+                            <w:drawing>
+                              <wp:inline xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">
+                                <wp:extent cx="914400" cy="457200"/>
+                                <wp:docPr id="1" name="Picture 1" descr="Test image" title="Image title"/>
+                                <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+                                  <a:graphicData>
+                                    <a:blip r:embed="rId2"/>
+                                    <a:srcRect l="10000"/>
+                                    <a:xfrm rot="2700000" flipH="1"/>
+                                  </a:graphicData>
+                                </a:graphic>
+                              </wp:inline>
+                            </w:drawing>
+                          </w:r>
+                          <w:r><w:t>After</w:t></w:r>
+                    """
+                    : string.Empty;
+                AddEntry(archive, "word/document.xml", $$"""
                         <?xml version="1.0" encoding="UTF-8"?>
                         <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
                                     xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
@@ -103,6 +156,7 @@ public class DocxParserTests
                               <w:r><w:rPr><w:b/></w:rPr><w:t>World</w:t></w:r>
                               <w:hyperlink r:id="rId1"><w:r><w:t xml:space="preserve"> Link</w:t></w:r></w:hyperlink>
                             </w:p>
+                            <w:p>{{imageRun}}</w:p>
                             <w:tbl>
                               <w:tr>
                                 <w:tc>
@@ -119,6 +173,7 @@ public class DocxParserTests
                           </w:body>
                         </w:document>
                         """);
+                      AddEntry(archive, "word/media/image1.png", ImageBytes);
                 AddEntry(archive, "docProps/core.xml", """
                         <?xml version="1.0" encoding="UTF-8"?>
                         <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"
@@ -161,6 +216,13 @@ public class DocxParserTests
         var entry = archive.CreateEntry(name);
         using var writer = new StreamWriter(entry.Open());
         writer.Write(content);
+    }
+
+    private static void AddEntry(ZipArchive archive, string name, byte[] content)
+    {
+        var entry = archive.CreateEntry(name);
+        using var stream = entry.Open();
+        stream.Write(content);
     }
 
     private static string GetText(IParagraphBlock block)
