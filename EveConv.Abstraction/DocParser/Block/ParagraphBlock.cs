@@ -43,5 +43,32 @@ namespace EveConv.Abstraction.DocParser.Block
         {
             Content = content;
         }
+
+
+        /// <inheritdoc/>
+        /// <remarks>
+        /// Ignore reference type equality such as <see cref="Dictionary{TKey, TValue}"/>.
+        /// </remarks>
+        public virtual bool Equals(ParagraphBlock<T>? other)
+        {
+            return ReferenceEquals(this, other)
+                || (other is not null
+                    && base.Equals(other)
+                    && EqualityComparer<T>.Default.Equals(Content, other.Content)
+                    && string.Equals(Numbering, other.Numbering, StringComparison.Ordinal));
+        }
+
+        /// <inheritdoc/>
+        /// <remarks>
+        /// Ignore reference type hashcode such as <see cref="Dictionary{TKey, TValue}"/>.
+        /// </remarks>
+        public override int GetHashCode()
+        {
+            var hash = new HashCode();
+            hash.Add(base.GetHashCode());
+            hash.Add(Content);
+            hash.Add(Numbering, StringComparer.Ordinal);
+            return hash.ToHashCode();
+        }
     }
 }
