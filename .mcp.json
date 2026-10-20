@@ -1,0 +1,15 @@
+{
+	"mcpServers": {
+
+		"codegraph": {
+			"type": "stdio",
+			"command": "bun",
+			"args": [
+				"x",
+				"@colbymchenry/codegraph",
+				"serve",
+				"--mcp"
+			]
+		}
+	}
+}

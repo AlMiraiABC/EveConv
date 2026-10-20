@@ -23,14 +23,19 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
-		<PackageReference Include="Testcontainers.Minio" />
-		<PackageReference Include="Testcontainers.XunitV3" />
 		<PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="dotenv.net" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Reference\Helper\EveConv.S3Helper\EveConv.S3Helper.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include=".env" Condition="Exists('.env')">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

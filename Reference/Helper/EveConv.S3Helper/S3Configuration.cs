@@ -43,6 +43,10 @@ namespace EveConv.S3Helper
         /// Got from environment or profile is not set.
         /// </remarks>
         public string? Endpoint { get => string.IsNullOrWhiteSpace(field) ? null : field; init; }
+        /// <summary>
+        /// Whether to force path style for S3 requests.
+        /// </summary>
+        public bool ForcePathStyle { get; init; } = false;
         #endregion
 
         #region operation

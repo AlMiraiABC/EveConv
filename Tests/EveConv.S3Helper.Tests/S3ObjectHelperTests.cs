@@ -1,28 +1,29 @@
 using System.Text;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Testcontainers.Minio;
 
 namespace EveConv.S3Helper.Tests
 {
-    public class S3ObjectHelperTests : IClassFixture<MinioContainerFixture>, IAsyncLifetime
+    public class S3ObjectHelperTests : IAsyncLifetime
     {
-        private readonly MinioContainer container;
+        private readonly S3Configuration _s3config;
         private readonly S3ObjectHelper client;
 
         private AmazonS3Client _client = null!;
 
         private static CancellationToken CurrentCT => TestContext.Current.CancellationToken;
 
-        public S3ObjectHelperTests(MinioContainerFixture fixture)
+        public S3ObjectHelperTests()
         {
-            this.container = fixture.Container;
+            dotenv.net.DotEnv.Load();
             var config = new S3Configuration()
             {
-                AccessKey = container.GetAccessKey(),
-                SecretKey = container.GetSecretKey(),
-                Endpoint = container.GetConnectionString(),
+                AccessKey = Environment.GetEnvironmentVariable("S3_ACCESS_KEY") ?? throw new NullReferenceException("S3_ACCESS_KEY is required."),
+                SecretKey = Environment.GetEnvironmentVariable("S3_SECRET_KEY") ?? throw new NullReferenceException("S3_SECRET_KEY is required."),
+                Endpoint = Environment.GetEnvironmentVariable("S3_ENDPOINT") ?? throw new NullReferenceException("S3_ENDPOINT is required."),
+                ForcePathStyle = Environment.GetEnvironmentVariable("S3_FORCE_PATH_STYLE") is not null && bool.Parse(Environment.GetEnvironmentVariable("S3_FORCE_PATH_STYLE")!),
             };
+            this._s3config = config;
             this.client = new(config);
         }
 
@@ -30,11 +31,12 @@ namespace EveConv.S3Helper.Tests
         {
             // test connection.
             this._client = new AmazonS3Client(
-               container.GetAccessKey(),
-               container.GetSecretKey(),
+               _s3config.AccessKey,
+               _s3config.SecretKey,
                new AmazonS3Config()
                {
-                   ServiceURL = container.GetConnectionString(),
+                   ServiceURL = _s3config.Endpoint,
+                   ForcePathStyle = _s3config.ForcePathStyle
                });
             var response = await _client.ListBucketsAsync(CurrentCT);
             Console.WriteLine("Got {0} buckets", response.Buckets?.Count ?? 0);

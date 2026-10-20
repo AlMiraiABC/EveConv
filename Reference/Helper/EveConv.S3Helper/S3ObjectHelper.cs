@@ -40,6 +40,7 @@ namespace EveConv.S3Helper
             var config = new AmazonS3Config()
             {
                 ServiceURL = _config.Endpoint,
+                ForcePathStyle = _config.ForcePathStyle,
             };
             return new AmazonS3Client(credentials, config);
         }
